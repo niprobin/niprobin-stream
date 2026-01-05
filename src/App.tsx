@@ -1,6 +1,5 @@
 import { Player } from './components/Player'
 import { Search } from './components/Search'
-import { useAudio } from './contexts/AudioContext'
 
 function App() {
   return (
