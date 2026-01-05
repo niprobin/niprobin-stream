@@ -46,3 +46,28 @@ export async function getStreamUrl(trackId: string): Promise<string> {
   const data = await response.json()
   return data.stream_url
 }
+
+// Download a track (returns blob directly)
+export async function downloadTrack(
+  trackId: string,
+  trackName: string,
+  artistName: string
+): Promise<Blob> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/download', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ 
+      trackId,
+      track: trackName,
+      artist: artistName
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to download track')
+  }
+
+  return response.blob()
+}
