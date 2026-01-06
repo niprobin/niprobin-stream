@@ -2,21 +2,26 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Download } from 'lucide-react'
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
 export function InstallPrompt() {
-  const [installPrompt, setInstallPrompt] = useState<any>(null)
-  const [isInstalled, setIsInstalled] = useState(false)
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [isInstalled, setIsInstalled] = useState(() => {
+    // Check if already installed during initialization
+    return window.matchMedia('(display-mode: standalone)').matches
+  })
 
   useEffect(() => {
-    // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true)
-      return
-    }
+    // Skip if already installed
+    if (isInstalled) return
 
     // Listen for install prompt event
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault()
-      setInstallPrompt(e)
+      setInstallPrompt(e as BeforeInstallPromptEvent)
     }
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
@@ -24,6 +29,7 @@ export function InstallPrompt() {
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleInstallClick = async () => {

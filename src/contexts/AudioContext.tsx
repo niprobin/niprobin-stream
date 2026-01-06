@@ -150,7 +150,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 }
 
 // Custom hook to use the audio context
-export function useAudio() {
+// eslint-disable-next-line react-refresh/only-export-components
+export const useAudio = () => {
   const context = useContext(AudioContext)
   if (!context) {
     throw new Error('useAudio must be used within AudioProvider')

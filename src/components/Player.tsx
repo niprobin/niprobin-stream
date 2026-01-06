@@ -82,7 +82,7 @@ export function Player() {
               onClick={handlePlayPause}
               size="icon"
               variant="ghost"
-              className="text-white hover:text-white hover:bg-slate-800 h-12 w-12"
+              className="bg-white text-black rounded-full h-12 w-12"
             >
               {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
             </Button>

@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon-512.png'],
+      includeAssets: ['android-chrome-192x192.png', 'android-chrome-512x512.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'Niprobin Stream',
         short_name: 'NiproStream',
@@ -18,7 +18,13 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: 'icon-512.png',
+            src: 'android-chrome-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: 'android-chrome-512x512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'

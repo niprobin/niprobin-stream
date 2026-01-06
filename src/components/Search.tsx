@@ -66,18 +66,18 @@ export function Search() {
       <form onSubmit={handleSearch} className="flex gap-2 mb-6">
         <Input
           type="text"
-          placeholder="Search for tracks"
+          placeholder="Find your favourite track"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 text-white"
+          className="rounded-full bg-gray-700 border-transparent flex-1 text-white"
         />
         <Button
           type="submit"
           disabled={isLoading}
-          className="bg-white text-slate-900 hover:bg-slate-200"
+          className="rounded-full bg-white text-slate-900 hover:bg-slate-200"
         >
-          <SearchIcon className="h-4 w-4 mr-2" />
           {isLoading ? 'Searching...' : 'Search'}
+          <SearchIcon className="h-2 w-2" />
         </Button>
       </form>
 
@@ -92,7 +92,7 @@ export function Search() {
           <div
             key={`${result['track-id']}-${index}`}
             onClick={() => handlePlayTrack(result)}
-            className="p-4 bg-slate-800 rounded-lg hover:bg-slate-700 cursor-pointer transition relative"
+            className="p-3 rounded-lg bg-gray-900 bg-opacity-90 cursor-pointer relative"
           >
             <div className="text-white font-semibold">{result.track}</div>
             <div className="text-slate-400 text-sm">{result.artist}</div>
