@@ -54,7 +54,7 @@ export function InstallPrompt() {
       onClick={handleInstallClick}
       variant="outline"
       size="sm"
-      className="gap-2"
+      className="gap-2 text-white"
     >
       <Download className="h-4 w-4" />
       Install App
