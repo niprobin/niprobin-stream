@@ -75,8 +75,6 @@ function AuthControls() {
 }
 
 function App() {
-  const { isAuthenticated } = useAuth()
-
   return (
     <div className="min-h-screen bg-slate-950 pb-32 md:pb-24">
       {/* Main Content Area */}
