@@ -18,7 +18,7 @@ export function Search() {
   // Handle search submission
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!query.trim()) return
 
     setIsLoading(true)
@@ -43,7 +43,7 @@ export function Search() {
     try {
       // Get the stream URL from n8n
       const streamUrl = await getStreamUrl(result['track-id'])
-      
+
       // Play the track with metadata
       play({
         id: result['track-id'],
@@ -71,7 +71,11 @@ export function Search() {
           onChange={(e) => setQuery(e.target.value)}
           className="flex-1 text-white"
         />
-        <Button type="submit" disabled={isLoading}>
+        <Button
+          type="submit"
+          disabled={isLoading}
+          className="bg-white text-slate-900 hover:bg-slate-200"
+        >
           <SearchIcon className="h-4 w-4 mr-2" />
           {isLoading ? 'Searching...' : 'Search'}
         </Button>
@@ -93,7 +97,7 @@ export function Search() {
             <div className="text-white font-semibold">{result.track}</div>
             <div className="text-slate-400 text-sm">{result.artist}</div>
             <div className="text-slate-500 text-xs">{result.album}</div>
-            
+
             {/* Loading indicator for this specific track */}
             {loadingTrackId === result['track-id'] && (
               <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
