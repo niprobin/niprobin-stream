@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { searchTracks, searchAlbums, getStreamUrl, getAlbumTracks } from '@/services/api'
 import type { SearchResult, AlbumResult } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
 import { Search as SearchIcon } from 'lucide-react'
+import { TrackList } from '@/components/TrackList'
 
 export function Search() {
   const [query, setQuery] = useState('')
@@ -98,32 +98,38 @@ export function Search() {
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4">
-      {/* Tabs for Track/Album Selection */}
-      <Tabs value={searchType} onValueChange={(value) => setSearchType(value as 'tracks' | 'albums')} className="w-full mb-4">
-        <TabsList className="w-full max-w-xs mx-auto">
-          <TabsTrigger value="tracks" className="flex-1">Tracks</TabsTrigger>
-          <TabsTrigger value="albums" className="flex-1">Albums</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
+    <div className="w-full p-4 sm:p-6 lg:p-8">
       {/* Search Form */}
-      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
+      <form
+        onSubmit={handleSearch}
+        className="flex flex-col gap-2 mb-6 sm:flex-row sm:items-center"
+      >
         <Input
           type="text"
-          placeholder={searchType === 'tracks' ? 'Find your favourite track' : 'Find your favourite album'}
+          placeholder={searchType === 'tracks' ? 'Find a track' : 'Find an album'}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="rounded-full bg-gray-700 border-transparent flex-1 text-white"
+          className="rounded-full bg-gray-700 border-transparent flex-1 text-white text-sm h-11"
         />
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="rounded-full bg-white text-slate-900 hover:bg-slate-200"
-        >
-          {isLoading ? 'Searching...' : 'Search'}
-          <SearchIcon className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <select
+            value={searchType}
+            onChange={(e) => setSearchType(e.target.value as 'tracks' | 'albums')}
+            className="rounded-full bg-slate-900 border border-slate-700 text-white text-sm px-4 h-11 focus:outline-none focus:ring-2 focus:ring-white/20"
+            aria-label="Search scope"
+          >
+            <option value="tracks">Tracks</option>
+            <option value="albums">Albums</option>
+          </select>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="rounded-full bg-white text-slate-900 hover:bg-slate-200 whitespace-nowrap h-11 px-6"
+          >
+            {isLoading ? 'Searching...' : 'Search'}
+            <SearchIcon className="h-4 w-4" />
+          </Button>
+        </div>
       </form>
 
       {/* Error Message */}
@@ -133,37 +139,26 @@ export function Search() {
 
       {/* Search Results - Track Results */}
       {searchType === 'tracks' && (
-        <div className="space-y-2">
-          {results.map((result, index) => (
-            <div
-              key={`${result['track-id']}-${index}`}
-              onClick={() => handlePlayTrack(result)}
-              className="flex gap-3 p-3 rounded-lg bg-gray-900 bg-opacity-90 cursor-pointer relative hover:bg-opacity-100 transition-all"
-            >
-              {/* Album Cover */}
-              <div className="w-14 h-14 rounded-md overflow-hidden bg-gray-800 flex-shrink-0">
-                <img
-                  src={result.cover}
-                  alt={`${result.album} cover`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Track Info */}
-              <div className="flex-1 min-w-0">
-                <div className="text-white font-semibold truncate">{result.track}</div>
-                <div className="text-slate-400 text-sm truncate">{result.artist}</div>
-                <div className="text-slate-500 text-xs truncate">{result.album}</div>
-              </div>
-
-              {loadingTrackId === result['track-id'] && (
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs">
-                  Loading...
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
+        <TrackList
+          variant="search"
+          tracks={results.map((result) => ({
+            id: result['track-id'],
+            title: result.track,
+            artist: result.artist,
+            album: result.album,
+            cover: result.cover,
+          }))}
+          loadingTrackId={loadingTrackId}
+          onSelect={(track) =>
+            handlePlayTrack({
+              track: track.title,
+              artist: track.artist,
+              album: track.album ?? '',
+              'track-id': track.id,
+              cover: track.cover ?? '',
+            })
+          }
+        />
       )}
 
       {/* Search Results - Album Results */}
@@ -176,11 +171,11 @@ export function Search() {
               className="group cursor-pointer"
             >
               {/* Album Cover */}
-              <div className="aspect-square rounded-lg overflow-hidden bg-gray-800 mb-2 relative">
+              <div className="border border-slate-600 aspect-square rounded-lg overflow-hidden bg-gray-800 mb-2 relative">
                 <img
                   src={album.cover}
                   alt={`${album.album} by ${album.artist}`}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  className="w-full h-full object-cover transition-transform"
                 />
                 {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity" />

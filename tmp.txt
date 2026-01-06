@@ -1,0 +1,449 @@
+# Niprobin Stream - Project Documentation
+
+## Overview
+A personal Spotify-like PWA that streams music from n8n webhooks. Built with React, TypeScript, Tailwind CSS, and shadcn/ui.
+
+## Tech Stack
+- **Framework**: Vite + React 19.2.0 + TypeScript
+- **Styling**: Tailwind CSS + Inter font
+- **Components**: shadcn/ui (New York style, Slate color)
+- **UI Primitives**: @radix-ui/react-dialog, @radix-ui/react-tabs
+- **Icons**: lucide-react
+- **Backend**: n8n webhooks
+
+## Project Structure
+```
+src/
+??? components/
+?   ??? Player.tsx        # Persistent audio player (bottom bar) with expandable album tracklist, likes, rating controls
+?   ??? Search.tsx        # Track/Album search with tabs + shared track list styling
+?   ??? TrackList.tsx     # Reusable track list component for player & search
+?   ??? InstallPrompt.tsx # PWA install prompt with close button
+?   ??? ui/               # shadcn/ui components (button, input, progress, tabs, etc.)
+??? pages/
+?   ??? Albums.tsx        # Dedicated /albums view backed by library database
+??? contexts/
+?   ??? AudioContext.tsx  # Global audio state + album context management
+??? services/
+?   ??? api.ts            # n8n webhook API calls (search, stream, download, likes, rating)
+??? App.tsx               # Main app layout
+??? main.tsx              # App entry point with AudioProvider/AuthProvider
+??? index.css             # Global styles + Inter font
+
+public/
+??? icon-512.png          # PWA icon
+??? manifest.json         # PWA manifest
+```
+
+## Key Features
+
+### 1. Audio Player (Player.tsx)
+**Enhanced expandable player with album tracklist integration:**
+
+#### Standard Mode (Track Playing)
+- **Persistent bottom bar** - stays visible across the app
+- **Play/Pause controls** - centered circle button (desktop), left-aligned (mobile)
+- **Progress bar** - clickable to seek, styled with transparent/white colors
+- **Track metadata** - title + artist (stacked on desktop, inline on mobile)
+- **Download button** - fetches file from n8n, shows loading state
+- **Show Album button** (List icon) - appears when album context is loaded, toggles tracklist
+- **Like button** - opens playlist picker modal when the user is authenticated
+- **Responsive layout** - desktop uses 3-column grid, mobile uses vertical stack
+
+#### Expanded Mode (Album Tracklist)
+- **Auto-expands to 80vh** when album is selected from search
+- **Album header** - 80x80px cover + album name + artist
+- **Compact tracklist** - track number, title, artist with dividers
+- **Current track highlighting** - shows which track is playing
+- **Playing indicator** - ♫ when playing, ❚❚ when paused
+- **Click to play** - any track in the list can be played
+- **Border divider** - separates controls from album content
+- **Same width** - controls and tracklist share max-w-4xl container
+- **Toggle button** - List icon next to Download button (both layouts)
+- **Album rating** - 1–5 clickable stars beneath artist info send a rating webhook and show inline feedback
+
+#### Playlist Like Modal
+- **Activated by heart icons** - available in player controls and by each album track entry
+- **Scrollable playlist list** - displays curated destinations (Afrobeat, Beats, etc.)
+- **Webhook-backed** - POSTs `{ track, artist, playlist }` to `/webhook/like-track` and surfaces success/error messages directly in the modal
+
+### 2. Search (Search.tsx)
+**Dual-mode search with tabs:**
+
+#### Track Search Mode
+- **Search input** - rounded, gray background, white text
+- **Results display** - uses the same `TrackList` component/styling as the album view for consistency
+- **Track rows** - show cover, track name, artist, album with loading indicator
+- **Click to play** - fetches stream URL and starts playback
+- **Clears album context** - removes tracklist when playing single track
+- **Loading states** - shows "Loading..." while fetching
+
+#### Album Search Mode
+- **Grid layout** - 2/3/4 columns (mobile/tablet/desktop)
+- **Album cards** - square cover, album name, artist
+- **Hover effects** - scale image + dark overlay
+- **Click behavior** - populates player with album tracklist (no auto-play)
+- **Player integration** - automatically expands player to show tracks
+
+### 6. Albums Page (/albums)
+- **Navigation tab** - accessible via the Home/Albums header tabs (uses history API for /# vs /albums).
+- **Backed by library database** - fetches curated albums from the /webhook/albums endpoint instead of live search.
+- **Album grid** - identical card styling to the Search album view, with hover/focus states.
+- **Player integration** - clicking an album loads its tracklist via the existing /webhook/stream-album flow and expands the player.
+
+### 3. Audio Context (AudioContext.tsx)
+**Global state with album context:**
+
+- **Track state** - current track, play/pause, time, volume
+- **Album context** - `albumTracks[]`, `albumInfo` (name, artist, cover)
+- **HTML5 Audio** - single Audio instance persists across app
+- **React Context** - makes audio controls available to all components
+- **Key functions**:
+  - `play()` - play a track
+  - `pause()`, `resume()` - playback control
+  - `seek()` - jump to time position
+  - `setVolume()` - adjust volume
+  - `setAlbumContext()` - load album tracklist
+  - `clearAlbumContext()` - remove album tracklist
+- **Media Session API** - integrates with OS media controls
+
+### 4. Install Prompt (InstallPrompt.tsx)
+- **PWA install banner** - shows when app is installable
+- **Download icon** - clear call-to-action
+- **Close button** (X icon) - dismisses the prompt
+- **Install detection** - hides when already installed
+- **beforeinstallprompt** event handling
+
+### 5. API Service (api.ts)
+Seven webhook endpoints:
+
+#### Track Search
+- **Endpoint**: `POST /webhook/search`
+- **Request**: `{ query: string }`
+- **Response**: `SearchResult[]` with cover field
+
+#### Album Search
+- **Endpoint**: `POST /webhook/search-album`
+- **Request**: `{ query: string }`
+- **Response**: `AlbumResult[]` with album-id, cover
+
+#### Album Tracks
+- **Endpoint**: `POST /webhook/stream-album`
+- **Request**: `{ albumId: number }`
+- **Response**: `AlbumTrack[]` with track-number
+- **Error handling**: Ensures array return (defensive coding)
+
+#### Stream
+- **Endpoint**: `POST /webhook/stream`
+- **Request**: `{ trackId: string }`
+- **Response**: `{ stream_url: string }`
+
+#### Download
+- **Endpoint**: `POST /webhook/download`
+- **Request**: `{ trackId, track, artist }`
+- **Response**: Binary blob (MP3 file)
+
+#### Like Track
+- **Endpoint**: `POST /webhook/like-track`
+- **Request**: `{ track, artist, playlist }`
+- **Response**: `{ status: 'success' | 'error', message: string }`
+
+#### Rate Album
+- **Endpoint**: `POST /webhook/rate-album`
+- **Request**: `{ album, artist, rating }`
+- **Response**: `{ status: 'success' | 'error', message: string }`
+
+## n8n Webhook Integration
+
+### Search Endpoint (Tracks)
+```json
+POST /webhook/search
+{ "query": "artist name" }
+
+Response:
+[{
+  "track": "Song Name",
+  "artist": "Artist Name",
+  "album": "Album Name",
+  "track-id": "unique-id",
+  "cover": "https://cover-url.jpg"
+}]
+```
+
+### Album Search Endpoint
+```json
+POST /webhook/search-album
+{ "query": "album name" }
+
+Response:
+[{
+  "album": "Album Name",
+  "artist": "Artist Name",
+  "album-id": 12345,
+  "cover": "https://cover-url.jpg"
+}]
+```
+
+### Album Tracks Endpoint
+```json
+POST /webhook/stream-album
+{ "albumId": 12345 }
+
+Response:
+[{
+  "track": "Track Name",
+  "track-id": 67890,
+  "artist": "Artist Name",
+  "track-number": 1
+}]
+```
+
+### Stream Endpoint
+```json
+POST /webhook/stream
+{ "trackId": "unique-id" }
+
+Response:
+{ "stream_url": "https://audio-url.mp3" }
+```
+
+### Download Endpoint
+```json
+POST /webhook/download
+{
+  "trackId": "unique-id",
+  "track": "Song Name",
+  "artist": "Artist Name"
+}
+
+Response: Binary file (audio/mpeg)
+Headers:
+  Content-Type: audio/mpeg
+  Content-Disposition: attachment; filename="Artist - Track.mp3"
+```
+
+### Like Track Endpoint
+```json
+POST /webhook/like-track
+{
+  "track": "Song Name",
+  "artist": "Artist Name",
+  "playlist": "Morning Chill"
+}
+
+Response:
+{ "status": "success", "message": "Added to playlist" }
+```
+
+### Rate Album Endpoint
+```json
+POST /webhook/rate-album
+{
+  "album": "Album Name",
+  "artist": "Artist Name",
+  "rating": 4
+}
+
+Response:
+{ "status": "success", "message": "Rating saved" }
+```
+
+## Styling Details
+
+### Colors
+- Background: `bg-slate-950` (#020617)
+- Player bar: `bg-slate-900` (#0f172a)
+- Cards: `bg-gray-900` hover `bg-opacity-100`, `bg-gray-800` for album grid
+- Text: white primary, `text-slate-400` secondary, `text-slate-500` tertiary
+- Progress track: `bg-white/20`, progress: `bg-white`
+- Borders: `border-slate-800` for dividers
+- Tabs: `bg-gray-800` background, `bg-gray-700` active
+
+### Responsive Design
+- **Desktop**: 3-column player layout (metadata left, controls center, buttons right)
+- **Mobile**: Vertical stack, compact spacing, metadata above play button
+- **Breakpoint**: `md:` prefix (768px)
+- **Max width**: `max-w-4xl` for player controls and tracklist (896px)
+- **Album grid**: 2 cols mobile, 3 cols tablet, 4 cols desktop
+
+### Typography
+- **Font**: Inter (400, 500, 600, 700 weights)
+- **Loaded via**: Google Fonts CDN in `index.css`
+- **Track list**: `text-sm` for track names, `text-xs` for artists
+- **Album grid**: `text-sm` for album names, `text-xs` for artists
+
+### Component Spacing
+- **Tracklist**: `divide-y divide-slate-800` with `p-2` per item, `space-y-0.5` removed for tighter layout
+- **Player padding**: `p-4 md:p-6` on main container
+- **Album header**: `gap-4 mb-4` with 80x80px cover
+- **Controls gap**: `gap-2` between buttons
+
+## PWA Configuration
+
+### manifest.json
+```json
+{
+  "name": "Niprobin Stream",
+  "short_name": "NiproStream",
+  "display": "standalone",
+  "theme_color": "#0f172a",
+  "background_color": "#020617",
+  "icons": [{ "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }]
+}
+```
+
+### index.html
+- Links to manifest and icon
+- Theme color meta tag for mobile browsers
+- Bottom padding on app container to prevent player overlap
+
+### InstallPrompt Component
+- Listens for `beforeinstallprompt` event
+- Shows Download + X button when installable
+- Hides after install or dismiss
+- Checks `display-mode: standalone` to detect if already installed
+
+## Key TypeScript Types
+
+```typescript
+// Track object (played in audio element)
+type Track = {
+  id: string
+  title: string
+  artist: string
+  album?: string
+  coverArt?: string
+  streamUrl: string
+}
+
+// Search result from n8n (tracks)
+type SearchResult = {
+  track: string
+  artist: string
+  album: string
+  'track-id': string
+  cover: string
+}
+
+// Album search result from n8n
+type AlbumResult = {
+  album: string
+  artist: string
+  'album-id': number
+  cover: string
+}
+
+// Album track listing
+type AlbumTrack = {
+  track: string
+  'track-id': number
+  artist: string
+  'track-number': number
+}
+
+// Audio context type
+type AudioContextType = {
+  currentTrack: Track | null
+  isPlaying: boolean
+  currentTime: number
+  duration: number
+  volume: number
+  albumTracks: AlbumTrackItem[]
+  albumInfo: { name: string; artist: string; cover: string } | null
+  play: (track: Track) => void
+  pause: () => void
+  resume: () => void
+  seek: (time: number) => void
+  setVolume: (volume: number) => void
+  setAlbumContext: (tracks: AlbumTrackItem[], albumInfo: { name: string; artist: string; cover: string }) => void
+  clearAlbumContext: () => void
+}
+```
+
+## User Flow
+
+### Playing a Single Track
+1. User searches for tracks (Track tab)
+2. Clicks on a track card
+3. App clears any existing album context
+4. Fetches stream URL from n8n
+5. Starts playing in the audio player
+6. Player shows track metadata + controls (no album button)
+
+### Playing an Album
+1. User searches for albums (Album tab)
+2. Clicks on an album card
+3. App fetches album tracklist from n8n
+4. Populates audio context with tracks + album info
+5. Player auto-expands to 80vh showing tracklist
+6. User can click any track to start playing
+7. List icon button appears next to download button
+8. Current track is highlighted in the list
+
+### Switching Between Modes
+- **Album → Single Track**: Playing a search result track clears album context
+- **Single Track → Album**: Selecting an album populates context and shows tracklist
+- **Expand/Collapse**: List icon button toggles tracklist visibility
+
+## Development Commands
+```bash
+npm install          # Install dependencies
+npm run dev          # Start dev server (localhost:5173)
+npm run build        # Build for production
+npm run preview      # Preview production build
+```
+
+## Dependencies
+```json
+{
+  "react": "^19.2.0",
+  "react-dom": "^19.2.0",
+  "@radix-ui/react-dialog": "latest",
+  "@radix-ui/react-tabs": "latest",
+  "lucide-react": "latest",
+  "tailwindcss": "latest"
+}
+```
+
+## Deployment (Vercel)
+- Push to GitHub
+- Connect repository in Vercel
+- Auto-deploys on push to main branch
+- Build command: `npm run build`
+- Output directory: `dist`
+
+## Recent Changes
+
+### Album Tracklist Integration (Latest)
+- ✅ Merged drawer into expandable player
+- ✅ Auto-expands to 80vh when album is loaded
+- ✅ List icon button for show/hide toggle
+- ✅ Clearing album context when playing single tracks
+- ✅ Compact tracklist with dividers
+- ✅ Current track highlighting with play indicator
+- ✅ Border divider between controls and album content
+- ✅ Same-width layout for controls and tracklist
+
+### Track/Album Search
+- ✅ Tabs UI for switching between modes
+- ✅ Album grid layout with covers and hover effects
+- ✅ Track results with album covers
+- ✅ Responsive grid (2/3/4 columns)
+
+### Install Prompt
+- ✅ PWA install banner with close button
+- ✅ Dismissible with X icon
+- ✅ Auto-hides when installed
+
+## Future Enhancements
+- Queue/playlist management
+- Favorites/liked songs
+- Recently played history
+- Keyboard shortcuts (space to play/pause, arrow keys for seek)
+- Service worker for offline support
+- Better error handling UI
+- Album art in player when no track is playing (album-only mode)
+- Shuffle and repeat controls
+- Volume slider
+- Next/Previous track buttons when in album context
+
