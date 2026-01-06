@@ -1,5 +1,7 @@
 import { Player } from './components/Player'
 import { Search } from './components/Search'
+import { InstallPrompt } from './components/InstallPrompt'
+
 
 function App() {
   return (
@@ -9,7 +11,7 @@ function App() {
         <h1 className="text-2xl font-bold text-white mb-1 text-center">
           Search and play audio
         </h1>
-        
+        <InstallPrompt />
         {/* Search Component */}
         <Search />
       </div>

@@ -42,33 +42,62 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   // Function: Play a new track
   const play = (track: Track) => {
-    // If no audio object exists yet, create one
     if (!audioRef.current) {
       audioRef.current = new Audio()
-      
-      // Listen for time updates
+
       audioRef.current.addEventListener('timeupdate', () => {
         setCurrentTime(audioRef.current?.currentTime || 0)
       })
-      
-      // Listen for when metadata loads (to get duration)
+
       audioRef.current.addEventListener('loadedmetadata', () => {
         setDuration(audioRef.current?.duration || 0)
       })
-      
-      // Listen for when track ends
+
       audioRef.current.addEventListener('ended', () => {
         setIsPlaying(false)
       })
     }
 
-    // Set the track URL and play
     audioRef.current.src = track.streamUrl
     audioRef.current.volume = volume
     audioRef.current.play()
-    
+
     setCurrentTrack(track)
     setIsPlaying(true)
+
+    // Update Media Session
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title,
+        artist: track.artist,
+        album: track.album || '',
+        artwork: track.coverArt ? [
+          { src: track.coverArt, sizes: '512x512', type: 'image/png' }
+        ] : []
+      })
+
+      navigator.mediaSession.setActionHandler('play', () => {
+        audioRef.current?.play()
+        setIsPlaying(true)
+      })
+
+      navigator.mediaSession.setActionHandler('pause', () => {
+        audioRef.current?.pause()
+        setIsPlaying(false)
+      })
+
+      navigator.mediaSession.setActionHandler('seekbackward', () => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 10)
+        }
+      })
+
+      navigator.mediaSession.setActionHandler('seekforward', () => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = Math.min(audioRef.current.duration, audioRef.current.currentTime + 10)
+        }
+      })
+    }
   }
 
   // Function: Pause playback
