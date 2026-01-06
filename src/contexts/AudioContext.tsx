@@ -11,6 +11,14 @@ type Track = {
   streamUrl: string
 }
 
+// TypeScript: Define album track for tracklist
+export type AlbumTrackItem = {
+  track: string
+  'track-id': number
+  artist: string
+  'track-number': number
+}
+
 // TypeScript: Define what our audio context contains
 type AudioContextType = {
   currentTrack: Track | null
@@ -18,11 +26,15 @@ type AudioContextType = {
   currentTime: number
   duration: number
   volume: number
+  albumTracks: AlbumTrackItem[]
+  albumInfo: { name: string; artist: string; cover: string } | null
   play: (track: Track) => void
   pause: () => void
   resume: () => void
   seek: (time: number) => void
   setVolume: (volume: number) => void
+  setAlbumContext: (tracks: AlbumTrackItem[], albumInfo: { name: string; artist: string; cover: string }) => void
+  clearAlbumContext: () => void
 }
 
 // Create the Context - this is our "box" that holds audio state
@@ -36,6 +48,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolumeState] = useState(1) // 0 to 1
+  const [albumTracks, setAlbumTracks] = useState<AlbumTrackItem[]>([])
+  const [albumInfo, setAlbumInfo] = useState<{ name: string; artist: string; cover: string } | null>(null)
 
   // Ref: Holds the actual Audio object (doesn't trigger re-renders when changed)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -128,6 +142,18 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setVolumeState(newVolume)
   }
 
+  // Function: Set album context with tracklist
+  const setAlbumContext = (tracks: AlbumTrackItem[], info: { name: string; artist: string; cover: string }) => {
+    setAlbumTracks(tracks)
+    setAlbumInfo(info)
+  }
+
+  // Function: Clear album context
+  const clearAlbumContext = () => {
+    setAlbumTracks([])
+    setAlbumInfo(null)
+  }
+
   // Provide all this to children components
   return (
     <AudioContext.Provider
@@ -137,11 +163,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         currentTime,
         duration,
         volume,
+        albumTracks,
+        albumInfo,
         play,
         pause,
         resume,
         seek,
         setVolume,
+        setAlbumContext,
+        clearAlbumContext,
       }}
     >
       {children}

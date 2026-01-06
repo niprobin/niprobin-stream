@@ -4,6 +4,23 @@ export type SearchResult = {
   artist: string
   album: string
   'track-id': string
+  cover: string
+}
+
+// Type for album search results
+export type AlbumResult = {
+  album: string
+  artist: string
+  'album-id': number
+  cover: string
+}
+
+// Type for album track listing
+export type AlbumTrack = {
+  track: string
+  'track-id': number
+  artist: string
+  'track-number': number
 }
 
 // Type for stream response
@@ -58,7 +75,7 @@ export async function downloadTrack(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ 
+    body: JSON.stringify({
       trackId,
       track: trackName,
       artist: artistName
@@ -70,4 +87,51 @@ export async function downloadTrack(
   }
 
   return response.blob()
+}
+
+// Search for albums
+export async function searchAlbums(query: string): Promise<AlbumResult[]> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/search-album', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Album search failed')
+  }
+
+  const data = await response.json()
+  return data.results || data
+}
+
+// Get tracks for a specific album
+export async function getAlbumTracks(albumId: number): Promise<AlbumTrack[]> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/stream-album', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ albumId }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to get album tracks')
+  }
+
+  const data = await response.json()
+
+  // Ensure we always return an array
+  if (Array.isArray(data)) {
+    return data
+  }
+
+  if (data.results && Array.isArray(data.results)) {
+    return data.results
+  }
+
+  // If data is not an array, wrap it or return empty array
+  return []
 }
