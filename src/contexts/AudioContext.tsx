@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useRef } from 'react'
+import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
+import { getStreamUrl } from '@/services/api'
 
 // TypeScript: Define what a Track looks like
 type Track = {
@@ -54,65 +55,134 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // Ref: Holds the actual Audio object (doesn't trigger re-renders when changed)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  // Function: Play a new track
-  const play = (track: Track) => {
+  const startPlayback = useCallback(
+    (track: Track) => {
+      if (typeof Audio === 'undefined') {
+        return
+      }
+
+      if (!audioRef.current) {
+        audioRef.current = new Audio()
+      }
+
+      const audio = audioRef.current
+      audio.src = track.streamUrl
+      audio.volume = volume
+      audio.play()
+
+      setCurrentTrack(track)
+      setIsPlaying(true)
+
+      // Update Media Session metadata/controls for current track
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track.title,
+          artist: track.artist,
+          album: track.album || '',
+          artwork: track.coverArt
+            ? [{ src: track.coverArt, sizes: '512x512', type: 'image/png' }]
+            : [],
+        })
+
+        navigator.mediaSession.setActionHandler('play', () => {
+          audioRef.current?.play()
+          setIsPlaying(true)
+        })
+
+        navigator.mediaSession.setActionHandler('pause', () => {
+          audioRef.current?.pause()
+          setIsPlaying(false)
+        })
+
+        navigator.mediaSession.setActionHandler('seekbackward', () => {
+          if (audioRef.current) {
+            audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 10)
+          }
+        })
+
+        navigator.mediaSession.setActionHandler('seekforward', () => {
+          if (audioRef.current) {
+            audioRef.current.currentTime = Math.min(
+              audioRef.current.duration,
+              audioRef.current.currentTime + 10
+            )
+          }
+        })
+      }
+    },
+    [volume]
+  )
+
+  // Function: Play next track in album
+  const playNextTrack = useCallback(async () => {
+    if (!currentTrack || albumTracks.length === 0 || !albumInfo) {
+      setIsPlaying(false)
+      return
+    }
+
+    const currentIndex = albumTracks.findIndex(
+      (track) => track['track-id'].toString() === currentTrack.id
+    )
+
+    if (currentIndex !== -1 && currentIndex < albumTracks.length - 1) {
+      const nextTrack = albumTracks[currentIndex + 1]
+
+      try {
+        const streamUrl = await getStreamUrl(nextTrack['track-id'].toString())
+        startPlayback({
+          id: nextTrack['track-id'].toString(),
+          title: nextTrack.track,
+          artist: nextTrack.artist,
+          album: albumInfo.name,
+          streamUrl,
+          coverArt: albumInfo.cover,
+        })
+      } catch (err) {
+        console.error('Failed to load next track:', err)
+        setIsPlaying(false)
+      }
+    } else {
+      setIsPlaying(false)
+    }
+  }, [currentTrack, albumTracks, albumInfo, startPlayback])
+
+  // Initialize audio element and bind lifecycle events once
+  useEffect(() => {
+    if (typeof Audio === 'undefined') {
+      return
+    }
+
     if (!audioRef.current) {
       audioRef.current = new Audio()
-
-      audioRef.current.addEventListener('timeupdate', () => {
-        setCurrentTime(audioRef.current?.currentTime || 0)
-      })
-
-      audioRef.current.addEventListener('loadedmetadata', () => {
-        setDuration(audioRef.current?.duration || 0)
-      })
-
-      audioRef.current.addEventListener('ended', () => {
-        setIsPlaying(false)
-      })
     }
 
-    audioRef.current.src = track.streamUrl
-    audioRef.current.volume = volume
-    audioRef.current.play()
+    const audio = audioRef.current
 
-    setCurrentTrack(track)
-    setIsPlaying(true)
-
-    // Update Media Session
-    if ('mediaSession' in navigator) {
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: track.title,
-        artist: track.artist,
-        album: track.album || '',
-        artwork: track.coverArt ? [
-          { src: track.coverArt, sizes: '512x512', type: 'image/png' }
-        ] : []
-      })
-
-      navigator.mediaSession.setActionHandler('play', () => {
-        audioRef.current?.play()
-        setIsPlaying(true)
-      })
-
-      navigator.mediaSession.setActionHandler('pause', () => {
-        audioRef.current?.pause()
-        setIsPlaying(false)
-      })
-
-      navigator.mediaSession.setActionHandler('seekbackward', () => {
-        if (audioRef.current) {
-          audioRef.current.currentTime = Math.max(0, audioRef.current.currentTime - 10)
-        }
-      })
-
-      navigator.mediaSession.setActionHandler('seekforward', () => {
-        if (audioRef.current) {
-          audioRef.current.currentTime = Math.min(audioRef.current.duration, audioRef.current.currentTime + 10)
-        }
-      })
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime || 0)
     }
-  }
+
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration || 0)
+    }
+
+    const handleEnded = () => {
+      void playNextTrack()
+    }
+
+    audio.addEventListener('timeupdate', handleTimeUpdate)
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+    audio.addEventListener('ended', handleEnded)
+
+    return () => {
+      audio.removeEventListener('timeupdate', handleTimeUpdate)
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+      audio.removeEventListener('ended', handleEnded)
+    }
+  }, [playNextTrack])
+
+  // Function: Play a new track
+  const play = startPlayback
 
   // Function: Pause playback
   const pause = () => {

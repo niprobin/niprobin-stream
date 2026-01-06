@@ -1,15 +1,16 @@
 import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Play, Pause, Download, List } from 'lucide-react'
+import { Play, Pause, Download, Maximize2 } from 'lucide-react'
 import { downloadTrack, getStreamUrl } from '@/services/api'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 export function Player() {
   const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, play } = useAudio()
   const [isDownloading, setIsDownloading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
+  const playerRef = useRef<HTMLDivElement>(null)
 
   // Auto-expand when album context is set
   const hasAlbumContext = albumTracks.length > 0 && albumInfo
@@ -21,9 +22,22 @@ export function Player() {
     }
   }, [hasAlbumContext])
 
-  if (!currentTrack && !hasAlbumContext) {
-    return null
-  }
+  // Handle click outside to collapse player
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isExpanded && playerRef.current && !playerRef.current.contains(event.target as Node)) {
+        setIsExpanded(false)
+      }
+    }
+
+    if (isExpanded) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isExpanded])
 
   // Determine height based on expand state
   const playerHeight = hasAlbumContext && isExpanded ? 'h-[80vh]' : 'h-auto'
@@ -109,16 +123,17 @@ export function Player() {
   }
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 md:p-6 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
-      {currentTrack && (
-        <div className="max-w-4xl mx-auto flex-shrink-0 w-full">
-          {/* Desktop Layout: 3 columns */}
-          <div className="hidden md:grid md:grid-cols-3 items-center gap-4 mb-4">
-              {/* Left: Track Info */}
-              <div className="text-left">
-                <div className="font-semibold text-white truncate">{currentTrack.title}</div>
-                <div className="text-sm text-slate-400 truncate">{currentTrack.artist}</div>
-              </div>
+    <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 md:p-6 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
+      <div className="max-w-4xl mx-auto flex-shrink-0 w-full">
+        {currentTrack ? (
+          <>
+            {/* Desktop Layout: 3 columns */}
+            <div className="hidden md:grid md:grid-cols-3 items-center gap-4 mb-4">
+                {/* Left: Track Info */}
+                <div className="text-left">
+                  <div className="font-semibold text-white truncate">{currentTrack.title}</div>
+                  <div className="text-sm text-slate-400 truncate">{currentTrack.artist}</div>
+                </div>
 
               {/* Center: Play/Pause Button */}
               <div className="flex justify-center">
@@ -141,7 +156,7 @@ export function Player() {
                     variant="ghost"
                     className="text-white hover:text-white hover:bg-slate-800"
                   >
-                    <List className="h-5 w-5" />
+                    <Maximize2 className="h-5 w-5" />
                   </Button>
                 )}
                 <Button
@@ -161,21 +176,12 @@ export function Player() {
               {/* Track Info - centered, side by side */}
               <div className="text-center text-sm text-white truncate max-w-full px-4">
                 <span className="font-semibold">{currentTrack.title}</span>
-                <span className="text-slate-400"> • {currentTrack.artist}</span>
+                <span className="text-slate-400"> – {currentTrack.artist}</span>
               </div>
 
               {/* Buttons Row */}
-              <div className="flex items-center gap-2">
-                {/* Play/Pause Button */}
-                <Button
-                  onClick={handlePlayPause}
-                  size="icon"
-                  variant="ghost"
-                  className="text-white hover:text-white hover:bg-slate-800 h-12 w-12"
-                >
-                  {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
-                </Button>
-
+              <div className="flex items-center gap-2 mb-2 mt-2">
+                
                 {/* Show Album Button */}
                 {hasAlbumContext && (
                   <Button
@@ -184,9 +190,19 @@ export function Player() {
                     variant="ghost"
                     className="text-white hover:text-white hover:bg-slate-800"
                   >
-                    <List className="h-5 w-5" />
+                    <Maximize2 className="h-5 w-5" />
                   </Button>
                 )}
+                
+                {/* Play/Pause Button */}
+                <Button
+                  onClick={handlePlayPause}
+                  size="icon"
+                  variant="ghost"
+                  className="bg-white rounded-full text-black h-10 w-10"
+                >
+                  {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                </Button>
 
                 {/* Download Button */}
                 <Button
@@ -198,6 +214,7 @@ export function Player() {
                 >
                   <Download className={`h-5 w-5 ${isDownloading ? 'animate-pulse' : ''}`} />
                 </Button>
+                                
               </div>
             </div>
 
@@ -221,8 +238,25 @@ export function Player() {
                 {formatTime(duration)}
               </span>
             </div>
-        </div>
-      )}
+          </>
+        ) : (
+          <div className="flex items-center justify-center gap-2 py-2">
+            <div className="text-center text-slate-400">
+              No track playing
+            </div>
+            {hasAlbumContext && (
+              <Button
+                onClick={toggleExpand}
+                size="icon"
+                variant="ghost"
+                className="text-white hover:text-white hover:bg-slate-800"
+              >
+                <Maximize2 className="h-5 w-5" />
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Album Tracklist - Only visible when expanded */}
       {hasAlbumContext && isExpanded && (
