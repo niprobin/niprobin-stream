@@ -77,7 +77,7 @@ export function Search() {
           className="rounded-full bg-white text-slate-900 hover:bg-slate-200"
         >
           {isLoading ? 'Searching...' : 'Search'}
-          <SearchIcon className="h-2 w-2" />
+          <SearchIcon className="h-4 w-4" />
         </Button>
       </form>
 
