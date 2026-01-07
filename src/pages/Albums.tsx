@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { getAlbumsToDiscover, type DiscoverAlbum } from '@/services/api'
+import { getAlbumsToDiscover, getAlbumTracks, type DiscoverAlbum } from '@/services/api'
+import { useAudio } from '@/contexts/AudioContext'
 
 type DiggingTab = 'tracks' | 'albums'
 
@@ -12,6 +13,30 @@ export function AlbumsPage() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const pageSize = 10
+
+  const { setAlbumContext } = useAudio()
+
+  // Handle clicking an album to view its tracks
+  const handleAlbumClick = async (album: DiscoverAlbum) => {
+    setError(null)
+    setIsLoading(true)
+
+    try {
+      const tracks = await getAlbumTracks(0, album.album, album.artist)
+
+      // Populate the player with album context (doesn't auto-play)
+      setAlbumContext(tracks, {
+        name: album.album,
+        artist: album.artist,
+        cover: album.cover_url,
+      })
+    } catch (err) {
+      setError('Failed to load album tracks. Please try again.')
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
     setPage(1)
@@ -101,7 +126,11 @@ export function AlbumsPage() {
                 {albums
                   .slice((page - 1) * pageSize, page * pageSize)
                   .map((album, index) => (
-                    <div key={`${album.album}-${(page - 1) * pageSize + index}`} className="group cursor-pointer">
+                    <div
+                      key={`${album.album}-${(page - 1) * pageSize + index}`}
+                      onClick={() => handleAlbumClick(album)}
+                      className="group cursor-pointer"
+                    >
                   <div className="border border-slate-700 aspect-square rounded-xl overflow-hidden bg-slate-900 relative">
                     <img
                       src={album.cover_url}

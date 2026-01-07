@@ -138,13 +138,17 @@ export async function searchAlbums(query: string): Promise<AlbumResult[]> {
 }
 
 // Get tracks for a specific album
-export async function getAlbumTracks(albumId: number): Promise<AlbumTrack[]> {
+export async function getAlbumTracks(
+  albumId: number,
+  album: string,
+  artist: string
+): Promise<AlbumTrack[]> {
   const response = await fetch('https://n8n.niprobin.com/webhook/stream-album', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ albumId }),
+    body: JSON.stringify({ albumId, album, artist }),
   })
 
   if (!response.ok) {

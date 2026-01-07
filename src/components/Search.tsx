@@ -81,7 +81,7 @@ export function Search() {
     setIsLoading(true)
 
     try {
-      const tracks = await getAlbumTracks(album['album-id'])
+      const tracks = await getAlbumTracks(album['album-id'], album.album, album.artist)
 
       // Populate the player with album context (doesn't auto-play)
       setAlbumContext(tracks, {
