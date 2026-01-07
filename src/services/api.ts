@@ -59,6 +59,13 @@ export type DiscoverAlbum = {
   cover_url: string
 }
 
+export type DiscoverTrack = {
+  track: string
+  artist: string
+  curator: string
+  'spotify-id': string
+}
+
 // Search for tracks
 export async function searchTracks(query: string): Promise<SearchResult[]> {
   const response = await fetch('https://n8n.niprobin.com/webhook/search', {
@@ -324,6 +331,27 @@ export async function getAlbumsToDiscover(): Promise<DiscoverAlbum[]> {
   return []
 }
 
+export async function getTracksToDiscover(): Promise<DiscoverTrack[]> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/tracks-to-discover', {
+    method: 'GET',
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to load tracks to discover')
+  }
+
+  const data = await response.json()
+  if (Array.isArray(data)) {
+    return data
+  }
+
+  if (data?.results && Array.isArray(data.results)) {
+    return data.results
+  }
+
+  return []
+}
+
 export async function getLibraryAlbums(): Promise<LibraryAlbum[]> {
   const response = await fetch('https://n8n.niprobin.com/webhook/albums-to-discover', {
     method: 'GET',
@@ -361,5 +389,25 @@ export async function hideAlbum(payload: HideAlbumPayload): Promise<void> {
 
   if (!response.ok) {
     throw new Error('Failed to hide album')
+  }
+}
+
+type HideTrackPayload = {
+  track: string
+  artist: string
+  'spotify-id': string
+}
+
+export async function hideTrack(payload: HideTrackPayload): Promise<void> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/hide-track', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to hide track')
   }
 }

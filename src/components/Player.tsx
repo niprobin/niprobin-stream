@@ -32,6 +32,7 @@ type LikeModalTrack = {
   id: string
   title: string
   artist: string
+  spotifyId?: string
 }
 
 export function Player() {
@@ -167,7 +168,7 @@ export function Player() {
     return likedTrackIds.includes(trackId)
   }
 
-  const openLikeModal = (trackId: string, title: string, artist: string) => {
+  const openLikeModal = (trackId: string, title: string, artist: string, spotifyId?: string) => {
     if (!isAuthenticated) return
     if (modalCloseTimer.current) {
       clearTimeout(modalCloseTimer.current)
@@ -175,7 +176,7 @@ export function Player() {
     }
     setModalResponse(null)
     setSelectedPlaylist(PLAYLISTS[0])
-    setLikeModalTrack({ id: trackId, title, artist })
+    setLikeModalTrack({ id: trackId, title, artist, spotifyId })
     setIsLikeModalOpen(true)
   }
 
@@ -204,7 +205,7 @@ export function Player() {
         track: likeModalTrack.title,
         artist: likeModalTrack.artist,
         playlist: selectedPlaylist,
-        'spotify-id': '', // Empty for now, can be populated when available
+        'spotify-id': likeModalTrack.spotifyId || '',
       })
       if (result.status === 'success') {
         const message = result.message
@@ -307,7 +308,7 @@ export function Player() {
                 {isAuthenticated && currentTrack && (
                   <Button
                     onClick={() =>
-                      openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist)
+                      openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)
                     }
                     size="icon"
                     variant="ghost"
@@ -359,7 +360,7 @@ export function Player() {
                 {isAuthenticated && currentTrack && (
                   <Button
                     onClick={() =>
-                      openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist)
+                      openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)
                     }
                     size="icon"
                     variant="ghost"
@@ -519,7 +520,7 @@ export function Player() {
                   }`}
                 >
                   {/* Track Number */}
-                  <div className={`text-xs font-medium w-6 text-right group-hover:text-white transition-colors ${
+                  <div className={`text-xs font-medium w-6 text-center group-hover:text-white transition-colors ${
                     isCurrentTrack ? 'text-white' : 'text-slate-500'
                   }`}>
                     {track['track-number']}
@@ -558,7 +559,7 @@ export function Player() {
                       }`}
                       onClick={(event) => {
                         event.stopPropagation()
-                        openLikeModal(trackId, track.track, track.artist)
+                        openLikeModal(trackId, track.track, track.artist, undefined)
                       }}
                       aria-pressed={liked}
                     >

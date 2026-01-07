@@ -10,6 +10,7 @@ type Track = {
   album?: string
   coverArt?: string
   streamUrl: string
+  spotifyId?: string
 }
 
 // TypeScript: Define album track for tracklist

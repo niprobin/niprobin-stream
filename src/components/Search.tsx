@@ -109,22 +109,23 @@ export function Search() {
           placeholder={searchType === 'tracks' ? 'Find a track' : 'Find an album'}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="rounded-full bg-gray-700 border-transparent flex-1 text-white text-sm h-11"
+          className="rounded-full bg-gray-700 border-transparent flex-1 text-white text-sm min-h-11"
         />
         <div className="flex items-center gap-2">
           <select
             value={searchType}
             onChange={(e) => setSearchType(e.target.value as 'tracks' | 'albums')}
-            className="rounded-full bg-slate-900 border border-slate-700 text-white text-sm px-4 h-11 focus:outline-none focus:ring-2 focus:ring-white/20"
+            className="rounded-full bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-white/20 h-11 px-4"
             aria-label="Search scope"
           >
-            <option value="tracks">Tracks</option>
-            <option value="albums">Albums</option>
+            <option value="tracks">Track</option>
+            <option value="albums">Album</option>
           </select>
           <Button
             type="submit"
             disabled={isLoading}
-            className="rounded-full bg-white text-slate-900 hover:bg-slate-200 whitespace-nowrap h-11 px-6"
+            size={null as any}
+            className="flex-1 rounded-full bg-white text-slate-900 hover:bg-slate-200 whitespace-nowrap h-11 px-6"
           >
             {isLoading ? 'Searching...' : 'Search'}
             <SearchIcon className="h-4 w-4" />

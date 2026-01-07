@@ -13,6 +13,8 @@ type AlbumListProps = {
   tracks: AlbumTrackItem[]
   onSelect: (track: AlbumTrackItem) => void
   renderIndicator?: (track: AlbumTrackItem) => React.ReactNode
+  renderAction?: (track: AlbumTrackItem) => React.ReactNode
+  loadingTrackId?: string | null
 }
 
 type SearchListProps = {
@@ -41,20 +43,32 @@ export function TrackList(props: TrackListProps) {
 
         if (isAlbumVariant) {
           const item = track as AlbumTrackItem
+          const trackId = `${item.track}-${item.artist}`
+          const loading = props.loadingTrackId === trackId
+
           return (
             <div
               key={key}
               className="flex items-center gap-2 p-2 hover:bg-slate-800 cursor-pointer transition-colors group"
-              onClick={() => props.onSelect(item)}
             >
-              <div className="text-xs font-medium w-6 text-right text-slate-500 group-hover:text-white">
+              <div className="text-xs font-medium w-6 text-center text-slate-500 group-hover:text-white">
                 {item['track-number']}
               </div>
-              <div className="flex-1 min-w-0">
+              <div
+                className="flex-1 min-w-0"
+                onClick={() => props.onSelect(item)}
+              >
                 <div className="text-sm font-medium text-white truncate">{item.track}</div>
                 <div className="text-slate-400 text-xs truncate">{item.artist}</div>
               </div>
-              {props.renderIndicator?.(item)}
+              {loading ? (
+                <div className="flex items-center text-slate-400 text-xs pr-2">Loading...</div>
+              ) : (
+                <>
+                  {props.renderIndicator?.(item)}
+                  {props.renderAction?.(item)}
+                </>
+              )}
             </div>
           )
         }
