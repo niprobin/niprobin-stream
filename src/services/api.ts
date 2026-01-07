@@ -32,6 +32,7 @@ type LikeTrackPayload = {
   track: string
   artist: string
   playlist: string
+  'spotify-id': string
 }
 
 export type LikeTrackResponse = {
@@ -77,13 +78,17 @@ export async function searchTracks(query: string): Promise<SearchResult[]> {
 }
 
 // Get stream URL for a track
-export async function getStreamUrl(trackId: string): Promise<string> {
+export async function getStreamUrl(
+  trackId: number,
+  track: string,
+  artist: string
+): Promise<string> {
   const response = await fetch('https://n8n.niprobin.com/webhook/stream', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ trackId }),
+    body: JSON.stringify({ trackId, track, artist }),
   })
 
   if (!response.ok) {

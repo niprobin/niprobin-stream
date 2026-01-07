@@ -128,7 +128,11 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const nextTrack = albumTracks[currentIndex + 1]
 
       try {
-        const streamUrl = await getStreamUrl(nextTrack['track-id'].toString())
+        const streamUrl = await getStreamUrl(
+          nextTrack['track-id'],
+          nextTrack.track,
+          nextTrack.artist
+        )
         startPlayback({
           id: nextTrack['track-id'].toString(),
           title: nextTrack.track,

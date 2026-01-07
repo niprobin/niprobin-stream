@@ -57,7 +57,7 @@ export function Search() {
       clearAlbumContext()
 
       // Get the stream URL from n8n
-      const streamUrl = await getStreamUrl(result['track-id'])
+      const streamUrl = await getStreamUrl(Number(result['track-id']), result.track, result.artist)
 
       // Play the track with metadata
       play({

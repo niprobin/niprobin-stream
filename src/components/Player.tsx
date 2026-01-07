@@ -141,7 +141,7 @@ export function Player() {
     setLoadingTrackId(track['track-id'].toString())
 
     try {
-      const streamUrl = await getStreamUrl(track['track-id'].toString())
+      const streamUrl = await getStreamUrl(track['track-id'], track.track, track.artist)
       play({
         id: track['track-id'].toString(),
         title: track.track,
@@ -204,6 +204,7 @@ export function Player() {
         track: likeModalTrack.title,
         artist: likeModalTrack.artist,
         playlist: selectedPlaylist,
+        'spotify-id': '', // Empty for now, can be populated when available
       })
       if (result.status === 'success') {
         const message = result.message
