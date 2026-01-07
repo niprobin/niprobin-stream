@@ -339,3 +339,22 @@ export async function getLibraryAlbums(): Promise<LibraryAlbum[]> {
 
   return []
 }
+
+type HideAlbumPayload = {
+  album: string
+  artist: string
+}
+
+export async function hideAlbum(payload: HideAlbumPayload): Promise<void> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/hide-album', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to hide album')
+  }
+}

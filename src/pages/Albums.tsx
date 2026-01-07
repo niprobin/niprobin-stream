@@ -1,17 +1,24 @@
 import { useEffect, useState } from 'react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { getAlbumsToDiscover, getAlbumTracks, type DiscoverAlbum } from '@/services/api'
+import { RefreshCw, X } from 'lucide-react'
+import { getAlbumsToDiscover, getAlbumTracks, hideAlbum, type DiscoverAlbum } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
 
 type DiggingTab = 'tracks' | 'albums'
 
+const ALBUMS_CACHE_KEY = 'niprobin-albums-cache'
+const CACHE_DURATION_MS = 5 * 60 * 1000 // 5 minutes
+
 export function AlbumsPage() {
   const [activeTab, setActiveTab] = useState<DiggingTab>('tracks')
   const [albums, setAlbums] = useState<DiscoverAlbum[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingAlbums, setIsLoadingAlbums] = useState(false)
+  const [isLoadingTracks, setIsLoadingTracks] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [hiddenAlbums, setHiddenAlbums] = useState<Set<string>>(new Set())
   const pageSize = 10
 
   const { setAlbumContext } = useAudio()
@@ -19,7 +26,7 @@ export function AlbumsPage() {
   // Handle clicking an album to view its tracks
   const handleAlbumClick = async (album: DiscoverAlbum) => {
     setError(null)
-    setIsLoading(true)
+    setIsLoadingTracks(true)
 
     try {
       const tracks = await getAlbumTracks(0, album.album, album.artist)
@@ -34,8 +41,36 @@ export function AlbumsPage() {
       setError('Failed to load album tracks. Please try again.')
       console.error(err)
     } finally {
-      setIsLoading(false)
+      setIsLoadingTracks(false)
     }
+  }
+
+  // Handle hiding an album
+  const handleHideAlbum = async (album: DiscoverAlbum, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent album click event
+    const albumKey = `${album.album}-${album.artist}`
+
+    // Optimistically hide the album in UI
+    setHiddenAlbums((prev) => new Set(prev).add(albumKey))
+
+    // Send to backend
+    try {
+      await hideAlbum({ album: album.album, artist: album.artist })
+    } catch (err) {
+      console.error('Failed to hide album', err)
+      // Optionally: revert the UI change if the API call fails
+      // setHiddenAlbums((prev) => {
+      //   const newSet = new Set(prev)
+      //   newSet.delete(albumKey)
+      //   return newSet
+      // })
+    }
+  }
+
+  // Handle manual refresh (clear cache and reload)
+  const handleRefresh = () => {
+    localStorage.removeItem(ALBUMS_CACHE_KEY)
+    setRefreshTrigger((prev) => prev + 1)
   }
 
   useEffect(() => {
@@ -50,10 +85,43 @@ export function AlbumsPage() {
     let isCancelled = false
 
     const loadAlbums = async () => {
-      setIsLoading(true)
+      setIsLoadingAlbums(true)
       setError(null)
+
       try {
+        // Check cache first
+        const cached = localStorage.getItem(ALBUMS_CACHE_KEY)
+        if (cached) {
+          try {
+            const { data, timestamp } = JSON.parse(cached)
+            const age = Date.now() - timestamp
+
+            // Use cache if it's still fresh
+            if (age < CACHE_DURATION_MS && Array.isArray(data)) {
+              if (!isCancelled) {
+                setAlbums(data)
+                setIsLoadingAlbums(false)
+              }
+              return
+            }
+          } catch {
+            // Invalid cache, continue to fetch
+          }
+        }
+
+        // Fetch fresh data
         const data = await getAlbumsToDiscover()
+
+        // Save to cache
+        try {
+          localStorage.setItem(
+            ALBUMS_CACHE_KEY,
+            JSON.stringify({ data, timestamp: Date.now() })
+          )
+        } catch {
+          // Cache save failed (quota exceeded?), continue anyway
+        }
+
         if (!isCancelled) {
           setAlbums(data)
         }
@@ -65,7 +133,7 @@ export function AlbumsPage() {
         }
       } finally {
         if (!isCancelled) {
-          setIsLoading(false)
+          setIsLoadingAlbums(false)
         }
       }
     }
@@ -75,7 +143,7 @@ export function AlbumsPage() {
     return () => {
       isCancelled = true
     }
-  }, [activeTab])
+  }, [activeTab, refreshTrigger])
 
   return (
     <div className="w-full space-y-6">
@@ -114,7 +182,21 @@ export function AlbumsPage() {
             </p>
           )}
 
-          {isLoading ? (
+          {/* Sync Albums Button */}
+          <div className="flex justify-center pb-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              className="text-xs text-slate-500 hover:text-white flex items-center gap-1.5"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Sync Albums
+            </Button>
+          </div>
+
+          {isLoadingAlbums ? (
             <div className="text-center text-slate-400 py-12">Loading playlists...</div>
           ) : albums.length === 0 ? (
             <div className="text-center text-slate-400 py-12">
@@ -124,6 +206,7 @@ export function AlbumsPage() {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {albums
+                  .filter((album) => !hiddenAlbums.has(`${album.album}-${album.artist}`))
                   .slice((page - 1) * pageSize, page * pageSize)
                   .map((album, index) => (
                     <div
@@ -138,6 +221,13 @@ export function AlbumsPage() {
                       className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+                    <button
+                      onClick={(e) => handleHideAlbum(album, e)}
+                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label="Hide album"
+                    >
+                      <X className="h-4 w-4 text-white" />
+                    </button>
                   </div>
                   <div className="px-1 mt-2">
                     <p className="text-white font-semibold text-sm line-clamp-2">
@@ -151,7 +241,7 @@ export function AlbumsPage() {
                   ))}
               </div>
               {albums.length > pageSize && (
-                <div className="text-xs text-slate-400 flex items-center justify-center gap-3 pt-4">
+                <div className="text-xs text-slate-400 flex items-center justify-center gap-3 pt-8 pb-24">
                   <Button
                     className="text-xs"
                     type="button"
