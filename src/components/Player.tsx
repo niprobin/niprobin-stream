@@ -80,6 +80,26 @@ export function Player() {
     }
   }, [isExpanded])
 
+  // Prevent scroll propagation when player is maximized
+  useEffect(() => {
+    const handleWheel = (event: WheelEvent) => {
+      if (isExpanded && playerRef.current) {
+        event.stopPropagation()
+      }
+    }
+
+    const player = playerRef.current
+    if (isExpanded && player) {
+      player.addEventListener('wheel', handleWheel, { passive: false })
+    }
+
+    return () => {
+      if (player) {
+        player.removeEventListener('wheel', handleWheel)
+      }
+    }
+  }, [isExpanded])
+
   // Determine height based on expand state
   const playerHeight = hasAlbumContext && isExpanded ? 'h-[80vh]' : 'h-auto'
 
