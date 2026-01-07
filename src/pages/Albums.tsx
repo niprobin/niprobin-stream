@@ -14,7 +14,6 @@ export function AlbumsPage() {
   const [activeTab, setActiveTab] = useState<DiggingTab>('tracks')
   const [albums, setAlbums] = useState<DiscoverAlbum[]>([])
   const [isLoadingAlbums, setIsLoadingAlbums] = useState(false)
-  const [isLoadingTracks, setIsLoadingTracks] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -26,7 +25,6 @@ export function AlbumsPage() {
   // Handle clicking an album to view its tracks
   const handleAlbumClick = async (album: DiscoverAlbum) => {
     setError(null)
-    setIsLoadingTracks(true)
 
     try {
       const tracks = await getAlbumTracks(0, album.album, album.artist)
@@ -40,8 +38,6 @@ export function AlbumsPage() {
     } catch (err) {
       setError('Failed to load album tracks. Please try again.')
       console.error(err)
-    } finally {
-      setIsLoadingTracks(false)
     }
   }
 
