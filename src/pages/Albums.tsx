@@ -8,6 +8,22 @@ import { TrackList } from '@/components/TrackList'
 
 type DiggingTab = 'tracks' | 'albums'
 
+const CURATORS = [
+  'niprobin',
+  'FIP Best Of',
+  'Tim Reaper',
+  'Infinite Loop',
+  'Joe-Armon Jones',
+  'Athens of the North',
+  'Somewhere Soul',
+  'Jazz & Joint',
+  'Skinshape',
+  'Tom Misch',
+  'Touching Bass',
+  'Jazzafip',
+  'Laurent Garnier',
+]
+
 const ALBUMS_CACHE_KEY = 'niprobin-albums-cache'
 const TRACKS_CACHE_KEY = 'niprobin-tracks-cache'
 const CACHE_DURATION_MS = 5 * 60 * 1000 // 5 minutes
@@ -24,6 +40,7 @@ export function AlbumsPage() {
   const [hiddenAlbums, setHiddenAlbums] = useState<Set<string>>(new Set())
   const [hiddenTracks, setHiddenTracks] = useState<Set<string>>(new Set())
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
+  const [selectedCurator, setSelectedCurator] = useState<string>('all')
   const pageSize = 10
 
   const { setAlbumContext, play, clearAlbumContext } = useAudio()
@@ -138,6 +155,10 @@ export function AlbumsPage() {
   }, [activeTab])
 
   useEffect(() => {
+    setPage(1)
+  }, [selectedCurator])
+
+  useEffect(() => {
     if (activeTab !== 'albums') {
       return
     }
@@ -237,7 +258,7 @@ export function AlbumsPage() {
           }
         }
 
-        // Fetch fresh data
+        // Fetch fresh data (always fetch all tracks)
         const data = await getTracksToDiscover()
 
         // Save to cache
@@ -304,8 +325,8 @@ export function AlbumsPage() {
             </p>
           )}
 
-          {/* Sync Tracks Button */}
-          <div className="flex justify-center pb-2">
+          {/* Sync Tracks Button and Curator Filter */}
+          <div className="flex items-center justify-left gap-3 w-full p-2">
             <Button
               type="button"
               variant="ghost"
@@ -316,6 +337,19 @@ export function AlbumsPage() {
               <RefreshCw className="h-3 w-3" />
               Sync Tracks
             </Button>
+
+            <select
+              value={selectedCurator}
+              onChange={(e) => setSelectedCurator(e.target.value)}
+              className="bg-slate-800 text-white text-xs border border-slate-700 rounded-md h-9 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-600"
+            >
+              <option value="all">All Curators</option>
+              {CURATORS.map((curator) => (
+                <option key={curator} value={curator}>
+                  {curator}
+                </option>
+              ))}
+            </select>
           </div>
 
           {isLoadingTracks ? (
@@ -324,83 +358,88 @@ export function AlbumsPage() {
             <div className="text-center text-slate-400 py-12">
               No tracks available yet. Check back soon.
             </div>
-          ) : (
-            <>
-              <TrackList
-                variant="album"
-                tracks={tracks
-                  .filter((track) => !hiddenTracks.has(`${track.track}-${track.artist}`))
-                  .slice((page - 1) * pageSize, page * pageSize)
-                  .map((track, index) => ({
-                    track: track.track,
-                    'track-id': (page - 1) * pageSize + index,
-                    artist: track.artist,
-                    'track-number': (page - 1) * pageSize + index + 1,
-                  }))}
-                loadingTrackId={loadingTrackId}
-                onSelect={(trackItem) => {
-                  // Find the original DiscoverTrack from the full tracks array
-                  const trackIndex = trackItem['track-id']
-                  const originalTrack = tracks.filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`))[trackIndex]
-                  if (originalTrack) {
-                    handlePlayTrack(originalTrack)
-                  }
-                }}
-                renderIndicator={(trackItem) => {
-                  const trackIndex = trackItem['track-id']
-                  const originalTrack = tracks.filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`))[trackIndex]
-                  return (
-                    <div className="text-xs text-slate-400 pr-2">
-                      {originalTrack?.curator}
+          ) : (() => {
+              const filteredTracks = tracks
+                .filter((track) => !hiddenTracks.has(`${track.track}-${track.artist}`))
+                .filter((track) => selectedCurator === 'all' || track.curator === selectedCurator)
+
+              return (
+                <>
+                  <TrackList
+                    variant="album"
+                    tracks={filteredTracks
+                      .slice((page - 1) * pageSize, page * pageSize)
+                      .map((track, index) => ({
+                        track: track.track,
+                        'track-id': (page - 1) * pageSize + index,
+                        artist: track.artist,
+                        'track-number': (page - 1) * pageSize + index + 1,
+                      }))}
+                    loadingTrackId={loadingTrackId}
+                    onSelect={(trackItem) => {
+                      // Find the original DiscoverTrack from the filtered tracks array
+                      const trackIndex = trackItem['track-id']
+                      const originalTrack = filteredTracks[trackIndex]
+                      if (originalTrack) {
+                        handlePlayTrack(originalTrack)
+                      }
+                    }}
+                    renderIndicator={(trackItem) => {
+                      const trackIndex = trackItem['track-id']
+                      const originalTrack = filteredTracks[trackIndex]
+                      return (
+                        <div className="text-xs text-slate-400 pr-2">
+                          {originalTrack?.curator}
+                        </div>
+                      )
+                    }}
+                    renderAction={(trackItem) => {
+                      const trackIndex = trackItem['track-id']
+                      const originalTrack = filteredTracks[trackIndex]
+                      if (!originalTrack) return null
+                      return (
+                        <button
+                          onClick={(e) => handleHideTrack(originalTrack, e)}
+                          className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 hover:bg-slate-700 rounded transition-opacity"
+                          aria-label="Hide track"
+                        >
+                          <X className="h-4 w-4 md:h-3 md:w-3 text-slate-400 hover:text-white" />
+                        </button>
+                      )
+                    }}
+                  />
+                  {filteredTracks.length > pageSize && (
+                    <div className="text-xs text-slate-400 flex items-center justify-center gap-3 pt-2 pb-12">
+                      <Button
+                        className="text-xs"
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={page === 1}
+                        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                      >
+                        Prev
+                      </Button>
+                      <span>
+                        Page {page} of {Math.ceil(filteredTracks.length / pageSize)}
+                      </span>
+                      <Button
+                        className="text-xs"
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={page >= Math.ceil(filteredTracks.length / pageSize)}
+                        onClick={() =>
+                          setPage((prev) => Math.min(Math.ceil(filteredTracks.length / pageSize), prev + 1))
+                        }
+                      >
+                        Next
+                      </Button>
                     </div>
-                  )
-                }}
-                renderAction={(trackItem) => {
-                  const trackIndex = trackItem['track-id']
-                  const originalTrack = tracks.filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`))[trackIndex]
-                  if (!originalTrack) return null
-                  return (
-                    <button
-                      onClick={(e) => handleHideTrack(originalTrack, e)}
-                      className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 hover:bg-slate-700 rounded transition-opacity"
-                      aria-label="Hide track"
-                    >
-                      <X className="h-4 w-4 md:h-3 md:w-3 text-slate-400 hover:text-white" />
-                    </button>
-                  )
-                }}
-              />
-              {tracks.filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`)).length > pageSize && (
-                <div className="text-xs text-slate-400 flex items-center justify-center gap-3 pt-2 pb-12">
-                  <Button
-                    className="text-xs"
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={page === 1}
-                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  >
-                    Prev
-                  </Button>
-                  <span>
-                    Page {page} of {Math.ceil(tracks.filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`)).length / pageSize)}
-                  </span>
-                  <Button
-                    className="text-xs"
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={page >= Math.ceil(tracks.filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`)).length / pageSize)}
-                    onClick={() =>
-                      setPage((prev) => Math.min(Math.ceil(tracks.filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`)).length / pageSize), prev + 1))
-                    }
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
+                  )}
+                </>
+              )
+            })()}
         </div>
       )}
 
