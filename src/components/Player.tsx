@@ -64,7 +64,11 @@ export function Player() {
   // Handle click outside to collapse player
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (isExpanded && playerRef.current && !playerRef.current.contains(event.target as Node)) {
+      // Don't collapse if clicking inside the modal
+      const target = event.target as Node
+      const isInsideModal = target instanceof Element && target.closest('[role="dialog"]')
+
+      if (isExpanded && playerRef.current && !playerRef.current.contains(target) && !isInsideModal) {
         setIsExpanded(false)
       }
     }
@@ -81,9 +85,9 @@ export function Player() {
   // Prevent scroll propagation when player is maximized
   useEffect(() => {
     const handleWheel = (event: WheelEvent) => {
-      if (isExpanded && playerRef.current) {
-        event.stopPropagation()
-      }
+      // Prevent default scroll behavior
+      event.preventDefault()
+      event.stopPropagation()
     }
 
     const player = playerRef.current
