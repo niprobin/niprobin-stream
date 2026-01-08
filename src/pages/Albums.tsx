@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { RefreshCw, X } from 'lucide-react'
 import { getAlbumsToDiscover, getAlbumTracks, hideAlbum, getTracksToDiscover, getStreamUrl, hideTrack, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
+import { useNotification } from '@/contexts/NotificationContext'
 import { TrackList } from '@/components/TrackList'
 
 type DiggingTab = 'tracks' | 'albums'
@@ -34,7 +35,6 @@ export function AlbumsPage() {
   const [isLoadingAlbums, setIsLoadingAlbums] = useState(false)
   const [tracks, setTracks] = useState<DiscoverTrack[]>([])
   const [isLoadingTracks, setIsLoadingTracks] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [hiddenAlbums, setHiddenAlbums] = useState<Set<string>>(new Set())
@@ -44,10 +44,10 @@ export function AlbumsPage() {
   const pageSize = 10
 
   const { setAlbumContext, play, clearAlbumContext } = useAudio()
+  const { showNotification } = useNotification()
 
   // Handle clicking an album to view its tracks
   const handleAlbumClick = async (album: DiscoverAlbum) => {
-    setError(null)
 
     try {
       const tracks = await getAlbumTracks(0, album.album, album.artist)
@@ -59,7 +59,7 @@ export function AlbumsPage() {
         cover: album.cover_url,
       })
     } catch (err) {
-      setError('Failed to load album tracks. Please try again.')
+      showNotification('Failed to load album tracks. Please try again.', 'error')
       console.error(err)
     }
   }
@@ -112,7 +112,7 @@ export function AlbumsPage() {
       })
     } catch (err) {
       console.error('Failed to load track:', err)
-      setError('Failed to load track. Please try again.')
+      showNotification('Failed to load track. Please try again.', 'error')
     } finally {
       setLoadingTrackId(null)
     }
@@ -167,7 +167,6 @@ export function AlbumsPage() {
 
     const loadAlbums = async () => {
       setIsLoadingAlbums(true)
-      setError(null)
 
       try {
         // Check cache first
@@ -209,7 +208,7 @@ export function AlbumsPage() {
       } catch (err) {
         console.error('Failed to load albums to discover', err)
         if (!isCancelled) {
-          setError('Failed to load albums to discover.')
+          showNotification('Failed to load albums to discover.', 'error')
           setAlbums([])
         }
       } finally {
@@ -235,7 +234,6 @@ export function AlbumsPage() {
 
     const loadTracks = async () => {
       setIsLoadingTracks(true)
-      setError(null)
 
       try {
         // Check cache first
@@ -277,7 +275,7 @@ export function AlbumsPage() {
       } catch (err) {
         console.error('Failed to load tracks to discover', err)
         if (!isCancelled) {
-          setError('Failed to load tracks to discover.')
+          showNotification('Failed to load tracks to discover.', 'error')
           setTracks([])
         }
       } finally {
@@ -319,12 +317,6 @@ export function AlbumsPage() {
 
       {activeTab === 'tracks' && (
         <div>
-          {error && (
-            <p className="text-center text-sm text-red-400" role="status">
-              {error}
-            </p>
-          )}
-
           {/* Sync Tracks Button and Curator Filter */}
           <div className="flex items-center justify-left gap-3 w-full p-2">
             <Button
@@ -445,12 +437,6 @@ export function AlbumsPage() {
 
       {activeTab === 'albums' && (
         <div>
-          {error && (
-            <p className="text-center text-sm text-red-400" role="status">
-              {error}
-            </p>
-          )}
-
           {/* Sync Albums Button */}
           <div className="flex justify-center pb-2">
             <Button

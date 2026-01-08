@@ -3,23 +3,25 @@ import { Player } from './components/Player'
 import { Search } from './components/Search'
 import { InstallPrompt } from './components/InstallPrompt'
 import { useAuth } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
+import { NotificationBanner } from './components/NotificationBanner'
 import { Button } from './components/ui/button'
 import { LogIn } from 'lucide-react'
 import { AlbumsPage } from './pages/Albums'
+import { useNotification } from './contexts/NotificationContext'
 
 function AuthControls() {
   const { isAuthenticated, login, logout } = useAuth()
+  const { showNotification } = useNotification()
   const [code, setCode] = useState('')
-  const [error, setError] = useState('')
   const [isPanelOpen, setIsPanelOpen] = useState(false)
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
     const success = login(code)
     if (!success) {
-      setError('Invalid access code')
+      showNotification('Invalid access code', 'error')
     } else {
-      setError('')
       setCode('')
       setIsPanelOpen(false)
     }
@@ -70,7 +72,6 @@ function AuthControls() {
           >
             <LogIn className="h-4 w-4" />
           </Button>
-          {error && <p className="text-xs text-red-400">{error}</p>}
         </form>
       )}
     </div>
@@ -119,64 +120,67 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-32 md:pb-24">
-      {/* Main Content Area */}
-      <div className="w-full px-4 sm:px-6 lg:px-10 pt-6">
-        <InstallPrompt />
-        <div className="w-full mb-1 space-y-3">
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <h1 className="text-white text-2xl font-semibold tracking-tight">
-              nipstream
-            </h1>
-            <AuthControls />
+    <NotificationProvider>
+      <NotificationBanner />
+      <div className="min-h-screen bg-slate-950 pb-32 md:pb-24">
+        {/* Main Content Area */}
+        <div className="w-full px-4 sm:px-6 lg:px-10 pt-6">
+          <InstallPrompt />
+          <div className="w-full mb-1 space-y-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <h1 className="text-white text-2xl font-semibold tracking-tight">
+                nipstream
+              </h1>
+              <AuthControls />
+            </div>
+
+            {isAuthenticated && (
+              <div className="rounded-full border border-slate-800 bg-slate-900/70 p-1.5 shadow-inner">
+                <nav
+                  className="grid grid-cols-2 gap-1.5 text-sm sm:text-base"
+                  role="tablist"
+                  aria-label="Primary pages"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activePage === 'home'}
+                    onClick={() => navigate('home')}
+                    className={`py-2.5 rounded-full font-medium transition ${
+                      activePage === 'home'
+                        ? 'bg-white text-slate-900'
+                        : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    Home
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activePage === 'digging'}
+                    onClick={() => navigate('digging')}
+                    className={`py-2.5 rounded-full font-medium transition ${
+                      activePage === 'digging'
+                        ? 'bg-white text-slate-900'
+                        : 'text-slate-300 hover:bg-slate-800'
+                    }`}
+                  >
+                    Digging
+                  </button>
+                </nav>
+              </div>
+            )}
           </div>
 
-          {isAuthenticated && (
-            <div className="rounded-full border border-slate-800 bg-slate-900/70 p-1.5 shadow-inner">
-              <nav
-                className="grid grid-cols-2 gap-1.5 text-sm sm:text-base"
-                role="tablist"
-                aria-label="Primary pages"
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activePage === 'home'}
-                  onClick={() => navigate('home')}
-                  className={`py-2.5 rounded-full font-medium transition ${
-                    activePage === 'home'
-                      ? 'bg-white text-slate-900'
-                      : 'text-slate-300 hover:bg-slate-800'
-                  }`}
-                >
-                  Home
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activePage === 'digging'}
-                  onClick={() => navigate('digging')}
-                  className={`py-2.5 rounded-full font-medium transition ${
-                    activePage === 'digging'
-                      ? 'bg-white text-slate-900'
-                      : 'text-slate-300 hover:bg-slate-800'
-                  }`}
-                >
-                  Digging
-                </button>
-              </nav>
-            </div>
-          )}
+          <div className="w-full">
+            {activePage === 'digging' ? <AlbumsPage /> : <Search />}
+          </div>
         </div>
 
-        <div className="w-full">
-          {activePage === 'digging' ? <AlbumsPage /> : <Search />}
-        </div>
+        {/* Player stays at the bottom */}
+        <Player />
       </div>
-
-      {/* Player stays at the bottom */}
-      <Player />
-    </div>
+    </NotificationProvider>
   )
 }
 

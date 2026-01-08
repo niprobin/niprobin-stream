@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { searchTracks, searchAlbums, getStreamUrl, getAlbumTracks } from '@/services/api'
 import type { SearchResult, AlbumResult } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
+import { useNotification } from '@/contexts/NotificationContext'
 import { Search as SearchIcon } from 'lucide-react'
 import { TrackList } from '@/components/TrackList'
 
@@ -11,13 +12,13 @@ export function Search() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
   const [searchType, setSearchType] = useState<'tracks' | 'albums'>('tracks')
   const [albumResults, setAlbumResults] = useState<AlbumResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
 
-  const { play, setAlbumContext, clearAlbumContext } = useAudio() // Get the play function and album context functions from audio context
+  const { play, setAlbumContext, clearAlbumContext } = useAudio()
+  const { showNotification } = useNotification()
 
   // Handle search submission
   const handleSearch = async (e: React.FormEvent) => {
@@ -26,7 +27,6 @@ export function Search() {
     if (!query.trim()) return
 
     setIsLoading(true)
-    setError(null)
     setHasSearched(true)
 
     try {
@@ -40,7 +40,7 @@ export function Search() {
         setResults([]) // Clear track results
       }
     } catch (err) {
-      setError('Search failed. Please try again.')
+      showNotification('Search failed. Please try again.', 'error')
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -50,7 +50,6 @@ export function Search() {
   // Handle clicking a track to play it
   const handlePlayTrack = async (result: SearchResult) => {
     setLoadingTrackId(result['track-id'])
-    setError(null)
 
     try {
       // Clear album context when playing a single track
@@ -68,7 +67,7 @@ export function Search() {
         streamUrl: streamUrl,
       })
     } catch (err) {
-      setError('Failed to load track. Please try again.')
+      showNotification('Failed to load track. Please try again.', 'error')
       console.error(err)
     } finally {
       setLoadingTrackId(null)
@@ -77,7 +76,6 @@ export function Search() {
 
   // Handle clicking an album to view its tracks
   const handleAlbumClick = async (album: AlbumResult) => {
-    setError(null)
     setIsLoading(true)
 
     try {
@@ -90,7 +88,7 @@ export function Search() {
         cover: album.cover,
       })
     } catch (err) {
-      setError('Failed to load album tracks. Please try again.')
+      showNotification('Failed to load album tracks. Please try again.', 'error')
       console.error(err)
     } finally {
       setIsLoading(false)
@@ -132,11 +130,6 @@ export function Search() {
           </Button>
         </div>
       </form>
-
-      {/* Error Message */}
-      {error && (
-        <div className="text-red-400 text-sm mb-4">{error}</div>
-      )}
 
       {/* Search Results - Track Results */}
       {searchType === 'tracks' && (

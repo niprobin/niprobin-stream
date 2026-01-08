@@ -1,5 +1,6 @@
 import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Play, Pause, Download, Maximize2, Heart, X, Star } from 'lucide-react'
@@ -38,6 +39,7 @@ type LikeModalTrack = {
 export function Player() {
   const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, play } = useAudio()
   const { isAuthenticated } = useAuth()
+  const { showNotification } = useNotification()
   const [isDownloading, setIsDownloading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
@@ -46,12 +48,8 @@ export function Player() {
   const [likeModalTrack, setLikeModalTrack] = useState<LikeModalTrack | null>(null)
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>('')
   const [isSubmittingLike, setIsSubmittingLike] = useState(false)
-  const [modalResponse, setModalResponse] = useState<{ status: 'success' | 'error'; message: string } | null>(null)
   const [albumRating, setAlbumRating] = useState(0)
-  const [ratingFeedback, setRatingFeedback] = useState<{ status: 'success' | 'error'; message: string } | null>(null)
   const playerRef = useRef<HTMLDivElement>(null)
-  const modalCloseTimer = useRef<number | null>(null)
-  const ratingTimerRef = useRef<number | null>(null)
 
   // Auto-expand when album context is set
   const hasAlbumContext = albumTracks.length > 0 && albumInfo
@@ -190,36 +188,25 @@ export function Player() {
 
   const openLikeModal = (trackId: string, title: string, artist: string, spotifyId?: string) => {
     if (!isAuthenticated) return
-    if (modalCloseTimer.current) {
-      clearTimeout(modalCloseTimer.current)
-      modalCloseTimer.current = null
-    }
-    setModalResponse(null)
     setSelectedPlaylist(PLAYLISTS[0])
     setLikeModalTrack({ id: trackId, title, artist, spotifyId })
     setIsLikeModalOpen(true)
   }
 
   const closeLikeModal = () => {
-    if (modalCloseTimer.current) {
-      clearTimeout(modalCloseTimer.current)
-      modalCloseTimer.current = null
-    }
     setIsLikeModalOpen(false)
     setLikeModalTrack(null)
     setSelectedPlaylist('')
     setIsSubmittingLike(false)
-    setModalResponse(null)
   }
 
   const handleSubmitLike = async (event: FormEvent) => {
     event.preventDefault()
     if (!likeModalTrack || !selectedPlaylist) {
-      setModalResponse({ status: 'error', message: 'Pick a playlist' })
+      showNotification('Pick a playlist', 'error')
       return
     }
     setIsSubmittingLike(true)
-    setModalResponse(null)
     try {
       const result = await likeTrack({
         track: likeModalTrack.title,
@@ -228,51 +215,25 @@ export function Player() {
         'spotify-id': likeModalTrack.spotifyId || '',
       })
       if (result.status === 'success') {
-        const message = result.message
         setLikedTrackIds((prev) =>
           prev.includes(likeModalTrack.id) ? prev : [...prev, likeModalTrack.id]
         )
-        setModalResponse({ status: 'success', message })
-        if (modalCloseTimer.current) {
-          clearTimeout(modalCloseTimer.current)
-        }
-        modalCloseTimer.current = window.setTimeout(() => {
-          closeLikeModal()
-        }, 1200)
+        showNotification(result.message, 'success')
+        closeLikeModal()
       } else {
-        const message = result.message
-        setModalResponse({ status: 'error', message })
+        showNotification(result.message, 'error')
       }
     } catch (err) {
       console.error('Failed to like track:', err)
-      setModalResponse({ status: 'error', message: 'Could not save like' })
+      showNotification('Could not save like', 'error')
     } finally {
       setIsSubmittingLike(false)
     }
   }
 
   useEffect(() => {
-    return () => {
-      if (modalCloseTimer.current) {
-        clearTimeout(modalCloseTimer.current)
-        modalCloseTimer.current = null
-      }
-    }
-  }, [])
-
-  useEffect(() => {
     setAlbumRating(0)
-    setRatingFeedback(null)
   }, [albumInfo])
-
-  useEffect(() => {
-    return () => {
-      if (ratingTimerRef.current) {
-        clearTimeout(ratingTimerRef.current)
-        ratingTimerRef.current = null
-      }
-    }
-  }, [])
 
   const handleRateAlbum = async (value: number) => {
     if (!albumInfo) {
@@ -285,15 +246,10 @@ export function Player() {
         artist: albumInfo.artist,
         rating: value,
       })
-      setRatingFeedback(response)
+      showNotification(response.message, response.status)
     } catch (err) {
       console.error('Failed to rate album:', err)
-      setRatingFeedback({ status: 'error', message: 'Failed to rate album' })
-    } finally {
-      if (ratingTimerRef.current) {
-        clearTimeout(ratingTimerRef.current)
-      }
-      ratingTimerRef.current = window.setTimeout(() => setRatingFeedback(null), 4000)
+      showNotification('Failed to rate album', 'error')
     }
   }
 
@@ -511,17 +467,6 @@ export function Player() {
                   )
                 })}
               </div>
-              {ratingFeedback && (
-                <p
-                  className={`text-xs mt-1 ${
-                    ratingFeedback.status === 'success' ? 'text-emerald-400' : 'text-red-400'
-                  }`}
-                  role="status"
-                  aria-live="polite"
-                >
-                  {ratingFeedback.message}
-                </p>
-              )}
             </div>
           </div>
 
@@ -640,18 +585,6 @@ export function Player() {
                 )
               })}
             </div>
-
-            {modalResponse && (
-              <p
-                className={`text-xs ${
-                  modalResponse.status === 'success' ? 'text-emerald-400' : 'text-red-400'
-                }`}
-                role="status"
-                aria-live="polite"
-              >
-                {modalResponse.message}
-              </p>
-            )}
 
             <div className="flex items-center justify-end gap-3">
               <Button
