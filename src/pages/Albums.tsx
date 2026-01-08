@@ -1,30 +1,12 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, X, Heart } from 'lucide-react'
-import { getAlbumsToDiscover, getAlbumTracks, hideAlbum, getTracksToDiscover, getStreamUrl, hideTrack, likeTrack, type DiscoverAlbum, type DiscoverTrack, type LikeTrackResponse } from '@/services/api'
+import { RefreshCw, X } from 'lucide-react'
+import { getAlbumsToDiscover, getAlbumTracks, hideAlbum, getTracksToDiscover, getStreamUrl, hideTrack, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
-import { useAuth } from '@/contexts/AuthContext'
 import { TrackList } from '@/components/TrackList'
 
 type DiggingTab = 'tracks' | 'albums'
-
-const PLAYLISTS = [
-  'Afrobeat & Highlife',
-  'Beats',
-  'Bossa Nova',
-  'Brazilian Music',
-  'Disco Dancefloor',
-  'DNB',
-  'Downtempo Trip-hop',
-  'Funk & Rock',
-  'Hip-hop',
-  'House Chill',
-  'House Dancefloor',
-  'Jazz Classic',
-  'Jazz Funk',
-  'Latin Music',
-]
 
 const ALBUMS_CACHE_KEY = 'niprobin-albums-cache'
 const TRACKS_CACHE_KEY = 'niprobin-tracks-cache'
@@ -42,16 +24,9 @@ export function AlbumsPage() {
   const [hiddenAlbums, setHiddenAlbums] = useState<Set<string>>(new Set())
   const [hiddenTracks, setHiddenTracks] = useState<Set<string>>(new Set())
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
-  const [likedTrackIds, setLikedTrackIds] = useState<string[]>([])
-  const [isLikeModalOpen, setIsLikeModalOpen] = useState(false)
-  const [likeModalTrack, setLikeModalTrack] = useState<{ track: string; artist: string; spotifyId: string } | null>(null)
-  const [selectedPlaylist, setSelectedPlaylist] = useState<string>('')
-  const [isSubmittingLike, setIsSubmittingLike] = useState(false)
-  const [modalResponse, setModalResponse] = useState<LikeTrackResponse | null>(null)
   const pageSize = 10
 
   const { setAlbumContext, play, clearAlbumContext } = useAudio()
-  const { isAuthenticated } = useAuth()
 
   // Handle clicking an album to view its tracks
   const handleAlbumClick = async (album: DiscoverAlbum) => {
@@ -146,54 +121,6 @@ export function AlbumsPage() {
         return newSet
       })
     }
-  }
-
-  // Handle opening like modal for a track
-  const handleOpenLikeModal = (track: DiscoverTrack, e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent track click event
-    setLikeModalTrack({ track: track.track, artist: track.artist, spotifyId: track['spotify-id'] })
-    setIsLikeModalOpen(true)
-    setSelectedPlaylist('')
-    setModalResponse(null)
-  }
-
-  // Handle submitting a like
-  const handleSubmitLike = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!likeModalTrack || !selectedPlaylist) {
-      setModalResponse({ status: 'error', message: 'Pick a playlist' })
-      return
-    }
-    setIsSubmittingLike(true)
-    setModalResponse(null)
-    try {
-      const result = await likeTrack({
-        track: likeModalTrack.track,
-        artist: likeModalTrack.artist,
-        playlist: selectedPlaylist,
-        'spotify-id': likeModalTrack.spotifyId,
-      })
-      setModalResponse(result)
-      if (result.status === 'success') {
-        const trackKey = `${likeModalTrack.track}-${likeModalTrack.artist}`
-        setLikedTrackIds((prev) => (prev.includes(trackKey) ? prev : [...prev, trackKey]))
-        // Auto-close modal after 1.5 seconds on success
-        setTimeout(() => {
-          setIsLikeModalOpen(false)
-        }, 1500)
-      }
-    } catch (err) {
-      console.error('Failed to like track', err)
-      setModalResponse({ status: 'error', message: 'Failed to add to playlist' })
-    } finally {
-      setIsSubmittingLike(false)
-    }
-  }
-
-  // Check if a track is liked
-  const isTrackLiked = (track: DiscoverTrack) => {
-    const trackKey = `${track.track}-${track.artist}`
-    return likedTrackIds.includes(trackKey)
   }
 
   // Handle manual refresh (clear cache and reload)
@@ -433,28 +360,13 @@ export function AlbumsPage() {
                   const originalTrack = tracks.filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`))[trackIndex]
                   if (!originalTrack) return null
                   return (
-                    <div className="flex items-center gap-1">
-                      {isAuthenticated && (
-                        <button
-                          onClick={(e) => handleOpenLikeModal(originalTrack, e)}
-                          className="w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-slate-700 rounded transition-opacity"
-                          aria-label="Like track"
-                          aria-pressed={isTrackLiked(originalTrack)}
-                        >
-                          <Heart
-                            className="h-3 w-3 text-slate-400 hover:text-white"
-                            fill={isTrackLiked(originalTrack) ? 'currentColor' : 'none'}
-                          />
-                        </button>
-                      )}
-                      <button
-                        onClick={(e) => handleHideTrack(originalTrack, e)}
-                        className="w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-slate-700 rounded transition-opacity"
-                        aria-label="Hide track"
-                      >
-                        <X className="h-3 w-3 text-slate-400 hover:text-white" />
-                      </button>
-                    </div>
+                    <button
+                      onClick={(e) => handleHideTrack(originalTrack, e)}
+                      className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 hover:bg-slate-700 rounded transition-opacity"
+                      aria-label="Hide track"
+                    >
+                      <X className="h-4 w-4 md:h-3 md:w-3 text-slate-400 hover:text-white" />
+                    </button>
                   )
                 }}
               />
@@ -541,10 +453,10 @@ export function AlbumsPage() {
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                     <button
                       onClick={(e) => handleHideAlbum(album, e)}
-                      className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-2 right-2 w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       aria-label="Hide album"
                     >
-                      <X className="h-4 w-4 text-white" />
+                      <X className="h-5 w-5 md:h-4 md:w-4 text-white" />
                     </button>
                   </div>
                   <div className="px-1 mt-2">
@@ -589,73 +501,6 @@ export function AlbumsPage() {
               )}
             </>
           )}
-        </div>
-      )}
-
-      {/* Like Modal */}
-      {isLikeModalOpen && likeModalTrack && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 space-y-4">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase text-slate-400 tracking-wide">Add to playlist</p>
-                <p className="text-white text-lg font-semibold truncate">{likeModalTrack.track}</p>
-                <p className="text-slate-400 text-sm truncate">{likeModalTrack.artist}</p>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => setIsLikeModalOpen(false)}
-                className="flex-shrink-0"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            <form onSubmit={handleSubmitLike} className="space-y-4">
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {PLAYLISTS.map((playlist) => (
-                  <label
-                    key={playlist}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors"
-                  >
-                    <input
-                      type="radio"
-                      name="playlist"
-                      value={playlist}
-                      checked={selectedPlaylist === playlist}
-                      onChange={(e) => setSelectedPlaylist(e.target.value)}
-                      className="w-4 h-4 text-white bg-slate-700 border-slate-600 focus:ring-white focus:ring-2"
-                    />
-                    <span className="text-white text-sm">{playlist}</span>
-                  </label>
-                ))}
-              </div>
-
-              {modalResponse && (
-                <p
-                  className={`text-sm text-center ${
-                    modalResponse.status === 'success' ? 'text-green-400' : 'text-red-400'
-                  }`}
-                >
-                  {modalResponse.message}
-                </p>
-              )}
-
-              <Button
-                type="submit"
-                disabled={isSubmittingLike || !selectedPlaylist}
-                className="w-full bg-white text-slate-900 hover:bg-slate-200"
-              >
-                {isSubmittingLike ? 'Adding...' : 'Add to Playlist'}
-              </Button>
-            </form>
-          </div>
         </div>
       )}
     </div>
