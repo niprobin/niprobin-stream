@@ -37,6 +37,7 @@ type AudioContextType = {
   setVolume: (volume: number) => void
   setAlbumContext: (tracks: AlbumTrackItem[], albumInfo: { name: string; artist: string; cover: string }) => void
   clearAlbumContext: () => void
+  loadTrack: (track: Track) => void
 }
 
 // Create the Context - this is our "box" that holds audio state
@@ -186,6 +187,23 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [playNextTrack])
 
+  // Sync URL with currently playing track
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    if (currentTrack) {
+      // Encode artist and title for URL
+      const artist = encodeURIComponent(currentTrack.artist)
+      const title = encodeURIComponent(currentTrack.title)
+      const newPath = `/track/${artist}/${title}`
+
+      // Only update if URL actually changed
+      if (window.location.pathname !== newPath) {
+        window.history.pushState({}, '', newPath)
+      }
+    }
+  }, [currentTrack])
+
   // Function: Play a new track
   const play = startPlayback
 
@@ -217,6 +235,38 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setVolumeState(newVolume)
   }
 
+  // Function: Load track metadata without playing
+  const loadTrack = useCallback(
+    (track: Track) => {
+      // Set track metadata but don't start playback
+      setCurrentTrack(track)
+      setIsPlaying(false)
+
+      // Initialize audio element with source but don't play
+      if (typeof Audio === 'undefined') return
+
+      if (!audioRef.current) {
+        audioRef.current = new Audio()
+      }
+
+      audioRef.current.src = track.streamUrl
+      audioRef.current.volume = volume
+
+      // Set Media Session metadata for lock screen/notification controls
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track.title,
+          artist: track.artist,
+          album: track.album || '',
+          artwork: track.coverArt
+            ? [{ src: track.coverArt, sizes: '512x512', type: 'image/png' }]
+            : [],
+        })
+      }
+    },
+    [volume]
+  )
+
   // Function: Set album context with tracklist
   const setAlbumContext = (tracks: AlbumTrackItem[], info: { name: string; artist: string; cover: string }) => {
     setAlbumTracks(tracks)
@@ -247,6 +297,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setVolume,
         setAlbumContext,
         clearAlbumContext,
+        loadTrack,
       }}
     >
       {children}

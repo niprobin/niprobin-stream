@@ -9,6 +9,8 @@ import { Button } from './components/ui/button'
 import { LogIn } from 'lucide-react'
 import { AlbumsPage } from './pages/Albums'
 import { useNotification } from './contexts/NotificationContext'
+import { useAudio } from './contexts/AudioContext'
+import { searchTracks, getStreamUrl } from './services/api'
 
 function AuthControls() {
   const { isAuthenticated, login, logout } = useAuth()
@@ -80,13 +82,72 @@ function AuthControls() {
 
 function App() {
   const { isAuthenticated } = useAuth()
+  const { showNotification } = useNotification()
+  const audio = useAudio()
   const [activePage, setActivePage] = useState<'home' | 'digging'>('home')
+
+  const loadTrackFromUrl = async (artist: string, title: string) => {
+    try {
+      // Search for track to get stream URL
+      const searchResults = await searchTracks(`${artist} ${title}`)
+
+      if (searchResults.length === 0) {
+        showNotification('Track not found', 'error')
+        window.history.replaceState({}, '', '/')
+        return
+      }
+
+      // Find best match (exact artist and title match preferred)
+      const exactMatch = searchResults.find(
+        t => t.artist.toLowerCase() === artist.toLowerCase() &&
+             t.track.toLowerCase() === title.toLowerCase()
+      )
+      const track = exactMatch || searchResults[0]
+
+      // Get stream URL (convert track-id string to number)
+      const streamUrl = await getStreamUrl(
+        Number(track['track-id']),
+        track.track,
+        track.artist
+      )
+
+      // Load into player WITHOUT playing
+      audio.loadTrack({
+        id: track['track-id'],
+        title: track.track,
+        artist: track.artist,
+        album: track.album,
+        coverArt: track.cover,
+        streamUrl,
+      })
+
+    } catch (error) {
+      console.error('Failed to load track from URL:', error)
+      showNotification('Failed to load track', 'error')
+      window.history.replaceState({}, '', '/')
+    }
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const syncFromLocation = () => {
-      const wantsDigging = window.location.pathname === '/digging'
+      const path = window.location.pathname
+
+      // Check for track URL: /track/{artist}/{title}
+      const trackMatch = path.match(/^\/track\/([^/]+)\/(.+)$/)
+      if (trackMatch) {
+        const artist = decodeURIComponent(trackMatch[1])
+        const title = decodeURIComponent(trackMatch[2])
+
+        // Load track metadata but don't auto-play
+        loadTrackFromUrl(artist, title)
+        setActivePage('home')
+        return
+      }
+
+      // Existing page routing logic
+      const wantsDigging = path === '/digging'
       if (wantsDigging) {
         if (isAuthenticated) {
           setActivePage('digging')
