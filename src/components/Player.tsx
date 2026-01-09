@@ -82,12 +82,16 @@ export function Player() {
     }
   }, [isExpanded])
 
-  // Prevent scroll propagation when player is maximized
+  // Prevent scroll propagation when player is maximized (but allow tracklist scrolling)
   useEffect(() => {
     const handleWheel = (event: WheelEvent) => {
-      // Prevent default scroll behavior
-      event.preventDefault()
-      event.stopPropagation()
+      const target = event.target as Element
+      // Allow scrolling on the tracklist container
+      const isTrackList = target.closest('.overflow-y-auto')
+      if (!isTrackList) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
     }
 
     const player = playerRef.current
@@ -434,7 +438,7 @@ export function Player() {
 
       {/* Album Tracklist - Only visible when expanded */}
       {hasAlbumContext && isExpanded && (
-        <div className="flex-1 overflow-hidden w-full pt-8">
+        <div className="flex-1 overflow-y-auto w-full pt-8">
           {/* Album Header */}
           <div className="flex gap-4 px-2 p-3 bg-slate-800">
             <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
