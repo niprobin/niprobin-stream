@@ -10,7 +10,7 @@ import { LogIn } from 'lucide-react'
 import { AlbumsPage } from './pages/Albums'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
-import { searchTracks, getStreamUrl } from './services/api'
+import { getTrackByHash } from './services/api'
 
 function AuthControls() {
   const { isAuthenticated, login, logout } = useAuth()
@@ -80,50 +80,29 @@ function AuthControls() {
   )
 }
 
-function App() {
+function AppContent() {
   const { isAuthenticated } = useAuth()
-  const { showNotification } = useNotification()
   const audio = useAudio()
   const [activePage, setActivePage] = useState<'home' | 'digging'>('home')
 
-  const loadTrackFromUrl = async (artist: string, title: string) => {
+  const loadTrackFromUrl = async (hash: string) => {
     try {
-      // Search for track to get stream URL
-      const searchResults = await searchTracks(`${artist} ${title}`)
+      // Call new webhook endpoint with hash
+      const trackData = await getTrackByHash(hash)
 
-      if (searchResults.length === 0) {
-        showNotification('Track not found', 'error')
-        window.history.replaceState({}, '', '/')
-        return
-      }
-
-      // Find best match (exact artist and title match preferred)
-      const exactMatch = searchResults.find(
-        t => t.artist.toLowerCase() === artist.toLowerCase() &&
-             t.track.toLowerCase() === title.toLowerCase()
-      )
-      const track = exactMatch || searchResults[0]
-
-      // Get stream URL (convert track-id string to number)
-      const streamUrl = await getStreamUrl(
-        Number(track['track-id']),
-        track.track,
-        track.artist
-      )
-
-      // Load into player WITHOUT playing
+      // Load track into player (don't auto-play)
       audio.loadTrack({
-        id: track['track-id'],
-        title: track.track,
-        artist: track.artist,
-        album: track.album,
-        coverArt: track.cover,
-        streamUrl,
+        id: trackData.trackId,
+        title: trackData.track,
+        artist: trackData.artist,
+        album: trackData.album,
+        coverArt: trackData.cover,
+        streamUrl: trackData.streamUrl,
+        playSource: 'search',
       })
-
     } catch (error) {
       console.error('Failed to load track from URL:', error)
-      showNotification('Failed to load track', 'error')
+      // Silently redirect to home on error
       window.history.replaceState({}, '', '/')
     }
   }
@@ -134,14 +113,12 @@ function App() {
     const syncFromLocation = () => {
       const path = window.location.pathname
 
-      // Check for track URL: /track/{artist}/{title}
-      const trackMatch = path.match(/^\/track\/([^/]+)\/(.+)$/)
+      // Check for track URL: /track/{hash}
+      const trackMatch = path.match(/^\/track\/(.+)$/)
       if (trackMatch) {
-        const artist = decodeURIComponent(trackMatch[1])
-        const title = decodeURIComponent(trackMatch[2])
-
-        // Load track metadata but don't auto-play
-        loadTrackFromUrl(artist, title)
+        const hash = trackMatch[1]
+        // Load track from hash
+        loadTrackFromUrl(hash)
         setActivePage('home')
         return
       }
@@ -181,7 +158,7 @@ function App() {
   }
 
   return (
-    <NotificationProvider>
+    <>
       <NotificationBanner />
       <div className="min-h-screen bg-slate-950 pb-32 md:pb-24">
         {/* Main Content Area */}
@@ -241,6 +218,14 @@ function App() {
         {/* Player stays at the bottom */}
         <Player />
       </div>
+    </>
+  )
+}
+
+function App() {
+  return (
+    <NotificationProvider>
+      <AppContent />
     </NotificationProvider>
   )
 }

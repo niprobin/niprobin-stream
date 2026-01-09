@@ -411,3 +411,28 @@ export async function hideTrack(payload: HideTrackPayload): Promise<void> {
     throw new Error('Failed to hide track')
   }
 }
+
+// Get track info and stream URL from MD5 hash
+export async function getTrackByHash(hash: string) {
+  const response = await fetch('https://n8n.niprobin.com/webhook/track-by-hash', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ hash }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to get track by hash')
+  }
+
+  const data = await response.json()
+  return {
+    trackId: data.track_id,
+    track: data.track,
+    artist: data.artist,
+    album: data.album,
+    cover: data.cover,
+    streamUrl: data.stream_url,
+  }
+}

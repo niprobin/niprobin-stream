@@ -11,6 +11,7 @@ type Track = {
   coverArt?: string
   streamUrl: string
   spotifyId?: string
+  playSource?: 'search' | 'digging' | 'album'
 }
 
 // TypeScript: Define album track for tracklist
@@ -187,15 +188,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [playNextTrack])
 
-  // Sync URL with currently playing track
+  // Sync URL with currently playing track (only for search tracks)
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    if (currentTrack) {
-      // Encode artist and title for URL
-      const artist = encodeURIComponent(currentTrack.artist)
-      const title = encodeURIComponent(currentTrack.title)
-      const newPath = `/track/${artist}/${title}`
+    if (currentTrack && currentTrack.playSource === 'search') {
+      // Create Base64 encoded string from "artist track" (lowercase, no separator)
+      const trackString = `${currentTrack.artist} ${currentTrack.title}`.toLowerCase()
+      const encoded = btoa(trackString)
+      const newPath = `/track/${encoded}`
 
       // Only update if URL actually changed
       if (window.location.pathname !== newPath) {

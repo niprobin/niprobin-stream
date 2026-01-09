@@ -65,6 +65,7 @@ export function Search() {
         artist: result.artist,
         album: result.album,
         streamUrl: streamUrl,
+        playSource: 'search',
       })
     } catch (err) {
       showNotification('Failed to load track. Please try again.', 'error')
