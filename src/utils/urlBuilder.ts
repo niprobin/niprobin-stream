@@ -18,6 +18,6 @@ export function buildTrackUrl(hash: string): string {
  * @returns The track hash or null if not a valid track URL
  */
 export function extractTrackHashFromPath(path: string): string | null {
-  const match = path.match(/^\/play\/([a-f0-9]+)$/i)
+  const match = path.match(/^\/play\/([A-Za-z0-9+/=_-]+)$/)
   return match ? match[1] : null
 }
