@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { searchTracks, searchAlbums, getStreamUrl, getAlbumTracks } from '@/services/api'
+import { searchTracks, searchAlbums } from '@/services/api'
 import type { SearchResult, AlbumResult } from '@/services/api'
-import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
+import { useTrackPlayer } from '@/hooks/useTrackPlayer'
+import { useAlbumLoader } from '@/hooks/useAlbumLoader'
 import { Search as SearchIcon } from 'lucide-react'
 import { TrackList } from '@/components/TrackList'
 
@@ -13,13 +14,13 @@ export function Search() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const { isLoading, increment, decrement } = useLoading()
-  const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
   const [searchType, setSearchType] = useState<'tracks' | 'albums'>('tracks')
   const [albumResults, setAlbumResults] = useState<AlbumResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
 
-  const { play, setAlbumContext, clearAlbumContext } = useAudio()
   const { showNotification } = useNotification()
+  const { playTrack, loadingTrackId } = useTrackPlayer()
+  const { loadAlbum } = useAlbumLoader()
 
   // Handle search submission
   const handleSearch = async (e: React.FormEvent) => {
@@ -50,54 +51,27 @@ export function Search() {
 
   // Handle clicking a track to play it
   const handlePlayTrack = async (result: SearchResult) => {
-    setLoadingTrackId(result['track-id'])
-
-    try {
-      // Clear album context when playing a single track
-      clearAlbumContext()
-
-      // Get the stream URL from n8n
-      const streamUrl = await getStreamUrl(Number(result['track-id']), result.track, result.artist)
-
-      // Play the track with metadata
-      play({
-        id: result['track-id'],
-        title: result.track,
-        artist: result.artist,
-        album: result.album,
-        streamUrl: streamUrl,
-      })
-    } catch (err) {
-      showNotification('Failed to load track. Please try again.', 'error')
-      console.error(err)
-    } finally {
-      setLoadingTrackId(null)
-    }
+    playTrack(
+      Number(result['track-id']),
+      result.track,
+      result.artist,
+      {
+        clearAlbum: true,
+        albumName: result.album,
+        coverArt: result.cover,
+      }
+    )
   }
 
   // Handle clicking an album to view its tracks
   const handleAlbumClick = async (album: AlbumResult) => {
-    increment()
-
-    try {
-      const tracks = await getAlbumTracks(album['album-id'], album.album, album.artist)
-
-      // Populate the player with album context (doesn't auto-play)
-      setAlbumContext(
-        tracks,
-        {
-          name: album.album,
-          artist: album.artist,
-          cover: album.cover,
-        },
-        { expand: false, loadFirst: true },
-      )
-    } catch (err) {
-      showNotification('Failed to load album tracks. Please try again.', 'error')
-      console.error(err)
-    } finally {
-      decrement()
-    }
+    loadAlbum(
+      album['album-id'],
+      album.album,
+      album.artist,
+      album.cover,
+      { expand: false, loadFirst: true }
+    )
   }
 
   return (

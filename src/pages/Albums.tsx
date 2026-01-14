@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, X } from 'lucide-react'
-import { getAlbumsToDiscover, getAlbumTracks, hideAlbum, getTracksToDiscover, getStreamUrl, hideTrack, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
-import { useAudio } from '@/contexts/AudioContext'
-import { useNotification } from '@/contexts/NotificationContext'
-import { useLoading } from '@/contexts/LoadingContext'
+import { getAlbumsToDiscover, hideAlbum, getTracksToDiscover, hideTrack, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { TrackList } from '@/components/TrackList'
 import { useCachedData } from '@/hooks/useCachedData'
+import { useTrackPlayer } from '@/hooks/useTrackPlayer'
+import { useAlbumLoader } from '@/hooks/useAlbumLoader'
 
 type DiggingTab = 'tracks' | 'albums'
 
@@ -33,17 +32,15 @@ const CACHE_DURATION_MS = 5 * 60 * 1000 // 5 minutes
 
 export function AlbumsPage() {
   const [activeTab, setActiveTab] = useState<DiggingTab>('tracks')
-  const { increment, decrement } = useLoading()
   const [page, setPage] = useState(1)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [hiddenAlbums, setHiddenAlbums] = useState<Set<string>>(new Set())
   const [hiddenTracks, setHiddenTracks] = useState<Set<string>>(new Set())
-  const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
   const [selectedCurator, setSelectedCurator] = useState<string>('all')
   const pageSize = 10
 
-  const { setAlbumContext, play, clearAlbumContext } = useAudio()
-  const { showNotification } = useNotification()
+  const { playTrack, loadingTrackId } = useTrackPlayer()
+  const { loadAlbum } = useAlbumLoader()
 
   // Use cached data hooks for albums and tracks
   const { data: albums, refresh: refreshAlbums } = useCachedData<DiscoverAlbum[]>(
@@ -70,27 +67,13 @@ export function AlbumsPage() {
 
   // Handle clicking an album to view its tracks
   const handleAlbumClick = async (album: DiscoverAlbum) => {
-
-    increment()
-    try {
-      const tracks = await getAlbumTracks(0, album.album, album.artist)
-
-      // Populate the player with album context (doesn't auto-play)
-      setAlbumContext(
-        tracks,
-        {
-          name: album.album,
-          artist: album.artist,
-          cover: album.cover_url,
-        },
-        { expand: false, loadFirst: true },
-      )
-    } catch (err) {
-      showNotification('Failed to load album tracks. Please try again.', 'error')
-      console.error(err)
-    } finally {
-      decrement()
-    }
+    loadAlbum(
+      0, // albumId=0, backend will look it up from album+artist
+      album.album,
+      album.artist,
+      album.cover_url,
+      { expand: false, loadFirst: true }
+    )
   }
 
   // Handle hiding an album
@@ -117,34 +100,16 @@ export function AlbumsPage() {
 
   // Handle playing a track from the Tracks tab
   const handlePlayTrack = async (track: DiscoverTrack) => {
-    // Use track+artist as unique ID since we don't have numeric track-id
-    const trackKey = `${track.track}-${track.artist}`
-    setLoadingTrackId(trackKey)
-
-    try {
-      // Clear album context for single track mode
-      clearAlbumContext()
-
-      // Get stream URL - pass 0 for trackId since we don't have it
-      // Backend will use track+artist to find the stream
-      const streamUrl = await getStreamUrl(0, track.track, track.artist)
-
-      // Play the track
-      play({
-        id: trackKey,
-        title: track.track,
-        artist: track.artist,
-        album: `Curated by ${track.curator}`,
-        streamUrl: streamUrl,
-        coverArt: undefined,
+    playTrack(
+      0, // trackId=0, backend will look it up from track+artist
+      track.track,
+      track.artist,
+      {
+        clearAlbum: true,
+        albumName: `Curated by ${track.curator}`,
         spotifyId: track['spotify-id'],
-      })
-    } catch (err) {
-      console.error('Failed to load track:', err)
-      showNotification('Failed to load track. Please try again.', 'error')
-    } finally {
-      setLoadingTrackId(null)
-    }
+      }
+    )
   }
 
   // Handle hiding a track

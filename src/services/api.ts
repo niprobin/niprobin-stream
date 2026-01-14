@@ -28,6 +28,11 @@ export type AlbumTrack = {
 // Type for stream response
 export type StreamResponse = {
   streamUrl: string
+  trackId: string
+  track: string
+  artist: string
+  album?: string
+  cover?: string
 }
 
 type LikeTrackPayload = {
@@ -91,7 +96,7 @@ export async function getStreamUrl(
   trackId: number,
   track: string,
   artist: string
-): Promise<string> {
+): Promise<StreamResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/stream', {
     method: 'POST',
     headers: {
@@ -105,7 +110,14 @@ export async function getStreamUrl(
   }
 
   const data = await response.json()
-  return data.stream_url
+  return {
+    streamUrl: data.stream_url,
+    trackId: String(data.track_id || trackId),
+    track: data.track || track,
+    artist: data.artist || artist,
+    album: data.album,
+    cover: data.cover,
+  }
 }
 
 // Download a track (returns blob directly)

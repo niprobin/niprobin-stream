@@ -11,6 +11,8 @@ import { LogIn } from 'lucide-react'
 import { AlbumsPage } from './pages/Albums'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
+import { extractTrackIdFromPath } from './utils/urlBuilder'
+import { getStreamUrl } from './services/api'
 
 function AuthControls() {
   const { isAuthenticated, login, logout } = useAuth()
@@ -82,16 +84,42 @@ function AuthControls() {
 
 function AppContent() {
   const { isAuthenticated } = useAuth()
-  const audio = useAudio()
+  const { loadTrack } = useAudio()
   const [activePage, setActivePage] = useState<'home' | 'digging'>('home')
-
-  // Removed URL-based track loading. Tracks are loaded via UI actions only.
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const syncFromLocation = () => {
+    const syncFromLocation = async () => {
       const path = window.location.pathname
+
+      // Check if this is a track URL (/play/:trackId)
+      const trackId = extractTrackIdFromPath(path)
+      if (trackId) {
+        try {
+          // Fetch track data from just the ID
+          const streamResponse = await getStreamUrl(Number(trackId), '', '')
+
+          // Load the track (paused, not playing)
+          loadTrack({
+            id: streamResponse.trackId,
+            title: streamResponse.track,
+            artist: streamResponse.artist,
+            album: streamResponse.album,
+            streamUrl: streamResponse.streamUrl,
+            coverArt: streamResponse.cover,
+          })
+
+          // Stay on home page when loading from URL
+          setActivePage('home')
+        } catch (err) {
+          console.error('Failed to load track from URL:', err)
+          // If track loading fails, just go to home
+          window.history.replaceState({}, '', '/')
+          setActivePage('home')
+        }
+        return
+      }
 
       // Existing page routing logic
       const wantsDigging = path === '/digging'
@@ -113,7 +141,7 @@ function AppContent() {
     return () => {
       window.removeEventListener('popstate', syncFromLocation)
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, loadTrack])
 
   const navigate = (page: 'home' | 'digging') => {
     if (page === 'digging' && !isAuthenticated) {

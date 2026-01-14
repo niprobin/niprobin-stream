@@ -4,9 +4,10 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Play, Pause, Download, Maximize2, Heart, X, Star } from 'lucide-react'
-import { downloadTrack, getStreamUrl, likeTrack, rateAlbum } from '@/services/api'
+import { downloadTrack, likeTrack, rateAlbum } from '@/services/api'
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
+import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 
 const PLAYLISTS = [
   'Afrobeat & Highlife',
@@ -38,12 +39,12 @@ type LikeModalTrack = {
 }
 
 export function Player() {
-  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, play, albumAutoExpand } = useAudio()
+  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, albumAutoExpand } = useAudio()
   const { isAuthenticated } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
+  const { playTrack, loadingTrackId } = useTrackPlayer()
   const [isExpanded, setIsExpanded] = useState(false)
-  const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
   const [likedTrackIds, setLikedTrackIds] = useState<string[]>([])
   const [isLikeModalOpen, setIsLikeModalOpen] = useState(false)
   const [likeModalTrack, setLikeModalTrack] = useState<LikeModalTrack | null>(null)
@@ -166,23 +167,16 @@ export function Player() {
   const handlePlayAlbumTrack = async (track: AlbumTrackItem) => {
     if (!albumInfo) return
 
-    setLoadingTrackId(track['track-id'].toString())
-
-    try {
-      const streamUrl = await getStreamUrl(track['track-id'], track.track, track.artist)
-      play({
-        id: track['track-id'].toString(),
-        title: track.track,
-        artist: track.artist,
-        album: albumInfo.name,
-        streamUrl: streamUrl,
+    playTrack(
+      track['track-id'],
+      track.track,
+      track.artist,
+      {
+        clearAlbum: false,
+        albumName: albumInfo.name,
         coverArt: albumInfo.cover,
-      })
-    } catch (err) {
-      console.error('Failed to load track:', err)
-    } finally {
-      setLoadingTrackId(null)
-    }
+      }
+    )
   }
 
   // Toggle expand/collapse

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { getStreamUrl } from '@/services/api'
+import { buildTrackUrl } from '@/utils/urlBuilder'
 
 // TypeScript: Define what a Track looks like
 type Track = {
@@ -82,6 +83,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setCurrentTrack(track)
       setIsPlaying(true)
 
+      // Update URL to reflect current track
+      if (track.id && track.id !== '0') {
+        const trackUrl = buildTrackUrl(track.id)
+        window.history.pushState({}, '', trackUrl)
+      }
+
       // Update Media Session metadata/controls for current track
       if ('mediaSession' in navigator) {
         navigator.mediaSession.metadata = new MediaMetadata({
@@ -137,18 +144,18 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       const nextTrack = albumTracks[currentIndex + 1]
 
       try {
-        const streamUrl = await getStreamUrl(
+        const streamResponse = await getStreamUrl(
           nextTrack['track-id'],
           nextTrack.track,
           nextTrack.artist
         )
         startPlayback({
-          id: nextTrack['track-id'].toString(),
-          title: nextTrack.track,
-          artist: nextTrack.artist,
-          album: albumInfo.name,
-          streamUrl,
-          coverArt: albumInfo.cover,
+          id: streamResponse.trackId,
+          title: streamResponse.track,
+          artist: streamResponse.artist,
+          album: streamResponse.album || albumInfo.name,
+          streamUrl: streamResponse.streamUrl,
+          coverArt: streamResponse.cover || albumInfo.cover,
         })
       } catch (err) {
         console.error('Failed to load next track:', err)
@@ -234,6 +241,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setCurrentTrack(track)
       setIsPlaying(false)
 
+      // Update URL to reflect current track
+      if (track.id && track.id !== '0') {
+        const trackUrl = buildTrackUrl(track.id)
+        window.history.pushState({}, '', trackUrl)
+      }
+
       // Initialize audio element with source but don't play
       if (typeof Audio === 'undefined') return
 
@@ -273,14 +286,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       ;(async () => {
         try {
           const first = tracks[0]
-          const streamUrl = await getStreamUrl(first['track-id'], first.track, first.artist)
+          const streamResponse = await getStreamUrl(first['track-id'], first.track, first.artist)
           loadTrack({
-            id: first['track-id'].toString(),
-            title: first.track,
-            artist: first.artist,
-            album: info.name,
-            streamUrl,
-            coverArt: info.cover,
+            id: streamResponse.trackId,
+            title: streamResponse.track,
+            artist: streamResponse.artist,
+            album: streamResponse.album || info.name,
+            streamUrl: streamResponse.streamUrl,
+            coverArt: streamResponse.cover || info.cover,
           })
         } catch (err) {
           console.error('Failed to preload first album track', err)
