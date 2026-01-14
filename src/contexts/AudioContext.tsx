@@ -6,6 +6,7 @@ import { buildTrackUrl } from '@/utils/urlBuilder'
 // TypeScript: Define what a Track looks like
 type Track = {
   id: string
+  hashUrl?: string
   title: string
   artist: string
   album?: string
@@ -84,8 +85,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setIsPlaying(true)
 
       // Update URL to reflect current track
-      if (track.id && track.id !== '0') {
-        const trackUrl = buildTrackUrl(track.id)
+      if (track.hashUrl) {
+        const trackUrl = buildTrackUrl(track.hashUrl)
         window.history.pushState({}, '', trackUrl)
       }
 
@@ -151,6 +152,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         )
         startPlayback({
           id: streamResponse.trackId,
+          hashUrl: streamResponse.hashUrl,
           title: streamResponse.track,
           artist: streamResponse.artist,
           album: streamResponse.album || albumInfo.name,
@@ -242,8 +244,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setIsPlaying(false)
 
       // Update URL to reflect current track
-      if (track.id && track.id !== '0') {
-        const trackUrl = buildTrackUrl(track.id)
+      if (track.hashUrl) {
+        const trackUrl = buildTrackUrl(track.hashUrl)
         window.history.pushState({}, '', trackUrl)
       }
 
@@ -289,6 +291,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           const streamResponse = await getStreamUrl(first['track-id'], first.track, first.artist)
           loadTrack({
             id: streamResponse.trackId,
+            hashUrl: streamResponse.hashUrl,
             title: streamResponse.track,
             artist: streamResponse.artist,
             album: streamResponse.album || info.name,

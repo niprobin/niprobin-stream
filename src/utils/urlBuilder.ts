@@ -5,19 +5,19 @@
 
 /**
  * Build a track URL that can be shared
- * @param trackId - The numeric track ID
- * @returns The path to the track (e.g., "/play/12345")
+ * @param hash - The track hash from the backend
+ * @returns The path to the track (e.g., "/play/abc123def456")
  */
-export function buildTrackUrl(trackId: string | number): string {
-  return `/play/${trackId}`
+export function buildTrackUrl(hash: string): string {
+  return `/play/${hash}`
 }
 
 /**
- * Extract track ID from a path
- * @param path - The URL path (e.g., "/play/12345")
- * @returns The track ID or null if not a valid track URL
+ * Extract track hash from a path
+ * @param path - The URL path (e.g., "/play/abc123def456")
+ * @returns The track hash or null if not a valid track URL
  */
-export function extractTrackIdFromPath(path: string): string | null {
-  const match = path.match(/^\/play\/(\d+)$/)
+export function extractTrackHashFromPath(path: string): string | null {
+  const match = path.match(/^\/play\/([a-f0-9]+)$/i)
   return match ? match[1] : null
 }

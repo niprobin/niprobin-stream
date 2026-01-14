@@ -11,8 +11,8 @@ import { LogIn } from 'lucide-react'
 import { AlbumsPage } from './pages/Albums'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
-import { extractTrackIdFromPath } from './utils/urlBuilder'
-import { getStreamUrl } from './services/api'
+import { extractTrackHashFromPath } from './utils/urlBuilder'
+import { getTrackByHash } from './services/api'
 
 function AuthControls() {
   const { isAuthenticated, login, logout } = useAuth()
@@ -93,16 +93,17 @@ function AppContent() {
     const syncFromLocation = async () => {
       const path = window.location.pathname
 
-      // Check if this is a track URL (/play/:trackId)
-      const trackId = extractTrackIdFromPath(path)
-      if (trackId) {
+      // Check if this is a track URL (/play/:hash)
+      const trackHash = extractTrackHashFromPath(path)
+      if (trackHash) {
         try {
-          // Fetch track data from just the ID
-          const streamResponse = await getStreamUrl(Number(trackId), '', '')
+          // Fetch track data from the hash
+          const streamResponse = await getTrackByHash(trackHash)
 
           // Load the track (paused, not playing)
           loadTrack({
             id: streamResponse.trackId,
+            hashUrl: streamResponse.hashUrl,
             title: streamResponse.track,
             artist: streamResponse.artist,
             album: streamResponse.album,

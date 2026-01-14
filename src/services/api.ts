@@ -29,6 +29,7 @@ export type AlbumTrack = {
 export type StreamResponse = {
   streamUrl: string
   trackId: string
+  hashUrl: string
   track: string
   artist: string
   album?: string
@@ -113,8 +114,9 @@ export async function getStreamUrl(
   return {
     streamUrl: data.stream_url,
     trackId: String(data.track_id || trackId),
-    track: data.track || track,
-    artist: data.artist || artist,
+    hashUrl: data.hash_url,
+    track: data.track,
+    artist: data.artist,
     album: data.album,
     cover: data.cover,
   }
@@ -330,5 +332,28 @@ export async function hideTrack(payload: HideTrackPayload): Promise<void> {
   }
 }
 
-// Get track info and stream URL from MD5 hash
-// `getTrackByHash` removed — tracks are loaded via UI actions only.
+// Get track info and stream URL from hash
+export async function getTrackByHash(hash: string): Promise<StreamResponse> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/stream', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ hash }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to get track by hash')
+  }
+
+  const data = await response.json()
+  return {
+    streamUrl: data.stream_url,
+    trackId: String(data.track_id),
+    hashUrl: data.hash_url || hash,
+    track: data.track,
+    artist: data.artist,
+    album: data.album,
+    cover: data.cover,
+  }
+}

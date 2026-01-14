@@ -52,6 +52,7 @@ export function useTrackPlayer() {
       // Play the track with all metadata
       play({
         id: streamResponse.trackId,
+        hashUrl: streamResponse.hashUrl,
         title: streamResponse.track,
         artist: streamResponse.artist,
         album: albumName || streamResponse.album,
