@@ -257,3 +257,9 @@ npm run preview
 ## License
 
 Proprietary - All rights reserved
+
+## Notable UX changes
+
+- **Global Loading Overlay**: The app now uses a single full-screen loading overlay for network-heavy actions (search, albums fetch, downloads). This provides consistent visual feedback while requests are in-flight; short-lived per-row loading indicators are still used for immediate inline feedback (e.g., when a single track row is loading).
+
+- **Removed URL-based track links**: The previous behavior that encoded playing tracks into `/track/<base64>` and loaded them on startup has been removed. Tracks are now loaded only via UI interactions (search, album clicks, tracklist), simplifying routing and avoiding unexpected URL state.

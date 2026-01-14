@@ -5,13 +5,14 @@ import { searchTracks, searchAlbums, getStreamUrl, getAlbumTracks } from '@/serv
 import type { SearchResult, AlbumResult } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
+import { useLoading } from '@/contexts/LoadingContext'
 import { Search as SearchIcon } from 'lucide-react'
 import { TrackList } from '@/components/TrackList'
 
 export function Search() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const { isLoading, increment, decrement } = useLoading()
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
   const [searchType, setSearchType] = useState<'tracks' | 'albums'>('tracks')
   const [albumResults, setAlbumResults] = useState<AlbumResult[]>([])
@@ -26,7 +27,7 @@ export function Search() {
 
     if (!query.trim()) return
 
-    setIsLoading(true)
+    increment()
     setHasSearched(true)
 
     try {
@@ -43,7 +44,7 @@ export function Search() {
       showNotification('Search failed. Please try again.', 'error')
       console.error(err)
     } finally {
-      setIsLoading(false)
+      decrement()
     }
   }
 
@@ -65,7 +66,6 @@ export function Search() {
         artist: result.artist,
         album: result.album,
         streamUrl: streamUrl,
-        playSource: 'search',
       })
     } catch (err) {
       showNotification('Failed to load track. Please try again.', 'error')
@@ -77,22 +77,26 @@ export function Search() {
 
   // Handle clicking an album to view its tracks
   const handleAlbumClick = async (album: AlbumResult) => {
-    setIsLoading(true)
+    increment()
 
     try {
       const tracks = await getAlbumTracks(album['album-id'], album.album, album.artist)
 
       // Populate the player with album context (doesn't auto-play)
-      setAlbumContext(tracks, {
-        name: album.album,
-        artist: album.artist,
-        cover: album.cover,
-      })
+      setAlbumContext(
+        tracks,
+        {
+          name: album.album,
+          artist: album.artist,
+          cover: album.cover,
+        },
+        { expand: false, loadFirst: true },
+      )
     } catch (err) {
       showNotification('Failed to load album tracks. Please try again.', 'error')
       console.error(err)
     } finally {
-      setIsLoading(false)
+      decrement()
     }
   }
 
@@ -120,15 +124,15 @@ export function Search() {
             <option value="tracks">Track</option>
             <option value="albums">Album</option>
           </select>
-          <Button
-            type="submit"
-            disabled={isLoading}
-            size={null as any}
-            className="flex-1 rounded-full bg-white text-slate-900 hover:bg-slate-200 whitespace-nowrap h-11 px-6"
-          >
-            {isLoading ? 'Searching...' : 'Search'}
-            <SearchIcon className="h-4 w-4" />
-          </Button>
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    size={null as any}
+                    className="flex-1 rounded-full bg-white text-slate-900 hover:bg-slate-200 whitespace-nowrap h-11 px-6"
+                  >
+                    {isLoading ? 'Searching...' : 'Search'}
+                    <SearchIcon className="h-4 w-4" />
+                  </Button>
         </div>
       </form>
 

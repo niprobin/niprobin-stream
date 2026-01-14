@@ -5,7 +5,9 @@ import { RefreshCw, X } from 'lucide-react'
 import { getAlbumsToDiscover, getAlbumTracks, hideAlbum, getTracksToDiscover, getStreamUrl, hideTrack, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
+import { useLoading } from '@/contexts/LoadingContext'
 import { TrackList } from '@/components/TrackList'
+import { useCachedData } from '@/hooks/useCachedData'
 
 type DiggingTab = 'tracks' | 'albums'
 
@@ -31,10 +33,7 @@ const CACHE_DURATION_MS = 5 * 60 * 1000 // 5 minutes
 
 export function AlbumsPage() {
   const [activeTab, setActiveTab] = useState<DiggingTab>('tracks')
-  const [albums, setAlbums] = useState<DiscoverAlbum[]>([])
-  const [isLoadingAlbums, setIsLoadingAlbums] = useState(false)
-  const [tracks, setTracks] = useState<DiscoverTrack[]>([])
-  const [isLoadingTracks, setIsLoadingTracks] = useState(false)
+  const { increment, decrement } = useLoading()
   const [page, setPage] = useState(1)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [hiddenAlbums, setHiddenAlbums] = useState<Set<string>>(new Set())
@@ -46,21 +45,51 @@ export function AlbumsPage() {
   const { setAlbumContext, play, clearAlbumContext } = useAudio()
   const { showNotification } = useNotification()
 
+  // Use cached data hooks for albums and tracks
+  const { data: albums, refresh: refreshAlbums } = useCachedData<DiscoverAlbum[]>(
+    ALBUMS_CACHE_KEY,
+    getAlbumsToDiscover,
+    {
+      cacheDuration: CACHE_DURATION_MS,
+      refreshTrigger,
+      enabled: activeTab === 'albums',
+      errorMessage: 'Failed to load albums to discover.',
+    }
+  )
+
+  const { data: tracks, refresh: refreshTracks } = useCachedData<DiscoverTrack[]>(
+    TRACKS_CACHE_KEY,
+    getTracksToDiscover,
+    {
+      cacheDuration: CACHE_DURATION_MS,
+      refreshTrigger,
+      enabled: activeTab === 'tracks',
+      errorMessage: 'Failed to load tracks to discover.',
+    }
+  )
+
   // Handle clicking an album to view its tracks
   const handleAlbumClick = async (album: DiscoverAlbum) => {
 
+    increment()
     try {
       const tracks = await getAlbumTracks(0, album.album, album.artist)
 
       // Populate the player with album context (doesn't auto-play)
-      setAlbumContext(tracks, {
-        name: album.album,
-        artist: album.artist,
-        cover: album.cover_url,
-      })
+      setAlbumContext(
+        tracks,
+        {
+          name: album.album,
+          artist: album.artist,
+          cover: album.cover_url,
+        },
+        { expand: false, loadFirst: true },
+      )
     } catch (err) {
       showNotification('Failed to load album tracks. Please try again.', 'error')
       console.error(err)
+    } finally {
+      decrement()
     }
   }
 
@@ -143,9 +172,9 @@ export function AlbumsPage() {
   // Handle manual refresh (clear cache and reload)
   const handleRefresh = () => {
     if (activeTab === 'albums') {
-      localStorage.removeItem(ALBUMS_CACHE_KEY)
+      refreshAlbums()
     } else if (activeTab === 'tracks') {
-      localStorage.removeItem(TRACKS_CACHE_KEY)
+      refreshTracks()
     }
     setRefreshTrigger((prev) => prev + 1)
   }
@@ -157,140 +186,6 @@ export function AlbumsPage() {
   useEffect(() => {
     setPage(1)
   }, [selectedCurator])
-
-  useEffect(() => {
-    if (activeTab !== 'albums') {
-      return
-    }
-
-    let isCancelled = false
-
-    const loadAlbums = async () => {
-      setIsLoadingAlbums(true)
-
-      try {
-        // Check cache first
-        const cached = localStorage.getItem(ALBUMS_CACHE_KEY)
-        if (cached) {
-          try {
-            const { data, timestamp } = JSON.parse(cached)
-            const age = Date.now() - timestamp
-
-            // Use cache if it's still fresh
-            if (age < CACHE_DURATION_MS && Array.isArray(data)) {
-              if (!isCancelled) {
-                setAlbums(data)
-                setIsLoadingAlbums(false)
-              }
-              return
-            }
-          } catch {
-            // Invalid cache, continue to fetch
-          }
-        }
-
-        // Fetch fresh data
-        const data = await getAlbumsToDiscover()
-
-        // Save to cache
-        try {
-          localStorage.setItem(
-            ALBUMS_CACHE_KEY,
-            JSON.stringify({ data, timestamp: Date.now() })
-          )
-        } catch {
-          // Cache save failed (quota exceeded?), continue anyway
-        }
-
-        if (!isCancelled) {
-          setAlbums(data)
-        }
-      } catch (err) {
-        console.error('Failed to load albums to discover', err)
-        if (!isCancelled) {
-          showNotification('Failed to load albums to discover.', 'error')
-          setAlbums([])
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingAlbums(false)
-        }
-      }
-    }
-
-    loadAlbums()
-
-    return () => {
-      isCancelled = true
-    }
-  }, [activeTab, refreshTrigger])
-
-  useEffect(() => {
-    if (activeTab !== 'tracks') {
-      return
-    }
-
-    let isCancelled = false
-
-    const loadTracks = async () => {
-      setIsLoadingTracks(true)
-
-      try {
-        // Check cache first
-        const cached = localStorage.getItem(TRACKS_CACHE_KEY)
-        if (cached) {
-          try {
-            const { data, timestamp } = JSON.parse(cached)
-            const age = Date.now() - timestamp
-
-            // Use cache if it's still fresh
-            if (age < CACHE_DURATION_MS && Array.isArray(data)) {
-              if (!isCancelled) {
-                setTracks(data)
-                setIsLoadingTracks(false)
-              }
-              return
-            }
-          } catch {
-            // Invalid cache, continue to fetch
-          }
-        }
-
-        // Fetch fresh data (always fetch all tracks)
-        const data = await getTracksToDiscover()
-
-        // Save to cache
-        try {
-          localStorage.setItem(
-            TRACKS_CACHE_KEY,
-            JSON.stringify({ data, timestamp: Date.now() })
-          )
-        } catch {
-          // Cache save failed (quota exceeded?), continue anyway
-        }
-
-        if (!isCancelled) {
-          setTracks(data)
-        }
-      } catch (err) {
-        console.error('Failed to load tracks to discover', err)
-        if (!isCancelled) {
-          showNotification('Failed to load tracks to discover.', 'error')
-          setTracks([])
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsLoadingTracks(false)
-        }
-      }
-    }
-
-    loadTracks()
-
-    return () => {
-      isCancelled = true
-    }
-  }, [activeTab, refreshTrigger])
 
   return (
     <div className="w-full space-y-0">
@@ -344,9 +239,7 @@ export function AlbumsPage() {
             </select>
           </div>
 
-          {isLoadingTracks ? (
-            <div className="text-center text-slate-400 py-12">Loading tracks...</div>
-          ) : tracks.length === 0 ? (
+          {!tracks || tracks.length === 0 ? (
             <div className="text-center text-slate-400 py-12">
               No tracks available yet. Check back soon.
             </div>
@@ -451,9 +344,7 @@ export function AlbumsPage() {
             </Button>
           </div>
 
-          {isLoadingAlbums ? (
-            <div className="text-center text-slate-400 py-12">Loading playlists...</div>
-          ) : albums.length === 0 ? (
+          {!albums || albums.length === 0 ? (
             <div className="text-center text-slate-400 py-12">
               No albums available yet. Check back soon.
             </div>

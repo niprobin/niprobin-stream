@@ -5,12 +5,12 @@ import { InstallPrompt } from './components/InstallPrompt'
 import { useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { NotificationBanner } from './components/NotificationBanner'
+import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { Button } from './components/ui/button'
 import { LogIn } from 'lucide-react'
 import { AlbumsPage } from './pages/Albums'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
-import { getTrackByHash } from './services/api'
 
 function AuthControls() {
   const { isAuthenticated, login, logout } = useAuth()
@@ -85,43 +85,13 @@ function AppContent() {
   const audio = useAudio()
   const [activePage, setActivePage] = useState<'home' | 'digging'>('home')
 
-  const loadTrackFromUrl = async (hash: string) => {
-    try {
-      // Call new webhook endpoint with hash
-      const trackData = await getTrackByHash(hash)
-
-      // Load track into player (don't auto-play)
-      audio.loadTrack({
-        id: trackData.trackId,
-        title: trackData.track,
-        artist: trackData.artist,
-        album: trackData.album,
-        coverArt: trackData.cover,
-        streamUrl: trackData.streamUrl,
-        playSource: 'search',
-      })
-    } catch (error) {
-      console.error('Failed to load track from URL:', error)
-      // Silently redirect to home on error
-      window.history.replaceState({}, '', '/')
-    }
-  }
+  // Removed URL-based track loading. Tracks are loaded via UI actions only.
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const syncFromLocation = () => {
       const path = window.location.pathname
-
-      // Check for track URL: /track/{hash}
-      const trackMatch = path.match(/^\/track\/(.+)$/)
-      if (trackMatch) {
-        const hash = trackMatch[1]
-        // Load track from hash
-        loadTrackFromUrl(hash)
-        setActivePage('home')
-        return
-      }
 
       // Existing page routing logic
       const wantsDigging = path === '/digging'
@@ -160,6 +130,7 @@ function AppContent() {
   return (
     <>
       <NotificationBanner />
+      <GlobalLoadingOverlay />
       <div className="min-h-screen bg-slate-950 pb-32 md:pb-24">
         {/* Main Content Area */}
         <div className="w-full px-4 sm:px-6 lg:px-10 pt-6">

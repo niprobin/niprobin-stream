@@ -4,6 +4,7 @@ import './index.css'
 import App from './App.tsx'
 import { AudioProvider } from './contexts/AudioContext'
 import { AuthProvider } from './contexts/AuthContext'
+import { LoadingProvider } from './contexts/LoadingContext'
 import { registerSW } from 'virtual:pwa-register'
 
 // Register service worker
@@ -21,7 +22,9 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
       <AudioProvider>
-        <App />
+        <LoadingProvider>
+          <App />
+        </LoadingProvider>
       </AudioProvider>
     </AuthProvider>
   </StrictMode>,

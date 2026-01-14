@@ -1,3 +1,5 @@
+import { parseApiResponse } from '@/utils/apiHelpers'
+
 // Type for search results
 export type SearchResult = {
   track: string
@@ -192,79 +194,10 @@ export async function likeTrack(payload: LikeTrackPayload): Promise<LikeTrackRes
   })
 
   const rawBody = await response.text()
-  let data: unknown = null
-
-  if (rawBody) {
-    try {
-      data = JSON.parse(rawBody)
-    } catch {
-      data = null
-    }
-  }
-
-  const normalizeStatus = (): 'success' | 'error' => {
-    if (data && typeof data === 'object' && data !== null) {
-      const candidate = (data as Record<string, unknown>).status
-      if (typeof candidate === 'string') {
-        const lowered = candidate.toLowerCase()
-        if (lowered === 'success') return 'success'
-        if (lowered === 'error' || lowered === 'failed' || lowered === 'fail') return 'error'
-      }
-
-      const successField = (data as Record<string, unknown>).success
-      if (typeof successField === 'boolean') {
-        return successField ? 'success' : 'error'
-      }
-
-      const errorField = (data as Record<string, unknown>).error
-      if (typeof errorField === 'boolean') {
-        return errorField ? 'error' : 'success'
-      }
-    }
-
-    return response.ok ? 'success' : 'error'
-  }
-
-  const extractMessage = (): string | null => {
-    const tryFields = (fields: string[]): string | null => {
-      if (!data || typeof data !== 'object' || data === null) return null
-      for (const field of fields) {
-        const value = (data as Record<string, unknown>)[field]
-        if (typeof value === 'string' && value.trim().length > 0) {
-          return value.trim()
-        }
-      }
-      return null
-    }
-
-    const prioritized = tryFields(['message', 'msg', 'detail', 'error', 'statusText'])
-    if (prioritized) return prioritized
-
-    if (typeof data === 'string' && data.trim().length > 0) {
-      return data.trim()
-    }
-
-    if (data && typeof data === 'object') {
-      const fallbackValue = Object.values(data).find(
-        (value) => typeof value === 'string' && value.trim().length > 0,
-      )
-      if (typeof fallbackValue === 'string') {
-        return fallbackValue.trim()
-      }
-    }
-
-    if (rawBody && rawBody.trim().length > 0) {
-      return rawBody.trim()
-    }
-
-    return null
-  }
-
-  const status = normalizeStatus()
-  const message =
-    extractMessage() || (status === 'success' ? 'Action completed' : 'Failed to like track')
-
-  return { status, message }
+  return parseApiResponse(response, rawBody, {
+    successMessage: 'Action completed',
+    errorMessage: 'Failed to like track',
+  })
 }
 
 export async function rateAlbum(payload: RateAlbumPayload): Promise<LikeTrackResponse> {
@@ -277,37 +210,10 @@ export async function rateAlbum(payload: RateAlbumPayload): Promise<LikeTrackRes
   })
 
   const rawBody = await response.text()
-  let data: unknown = null
-
-  if (rawBody) {
-    try {
-      data = JSON.parse(rawBody)
-    } catch {
-      data = null
-    }
-  }
-
-  const statusField =
-    typeof (data as any)?.status === 'string' ? (data as any).status.toLowerCase() : null
-  const status: 'success' | 'error' =
-    statusField === 'success'
-      ? 'success'
-      : statusField === 'error'
-        ? 'error'
-        : response.ok
-          ? 'success'
-          : 'error'
-
-  const message =
-    typeof (data as any)?.message === 'string' && (data as any).message.trim().length > 0
-      ? (data as any).message.trim()
-      : rawBody.trim().length > 0
-        ? rawBody.trim()
-        : status === 'success'
-          ? 'Rating saved'
-          : 'Failed to rate album'
-
-  return { status, message }
+  return parseApiResponse(response, rawBody, {
+    successMessage: 'Rating saved',
+    errorMessage: 'Failed to rate album',
+  })
 }
 
 export async function getAlbumsToDiscover(): Promise<DiscoverAlbum[]> {
@@ -413,26 +319,4 @@ export async function hideTrack(payload: HideTrackPayload): Promise<void> {
 }
 
 // Get track info and stream URL from MD5 hash
-export async function getTrackByHash(hash: string) {
-  const response = await fetch('https://n8n.niprobin.com/webhook/track-by-hash', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ hash }),
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to get track by hash')
-  }
-
-  const data = await response.json()
-  return {
-    trackId: data.track_id,
-    track: data.track,
-    artist: data.artist,
-    album: data.album,
-    cover: data.cover,
-    streamUrl: data.stream_url,
-  }
-}
+// `getTrackByHash` removed — tracks are loaded via UI actions only.

@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress'
 import { Play, Pause, Download, Maximize2, Heart, X, Star } from 'lucide-react'
 import { downloadTrack, getStreamUrl, likeTrack, rateAlbum } from '@/services/api'
 import { useState, useEffect, useRef, type FormEvent } from 'react'
+import { useLoading } from '@/contexts/LoadingContext'
 
 const PLAYLISTS = [
   'Afrobeat & Highlife',
@@ -37,10 +38,10 @@ type LikeModalTrack = {
 }
 
 export function Player() {
-  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, play } = useAudio()
+  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, play, albumAutoExpand } = useAudio()
   const { isAuthenticated } = useAuth()
   const { showNotification } = useNotification()
-  const [isDownloading, setIsDownloading] = useState(false)
+  const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
   const [isExpanded, setIsExpanded] = useState(false)
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
   const [likedTrackIds, setLikedTrackIds] = useState<string[]>([])
@@ -56,10 +57,10 @@ export function Player() {
 
   // Automatically expand player when album context is populated
   useEffect(() => {
-    if (hasAlbumContext) {
+    if (hasAlbumContext && albumAutoExpand) {
       setIsExpanded(true)
     }
-  }, [hasAlbumContext])
+  }, [hasAlbumContext, albumAutoExpand])
 
   // Handle click outside to collapse player
   useEffect(() => {
@@ -139,7 +140,7 @@ export function Player() {
   const handleDownload = async () => {
     if (!currentTrack) return
 
-    setIsDownloading(true)
+    increment()
 
     try {
       const blob = await downloadTrack(currentTrack.id, currentTrack.title, currentTrack.artist)
@@ -157,7 +158,7 @@ export function Player() {
     } catch (err) {
       console.error('Download failed:', err)
     } finally {
-      setIsDownloading(false)
+      decrement()
     }
   }
 
@@ -321,10 +322,10 @@ export function Player() {
                   onClick={handleDownload}
                   size="icon"
                   variant="ghost"
-                  disabled={isDownloading}
+                  disabled={isGlobalLoading}
                   className="text-white hover:text-white hover:bg-slate-800"
                 >
-                  <Download className={`h-5 w-5 ${isDownloading ? 'animate-pulse' : ''}`} />
+                  <Download className={`h-5 w-5 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
                 </Button>
               </div>
             </div>
@@ -387,10 +388,10 @@ export function Player() {
                   onClick={handleDownload}
                   size="icon"
                   variant="ghost"
-                  disabled={isDownloading}
+                  disabled={isGlobalLoading}
                   className="text-white hover:text-white hover:bg-slate-800"
                 >
-                  <Download className={`h-5 w-5 ${isDownloading ? 'animate-pulse' : ''}`} />
+                  <Download className={`h-5 w-5 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
                 </Button>
                                 
               </div>

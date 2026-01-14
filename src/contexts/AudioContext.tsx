@@ -36,7 +36,12 @@ type AudioContextType = {
   resume: () => void
   seek: (time: number) => void
   setVolume: (volume: number) => void
-  setAlbumContext: (tracks: AlbumTrackItem[], albumInfo: { name: string; artist: string; cover: string }) => void
+  setAlbumContext: (
+    tracks: AlbumTrackItem[],
+    albumInfo: { name: string; artist: string; cover: string },
+    options?: { expand?: boolean; loadFirst?: boolean },
+  ) => void
+  albumAutoExpand?: boolean
   clearAlbumContext: () => void
   loadTrack: (track: Track) => void
 }
@@ -54,6 +59,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [volume, setVolumeState] = useState(1) // 0 to 1
   const [albumTracks, setAlbumTracks] = useState<AlbumTrackItem[]>([])
   const [albumInfo, setAlbumInfo] = useState<{ name: string; artist: string; cover: string } | null>(null)
+  const [albumAutoExpand, setAlbumAutoExpand] = useState(true)
 
   // Ref: Holds the actual Audio object (doesn't trigger re-renders when changed)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -188,22 +194,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [playNextTrack])
 
-  // Sync URL with currently playing track (only for search tracks)
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    if (currentTrack && currentTrack.playSource === 'search') {
-      // Create Base64 encoded string from "artist track" (lowercase, no separator)
-      const trackString = `${currentTrack.artist} ${currentTrack.title}`.toLowerCase()
-      const encoded = btoa(trackString)
-      const newPath = `/track/${encoded}`
-
-      // Only update if URL actually changed
-      if (window.location.pathname !== newPath) {
-        window.history.pushState({}, '', newPath)
-      }
-    }
-  }, [currentTrack])
+  // URL sync removed: tracks are not encoded into the URL anymore.
 
   // Function: Play a new track
   const play = startPlayback
@@ -269,9 +260,33 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   )
 
   // Function: Set album context with tracklist
-  const setAlbumContext = (tracks: AlbumTrackItem[], info: { name: string; artist: string; cover: string }) => {
+  const setAlbumContext = (
+    tracks: AlbumTrackItem[],
+    info: { name: string; artist: string; cover: string },
+    options?: { expand?: boolean; loadFirst?: boolean },
+  ) => {
     setAlbumTracks(tracks)
     setAlbumInfo(info)
+    setAlbumAutoExpand(options?.expand ?? true)
+
+    if (options?.loadFirst && tracks.length > 0) {
+      ;(async () => {
+        try {
+          const first = tracks[0]
+          const streamUrl = await getStreamUrl(first['track-id'], first.track, first.artist)
+          loadTrack({
+            id: first['track-id'].toString(),
+            title: first.track,
+            artist: first.artist,
+            album: info.name,
+            streamUrl,
+            coverArt: info.cover,
+          })
+        } catch (err) {
+          console.error('Failed to preload first album track', err)
+        }
+      })()
+    }
   }
 
   // Function: Clear album context
@@ -298,6 +313,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setVolume,
         setAlbumContext,
         clearAlbumContext,
+        albumAutoExpand,
         loadTrack,
       }}
     >
