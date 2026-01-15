@@ -6,7 +6,7 @@ import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { getAlbumById, rateAlbum, type AlbumTrack } from '@/services/api'
 import { Button } from '@/components/ui/button'
-import { Play, Star, ArrowLeft } from 'lucide-react'
+import { Play, Star, ArrowLeft, Share2 } from 'lucide-react'
 
 type AlbumPageProps = {
   albumId: number
@@ -101,6 +101,13 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
     }
   }
 
+  // Handle share
+  const handleShareAlbum = () => {
+    const albumUrl = `stream.niprobin.com/album/${albumId}`
+    navigator.clipboard.writeText(albumUrl)
+    showNotification('Album link copied to clipboard', 'success')
+  }
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -164,6 +171,15 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
             >
               <Play className="h-5 w-5 mr-2" fill="currentColor" />
               Play
+            </Button>
+
+            <Button
+              onClick={handleShareAlbum}
+              variant="outline"
+              className="rounded-full px-6 border-slate-600 text-white hover:bg-slate-800"
+            >
+              <Share2 className="h-5 w-5 mr-2" />
+              Share
             </Button>
 
             {/* Rating (authenticated only) */}

@@ -235,7 +235,7 @@ function AppContent() {
 
           <div className="w-full">
             {activePage === 'album' && currentAlbumId ? (
-              <AlbumPage albumId={currentAlbumId} onBack={handleAlbumBack} />
+              <AlbumPage key={currentAlbumId} albumId={currentAlbumId} onBack={handleAlbumBack} />
             ) : activePage === 'digging' ? (
               <AlbumsPage />
             ) : (
