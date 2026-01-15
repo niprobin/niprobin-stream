@@ -183,22 +183,20 @@ function AppContent() {
     <>
       <NotificationBanner />
       <GlobalLoadingOverlay />
-      <div className="min-h-screen bg-slate-950 pb-32 md:pb-24">
-        {/* Main Content Area */}
-        <div className="w-full px-4 sm:px-6 lg:px-10 pt-6">
-          <InstallPrompt />
-          <div className="w-full mb-1 space-y-3">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <h1 className="text-white text-2xl font-semibold tracking-tight">
-                nipstream
-              </h1>
-              <AuthControls />
-            </div>
-
+      
+      {/* Sticky Navbar */}
+      <nav className="sticky top-0 z-50 bg-slate-950 border-b border-slate-800">
+        <div className="w-full px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between">
+          {/* Left: Logo + Tabs */}
+          <div className="flex items-center gap-6">
+            <h1 className="text-white text-2xl font-semibold tracking-tight">
+              nipstream
+            </h1>
+            
             {isAuthenticated && (
-              <div className="rounded-full border border-slate-800 bg-slate-900/70 p-1.5 shadow-inner">
-                <nav
-                  className="grid grid-cols-2 gap-1.5 text-sm sm:text-base"
+              <div className="hidden md:block rounded-full border border-slate-800 bg-slate-900/70 p-1.5">
+                <div
+                  className="flex gap-1.5 text-sm"
                   role="tablist"
                   aria-label="Primary pages"
                 >
@@ -207,7 +205,7 @@ function AppContent() {
                     role="tab"
                     aria-selected={activePage === 'home'}
                     onClick={() => navigate('home')}
-                    className={`py-2.5 rounded-full font-medium transition ${
+                    className={`px-4 py-2 rounded-full font-medium transition ${
                       activePage === 'home'
                         ? 'bg-white text-slate-900'
                         : 'text-slate-300 hover:bg-slate-800'
@@ -220,7 +218,7 @@ function AppContent() {
                     role="tab"
                     aria-selected={activePage === 'digging'}
                     onClick={() => navigate('digging')}
-                    className={`py-2.5 rounded-full font-medium transition ${
+                    className={`px-4 py-2 rounded-full font-medium transition ${
                       activePage === 'digging'
                         ? 'bg-white text-slate-900'
                         : 'text-slate-300 hover:bg-slate-800'
@@ -228,10 +226,56 @@ function AppContent() {
                   >
                     Digging
                   </button>
-                </nav>
+                </div>
               </div>
             )}
           </div>
+          
+          {/* Right: Auth Controls */}
+          <AuthControls />
+        </div>
+        
+        {/* Mobile tabs - shown only on small screens when authenticated */}
+        {isAuthenticated && (
+          <div className="md:hidden px-4 sm:px-6 lg:px-10 pb-4">
+            <div className="rounded-full border border-slate-800 bg-slate-900/70 p-1.5">
+              <div className="grid grid-cols-2 gap-1.5 text-sm">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activePage === 'home'}
+                  onClick={() => navigate('home')}
+                  className={`py-2 rounded-full font-medium transition ${
+                    activePage === 'home'
+                      ? 'bg-white text-slate-900'
+                      : 'text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  Home
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activePage === 'digging'}
+                  onClick={() => navigate('digging')}
+                  className={`py-2 rounded-full font-medium transition ${
+                    activePage === 'digging'
+                      ? 'bg-white text-slate-900'
+                      : 'text-slate-300 hover:bg-slate-800'
+                  }`}
+                >
+                  Digging
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </nav>
+
+      <div className="min-h-screen bg-slate-950 pb-32 md:pb-24">
+        {/* Main Content Area */}
+        <div className="w-full px-4 sm:px-6 lg:px-10">
+          <InstallPrompt />
 
           <div className="w-full">
             {activePage === 'album' && currentAlbumId ? (
