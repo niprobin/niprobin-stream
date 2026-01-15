@@ -24,6 +24,7 @@ export type AlbumTrack = {
   artist: string
   'track-number': number
   'album-id'?: number
+  cover?: string
 }
 
 // Type for album response with metadata
@@ -237,7 +238,7 @@ export async function getAlbumById(albumId: number): Promise<AlbumResponse> {
   return {
     tracks,
     albumId: data.album_id || data.albumId || albumId,
-    album: data.album || (tracks.length > 0 ? tracks[0].album || '' : ''),
+    album: data.album || '',
     artist: data.artist || (tracks.length > 0 ? tracks[0].artist : ''),
     cover: data.cover || (tracks.length > 0 ? tracks[0].cover || '' : ''),
   }
