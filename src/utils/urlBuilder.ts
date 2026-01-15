@@ -21,3 +21,22 @@ export function extractTrackHashFromPath(path: string): string | null {
   const match = path.match(/^\/play\/([A-Za-z0-9+/=_-]+)$/)
   return match ? match[1] : null
 }
+
+/**
+ * Build an album URL from album ID
+ * @param albumId - The album ID from the backend
+ * @returns The path to the album (e.g., "/album/12345")
+ */
+export function buildAlbumUrl(albumId: number): string {
+  return `/album/${albumId}`
+}
+
+/**
+ * Extract album ID from a path
+ * @param path - The URL path (e.g., "/album/12345")
+ * @returns The album ID or null if not a valid album URL
+ */
+export function extractAlbumIdFromPath(path: string): number | null {
+  const match = path.match(/^\/album\/(\d+)$/)
+  return match ? parseInt(match[1], 10) : null
+}

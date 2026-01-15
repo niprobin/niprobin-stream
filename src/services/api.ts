@@ -23,6 +23,16 @@ export type AlbumTrack = {
   'track-id': number
   artist: string
   'track-number': number
+  'album-id'?: number
+}
+
+// Type for album response with metadata
+export type AlbumResponse = {
+  tracks: AlbumTrack[]
+  albumId: number
+  album: string
+  artist: string
+  cover: string
 }
 
 // Type for stream response
@@ -196,6 +206,41 @@ export async function getAlbumTracks(
 
   // If data is not an array, wrap it or return empty array
   return []
+}
+
+// Get album by ID (for album page)
+export async function getAlbumById(albumId: number): Promise<AlbumResponse> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/stream-album', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ albumId }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to get album')
+  }
+
+  const data = await response.json()
+
+  // Extract tracks array
+  let tracks: AlbumTrack[] = []
+  if (Array.isArray(data)) {
+    tracks = data
+  } else if (data.tracks && Array.isArray(data.tracks)) {
+    tracks = data.tracks
+  } else if (data.results && Array.isArray(data.results)) {
+    tracks = data.results
+  }
+
+  return {
+    tracks,
+    albumId: data.album_id || data.albumId || albumId,
+    album: data.album || (tracks.length > 0 ? tracks[0].album || '' : ''),
+    artist: data.artist || (tracks.length > 0 ? tracks[0].artist : ''),
+    cover: data.cover || (tracks.length > 0 ? tracks[0].cover || '' : ''),
+  }
 }
 
 export async function likeTrack(payload: LikeTrackPayload): Promise<LikeTrackResponse> {

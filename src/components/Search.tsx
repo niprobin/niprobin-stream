@@ -6,7 +6,6 @@ import type { SearchResult, AlbumResult } from '@/services/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { useAlbumLoader } from '@/hooks/useAlbumLoader'
 import { Search as SearchIcon } from 'lucide-react'
 import { TrackList } from '@/components/TrackList'
 
@@ -20,7 +19,6 @@ export function Search() {
 
   const { showNotification } = useNotification()
   const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { loadAlbum } = useAlbumLoader()
 
   // Handle search submission
   const handleSearch = async (e: React.FormEvent) => {
@@ -63,15 +61,10 @@ export function Search() {
     )
   }
 
-  // Handle clicking an album to view its tracks
-  const handleAlbumClick = async (album: AlbumResult) => {
-    loadAlbum(
-      album['album-id'],
-      album.album,
-      album.artist,
-      album.cover,
-      { expand: false, loadFirst: true }
-    )
+  // Handle clicking an album to navigate to album page
+  const handleAlbumClick = (album: AlbumResult) => {
+    window.history.pushState({}, '', `/album/${album['album-id']}`)
+    window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
   return (

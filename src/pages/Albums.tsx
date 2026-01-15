@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, X } from 'lucide-react'
-import { getAlbumsToDiscover, hideAlbum, getTracksToDiscover, hideTrack, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
+import { getAlbumsToDiscover, hideAlbum, getTracksToDiscover, hideTrack, getAlbumTracks, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
+import { useLoading } from '@/contexts/LoadingContext'
+import { useNotification } from '@/contexts/NotificationContext'
 import { TrackList } from '@/components/TrackList'
 import { useCachedData } from '@/hooks/useCachedData'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { useAlbumLoader } from '@/hooks/useAlbumLoader'
+import { useHideItem } from '@/hooks/useHideItem'
 
 type DiggingTab = 'tracks' | 'albums'
 
@@ -34,13 +36,23 @@ export function AlbumsPage() {
   const [activeTab, setActiveTab] = useState<DiggingTab>('tracks')
   const [page, setPage] = useState(1)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
-  const [hiddenAlbums, setHiddenAlbums] = useState<Set<string>>(new Set())
-  const [hiddenTracks, setHiddenTracks] = useState<Set<string>>(new Set())
   const [selectedCurator, setSelectedCurator] = useState<string>('all')
   const pageSize = 10
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { loadAlbum } = useAlbumLoader()
+  const { increment, decrement } = useLoading()
+  const { showNotification } = useNotification()
+
+  // Use hide item hooks for albums and tracks
+  const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem<DiscoverAlbum>(
+    (album) => hideAlbum({ album: album.album, artist: album.artist }),
+    (album) => `${album.album}-${album.artist}`
+  )
+
+  const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem<DiscoverTrack>(
+    (track) => hideTrack({ track: track.track, artist: track.artist, 'spotify-id': track['spotify-id'] }),
+    (track) => `${track.track}-${track.artist}`
+  )
 
   // Use cached data hooks for albums and tracks
   const { data: albums, refresh: refreshAlbums } = useCachedData<DiscoverAlbum[]>(
@@ -65,41 +77,30 @@ export function AlbumsPage() {
     }
   )
 
-  // Handle clicking an album to view its tracks
+  // Handle clicking an album to navigate to album page
   const handleAlbumClick = async (album: DiscoverAlbum) => {
-    loadAlbum(
-      0, // albumId=0, backend will look it up from album+artist
-      album.album,
-      album.artist,
-      album.cover_url,
-      { expand: false, loadFirst: true }
-    )
-  }
-
-  // Handle hiding an album
-  const handleHideAlbum = async (album: DiscoverAlbum, e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent album click event
-    const albumKey = `${album.album}-${album.artist}`
-
-    // Optimistically hide the album in UI
-    setHiddenAlbums((prev) => new Set(prev).add(albumKey))
-
-    // Send to backend
+    increment()
     try {
-      await hideAlbum({ album: album.album, artist: album.artist })
+      // Fetch album tracks to get the album ID
+      const tracks = await getAlbumTracks(0, album.album, album.artist)
+      // Get album ID from first track
+      const albumId = tracks[0]?.['album-id']
+      if (albumId) {
+        window.history.pushState({}, '', `/album/${albumId}`)
+        window.dispatchEvent(new PopStateEvent('popstate'))
+      } else {
+        showNotification('Could not find album', 'error')
+      }
     } catch (err) {
-      console.error('Failed to hide album', err)
-      // Optionally: revert the UI change if the API call fails
-      // setHiddenAlbums((prev) => {
-      //   const newSet = new Set(prev)
-      //   newSet.delete(albumKey)
-      //   return newSet
-      // })
+      console.error('Failed to load album:', err)
+      showNotification('Failed to load album', 'error')
+    } finally {
+      decrement()
     }
   }
 
   // Handle playing a track from the Tracks tab
-  const handlePlayTrack = async (track: DiscoverTrack) => {
+  const handlePlayTrack = (track: DiscoverTrack) => {
     playTrack(
       0, // trackId=0, backend will look it up from track+artist
       track.track,
@@ -110,28 +111,6 @@ export function AlbumsPage() {
         spotifyId: track['spotify-id'],
       }
     )
-  }
-
-  // Handle hiding a track
-  const handleHideTrack = async (track: DiscoverTrack, e: React.MouseEvent) => {
-    e.stopPropagation() // Prevent track click event
-    const trackKey = `${track.track}-${track.artist}`
-
-    // Optimistically hide the track in UI
-    setHiddenTracks((prev) => new Set(prev).add(trackKey))
-
-    // Send to backend
-    try {
-      await hideTrack({ track: track.track, artist: track.artist, 'spotify-id': track['spotify-id'] })
-    } catch (err) {
-      console.error('Failed to hide track', err)
-      // Optionally: revert the UI change if the API call fails
-      setHiddenTracks((prev) => {
-        const newSet = new Set(prev)
-        newSet.delete(trackKey)
-        return newSet
-      })
-    }
   }
 
   // Handle manual refresh (clear cache and reload)
@@ -249,7 +228,7 @@ export function AlbumsPage() {
                       if (!originalTrack) return null
                       return (
                         <button
-                          onClick={(e) => handleHideTrack(originalTrack, e)}
+                          onClick={(e) => hideTrackItem(originalTrack, e)}
                           className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 hover:bg-slate-700 rounded transition-opacity"
                           aria-label="Hide track"
                         >
@@ -333,7 +312,7 @@ export function AlbumsPage() {
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                     <button
-                      onClick={(e) => handleHideAlbum(album, e)}
+                      onClick={(e) => hideAlbumItem(album, e)}
                       className="absolute top-2 right-2 w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                       aria-label="Hide album"
                     >

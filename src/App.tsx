@@ -11,8 +11,9 @@ import { LogIn } from 'lucide-react'
 import { AlbumsPage } from './pages/Albums'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
-import { extractTrackHashFromPath } from './utils/urlBuilder'
+import { extractTrackHashFromPath, extractAlbumIdFromPath } from './utils/urlBuilder'
 import { getTrackByHash } from './services/api'
+import { AlbumPage } from './pages/Album'
 
 function AuthControls() {
   const { isAuthenticated, login, logout } = useAuth()
@@ -85,13 +86,22 @@ function AuthControls() {
 function AppContent() {
   const { isAuthenticated } = useAuth()
   const { loadTrack } = useAudio()
-  const [activePage, setActivePage] = useState<'home' | 'digging'>('home')
+  const [activePage, setActivePage] = useState<'home' | 'digging' | 'album'>('home')
+  const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const syncFromLocation = async () => {
       const path = window.location.pathname
+
+      // Check if this is an album URL (/album/:id)
+      const albumId = extractAlbumIdFromPath(path)
+      if (albumId) {
+        setCurrentAlbumId(albumId)
+        setActivePage('album')
+        return
+      }
 
       // Check if this is a track URL (/play/:hash)
       const trackHash = extractTrackHashFromPath(path)
@@ -144,16 +154,29 @@ function AppContent() {
     }
   }, [isAuthenticated, loadTrack])
 
-  const navigate = (page: 'home' | 'digging') => {
+  const navigate = (page: 'home' | 'digging' | 'album', albumId?: number) => {
     if (page === 'digging' && !isAuthenticated) {
       return
     }
 
-    const path = page === 'digging' ? '/digging' : '/'
+    let path = '/'
+    if (page === 'digging') path = '/digging'
+    else if (page === 'album' && albumId) path = `/album/${albumId}`
+
     if (typeof window !== 'undefined' && window.location.pathname !== path) {
       window.history.pushState({}, '', path)
     }
+
+    if (page === 'album' && albumId) {
+      setCurrentAlbumId(albumId)
+    } else {
+      setCurrentAlbumId(null)
+    }
     setActivePage(page)
+  }
+
+  const handleAlbumBack = () => {
+    window.history.back()
   }
 
   return (
@@ -211,7 +234,13 @@ function AppContent() {
           </div>
 
           <div className="w-full">
-            {activePage === 'digging' ? <AlbumsPage /> : <Search />}
+            {activePage === 'album' && currentAlbumId ? (
+              <AlbumPage albumId={currentAlbumId} onBack={handleAlbumBack} />
+            ) : activePage === 'digging' ? (
+              <AlbumsPage />
+            ) : (
+              <Search />
+            )}
           </div>
         </div>
 
