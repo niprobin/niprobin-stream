@@ -88,6 +88,7 @@ function AppContent() {
   const { loadTrack } = useAudio()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
+  const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -194,9 +195,9 @@ function AppContent() {
             </h1>
             
             {isAuthenticated && (
-              <div className="hidden md:block rounded-full border border-slate-800 bg-slate-900/70 p-1.5">
-                <div
-                  className="flex gap-1.5 text-sm"
+              <div className="hidden md:flex items-center gap-4">
+                <nav
+                  className="flex space-x-2"
                   role="tablist"
                   aria-label="Primary pages"
                 >
@@ -205,10 +206,10 @@ function AppContent() {
                     role="tab"
                     aria-selected={activePage === 'home'}
                     onClick={() => navigate('home')}
-                    className={`px-4 py-2 rounded-full font-medium transition ${
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition ${
                       activePage === 'home'
-                        ? 'bg-white text-slate-900'
-                        : 'text-slate-300 hover:bg-slate-800'
+                        ? 'bg-slate-800 text-white'
+                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
                     }`}
                   >
                     Home
@@ -218,15 +219,50 @@ function AppContent() {
                     role="tab"
                     aria-selected={activePage === 'digging'}
                     onClick={() => navigate('digging')}
-                    className={`px-4 py-2 rounded-full font-medium transition ${
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition ${
                       activePage === 'digging'
-                        ? 'bg-white text-slate-900'
-                        : 'text-slate-300 hover:bg-slate-800'
+                        ? 'bg-slate-800 text-white'
+                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
                     }`}
                   >
                     Digging
                   </button>
-                </div>
+                </nav>
+
+                {/* Sub-tabs for Digging page */}
+                {activePage === 'digging' && (
+                  <>
+                    <div className="w-px h-6 bg-slate-700" />
+                    <nav className="flex space-x-2" role="tablist" aria-label="Digging sections">
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={diggingTab === 'tracks'}
+                        onClick={() => setDiggingTab('tracks')}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition ${
+                          diggingTab === 'tracks'
+                            ? 'bg-slate-800 text-white'
+                            : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
+                        }`}
+                      >
+                        Tracks
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        aria-selected={diggingTab === 'albums'}
+                        onClick={() => setDiggingTab('albums')}
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition ${
+                          diggingTab === 'albums'
+                            ? 'bg-slate-800 text-white'
+                            : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
+                        }`}
+                      >
+                        Albums
+                      </button>
+                    </nav>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -237,37 +273,70 @@ function AppContent() {
         
         {/* Mobile tabs - shown only on small screens when authenticated */}
         {isAuthenticated && (
-          <div className="md:hidden px-4 sm:px-6 lg:px-10 pb-4">
-            <div className="rounded-full border border-slate-800 bg-slate-900/70 p-1.5">
-              <div className="grid grid-cols-2 gap-1.5 text-sm">
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activePage === 'home'}
-                  onClick={() => navigate('home')}
-                  className={`py-2 rounded-full font-medium transition ${
-                    activePage === 'home'
-                      ? 'bg-white text-slate-900'
-                      : 'text-slate-300 hover:bg-slate-800'
-                  }`}
-                >
-                  Home
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={activePage === 'digging'}
-                  onClick={() => navigate('digging')}
-                  className={`py-2 rounded-full font-medium transition ${
-                    activePage === 'digging'
-                      ? 'bg-white text-slate-900'
-                      : 'text-slate-300 hover:bg-slate-800'
-                  }`}
-                >
-                  Digging
-                </button>
-              </div>
-            </div>
+          <div className="md:hidden pb-4">
+            <nav className="flex space-x-2 px-4 sm:px-6 lg:px-10">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activePage === 'home'}
+                onClick={() => navigate('home')}
+                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition ${
+                  activePage === 'home'
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
+                }`}
+              >
+                Home
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activePage === 'digging'}
+                onClick={() => navigate('digging')}
+                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition ${
+                  activePage === 'digging'
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
+                }`}
+              >
+                Digging
+              </button>
+            </nav>
+
+            {/* Sub-tabs for Digging page on mobile */}
+            {activePage === 'digging' && (
+              <>
+                <div className="h-px bg-slate-800 my-3" />
+                <nav className="flex space-x-2 px-4 sm:px-6 lg:px-10" role="tablist" aria-label="Digging sections">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={diggingTab === 'tracks'}
+                    onClick={() => setDiggingTab('tracks')}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition ${
+                      diggingTab === 'tracks'
+                        ? 'bg-slate-800 text-white'
+                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
+                    }`}
+                  >
+                    Tracks
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={diggingTab === 'albums'}
+                    onClick={() => setDiggingTab('albums')}
+                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition ${
+                      diggingTab === 'albums'
+                        ? 'bg-slate-800 text-white'
+                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
+                    }`}
+                  >
+                    Albums
+                  </button>
+                </nav>
+              </>
+            )}
           </div>
         )}
       </nav>
@@ -281,7 +350,7 @@ function AppContent() {
             {activePage === 'album' && currentAlbumId ? (
               <AlbumPage key={currentAlbumId} albumId={currentAlbumId} onBack={handleAlbumBack} />
             ) : activePage === 'digging' ? (
-              <AlbumsPage />
+              <AlbumsPage activeTab={diggingTab} onTabChange={setDiggingTab} />
             ) : (
               <Search />
             )}

@@ -1,12 +1,11 @@
 import { useState } from 'react'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { searchTracks, searchAlbums } from '@/services/api'
 import type { SearchResult, AlbumResult } from '@/services/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { Search as SearchIcon } from 'lucide-react'
+import { Search as SearchIcon, ChevronDown } from 'lucide-react'
 import { TrackList } from '@/components/TrackList'
 
 export function Search() {
@@ -74,33 +73,36 @@ export function Search() {
         onSubmit={handleSearch}
         className="flex flex-col gap-2 mb-6 sm:flex-row sm:items-center"
       >
-        <Input
-          type="text"
-          placeholder={searchType === 'tracks' ? 'Find a track' : 'Find an album'}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="rounded-full bg-gray-700 border-transparent flex-1 text-white text-sm min-h-11"
-        />
-        <div className="flex items-center gap-2">
-          <select
-            value={searchType}
-            onChange={(e) => setSearchType(e.target.value as 'tracks' | 'albums')}
-            className="rounded-full bg-slate-900 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-white/20 h-11 px-4"
-            aria-label="Search scope"
-          >
-            <option value="tracks">Track</option>
-            <option value="albums">Album</option>
-          </select>
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    size={null as any}
-                    className="flex-1 rounded-full bg-white text-slate-900 hover:bg-slate-200 whitespace-nowrap h-11 px-6"
-                  >
-                    {isLoading ? 'Searching...' : 'Search'}
-                    <SearchIcon className="h-4 w-4" />
-                  </Button>
+        <div className="flex items-center flex-1 rounded-full bg-gray-700 overflow-hidden focus-within:ring-2 focus-within:ring-white/20">
+          <div className="relative">
+            <select
+              value={searchType}
+              onChange={(e) => setSearchType(e.target.value as 'tracks' | 'albums')}
+              className="bg-slate-800/50 border-0 text-white text-sm font-medium h-11 pl-4 pr-8 cursor-pointer rounded-l-md appearance-none"
+              aria-label="Search scope"
+            >
+              <option value="tracks">Track</option>
+              <option value="albums">Album</option>
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+          </div>
+          <input
+            type="text"
+            placeholder={searchType === 'tracks' ? 'Find a track' : 'Find an album'}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="flex-1 bg-transparent border-0 text-white text-sm px-4 focus:outline-none placeholder:text-slate-400"
+          />
         </div>
+        <Button
+          type="submit"
+          disabled={isLoading}
+          size="default"
+          className="flex-1 sm:flex-initial rounded-full bg-white text-slate-900 whitespace-nowrap h-11 px-6"
+        >
+          {isLoading ? 'Searching...' : 'Search'}
+          <SearchIcon className="h-4 w-4" />
+        </Button>
       </form>
 
       {/* Search Results - Track Results */}

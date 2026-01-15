@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, X } from 'lucide-react'
 import { getAlbumsToDiscover, hideAlbum, getTracksToDiscover, hideTrack, getAlbumTracks, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
@@ -30,10 +29,14 @@ const CURATORS = [
 
 const ALBUMS_CACHE_KEY = 'niprobin-albums-cache'
 const TRACKS_CACHE_KEY = 'niprobin-tracks-cache'
-const CACHE_DURATION_MS = 5 * 60 * 1000 // 5 minutes
+const CACHE_DURATION_MS = 6 * 60 * 60 * 1000 // 6 hours
 
-export function AlbumsPage() {
-  const [activeTab, setActiveTab] = useState<DiggingTab>('tracks')
+interface AlbumsPageProps {
+  activeTab: DiggingTab
+  onTabChange: (tab: DiggingTab) => void
+}
+
+export function AlbumsPage({ activeTab }: AlbumsPageProps) {
   const [page, setPage] = useState(1)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [selectedCurator, setSelectedCurator] = useState<string>('all')
@@ -133,27 +136,6 @@ export function AlbumsPage() {
 
   return (
     <div className="w-full space-y-0">
-      <Tabs
-        value={activeTab}
-        onValueChange={(value) => setActiveTab(value as DiggingTab)}
-        className="w-full p-2"
-      >
-        <TabsList className="flex w-full gap-6">
-          <TabsTrigger
-            value="tracks"
-            className="relative flex-1"
-          >
-            Tracks
-          </TabsTrigger>
-          <TabsTrigger
-            value="albums"
-            className="relative flex-1"
-          >
-            Albums
-          </TabsTrigger>
-        </TabsList>
-      </Tabs>
-
       {activeTab === 'tracks' && (
         <div>
           {/* Sync Tracks Button and Curator Filter */}
