@@ -24,6 +24,14 @@ export type AlbumTrackItem = {
   'track-number': number
 }
 
+// TypeScript: Define loading states for audio player
+export type AudioLoadingState =
+  | { status: 'idle' }
+  | { status: 'fetching-stream', trackId: string }
+  | { status: 'buffering', trackId: string }
+  | { status: 'ready', trackId: string }
+  | { status: 'error', trackId: string, error?: string }
+
 // TypeScript: Define what our audio context contains
 type AudioContextType = {
   currentTrack: Track | null
@@ -33,6 +41,7 @@ type AudioContextType = {
   volume: number
   albumTracks: AlbumTrackItem[]
   albumInfo: { name: string; artist: string; cover: string } | null
+  loadingState: AudioLoadingState
   play: (track: Track) => void
   pause: () => void
   resume: () => void
@@ -46,6 +55,7 @@ type AudioContextType = {
   albumAutoExpand?: boolean
   clearAlbumContext: () => void
   loadTrack: (track: Track) => void
+  setLoadingState: (state: AudioLoadingState) => void
 }
 
 // Create the Context - this is our "box" that holds audio state
@@ -62,6 +72,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [albumTracks, setAlbumTracks] = useState<AlbumTrackItem[]>([])
   const [albumInfo, setAlbumInfo] = useState<{ name: string; artist: string; cover: string } | null>(null)
   const [albumAutoExpand, setAlbumAutoExpand] = useState(true)
+  const [loadingState, setLoadingState] = useState<AudioLoadingState>({ status: 'idle' })
 
   // Ref: Holds the actual Audio object (doesn't trigger re-renders when changed)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -83,6 +94,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
       setCurrentTrack(track)
       setIsPlaying(true)
+
+      // Simple loading state: set to buffering when starting playback
+      setLoadingState({ status: 'buffering', trackId: track.id })
 
       // Update URL to reflect current track
       if (track.hashUrl) {
@@ -192,14 +206,36 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       void playNextTrack()
     }
 
+    // Simple loading state event handlers
+    const handleCanPlay = () => {
+      // Audio is ready to play - clear loading state
+      setLoadingState({ status: 'idle' })
+    }
+
+    const handlePlay = () => {
+      // Audio started playing - clear loading state
+      setLoadingState({ status: 'idle' })
+    }
+
+    const handleError = () => {
+      // Audio loading error
+      setLoadingState({ status: 'idle' })
+    }
+
     audio.addEventListener('timeupdate', handleTimeUpdate)
     audio.addEventListener('loadedmetadata', handleLoadedMetadata)
     audio.addEventListener('ended', handleEnded)
+    audio.addEventListener('canplay', handleCanPlay)
+    audio.addEventListener('play', handlePlay)
+    audio.addEventListener('error', handleError)
 
     return () => {
       audio.removeEventListener('timeupdate', handleTimeUpdate)
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
       audio.removeEventListener('ended', handleEnded)
+      audio.removeEventListener('canplay', handleCanPlay)
+      audio.removeEventListener('play', handlePlay)
+      audio.removeEventListener('error', handleError)
     }
   }, [playNextTrack])
 
@@ -322,6 +358,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         volume,
         albumTracks,
         albumInfo,
+        loadingState,
         play,
         pause,
         resume,
@@ -331,6 +368,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         clearAlbumContext,
         albumAutoExpand,
         loadTrack,
+        setLoadingState,
       }}
     >
       {children}

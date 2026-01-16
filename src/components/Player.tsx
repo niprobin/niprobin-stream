@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Play, Pause, Download, Maximize2, Heart, X, Star } from 'lucide-react'
+import { Play, Pause, Download, Maximize2, Heart, X, Star, Loader2 } from 'lucide-react'
 import { downloadTrack, likeTrack, rateAlbum } from '@/services/api'
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
@@ -43,7 +43,7 @@ export function Player() {
   const { isAuthenticated } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
-  const { playTrack, loadingTrackId } = useTrackPlayer()
+  const { playTrack, loadingTrackId, loadingState } = useTrackPlayer()
   const [isExpanded, setIsExpanded] = useState(false)
   const [likedTrackIds, setLikedTrackIds] = useState<string[]>([])
   const [isLikeModalOpen, setIsLikeModalOpen] = useState(false)
@@ -52,6 +52,10 @@ export function Player() {
   const [isSubmittingLike, setIsSubmittingLike] = useState(false)
   const [albumRating, setAlbumRating] = useState(0)
   const playerRef = useRef<HTMLDivElement>(null)
+
+  // Determine if current track is loading
+  const isCurrentTrackLoading = loadingState.status !== 'idle' &&
+    loadingState.trackId === currentTrack?.id
 
   // Auto-expand when album context is set
   const hasAlbumContext = albumTracks.length > 0 && albumInfo
@@ -276,9 +280,16 @@ export function Player() {
                   onClick={handlePlayPause}
                   size="icon"
                   variant="ghost"
-                  className="bg-white text-black rounded-full h-12 w-12"
+                  className="bg-white text-black rounded-full h-12 w-12 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isCurrentTrackLoading}
                 >
-                  {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                  {isCurrentTrackLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : isPlaying ? (
+                    <Pause className="h-6 w-6" />
+                  ) : (
+                    <Play className="h-6 w-6" />
+                  )}
                 </Button>
               </div>
 
@@ -372,9 +383,16 @@ export function Player() {
                   onClick={handlePlayPause}
                   size="icon"
                   variant="ghost"
-                  className="bg-white rounded-full text-black h-10 w-10"
+                  className="bg-white rounded-full text-black h-10 w-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isCurrentTrackLoading}
                 >
-                  {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6" />}
+                  {isCurrentTrackLoading ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : isPlaying ? (
+                    <Pause className="h-6 w-6" />
+                  ) : (
+                    <Play className="h-6 w-6" />
+                  )}
                 </Button>
 
                 {/* Download Button */}

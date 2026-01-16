@@ -16,7 +16,7 @@ export type TrackPlayerOptions = {
  */
 export function useTrackPlayer() {
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
-  const { play, clearAlbumContext } = useAudio()
+  const { play, clearAlbumContext, loadingState, setLoadingState } = useAudio()
   const { showNotification } = useNotification()
 
   const playTrack = async (
@@ -35,6 +35,9 @@ export function useTrackPlayer() {
     // Use track ID as loading key, or fallback to track-artist combo
     const loadingKey = String(trackId)
     setLoadingTrackId(loadingKey)
+
+    // Set loading state for API fetch
+    setLoadingState({ status: 'fetching-stream', trackId: loadingKey })
 
     try {
       // Clear album context if requested (for standalone tracks)
@@ -60,9 +63,12 @@ export function useTrackPlayer() {
         coverArt: coverArt || streamResponse.cover,
         spotifyId,
       })
+
+      // API fetch completed - loading state will be managed by AudioContext
     } catch (err) {
       console.error('Failed to load track:', err)
       showNotification('Failed to load track. Please try again.', 'error')
+      setLoadingState({ status: 'idle' })
     } finally {
       setLoadingTrackId(null)
     }
@@ -70,6 +76,8 @@ export function useTrackPlayer() {
 
   return {
     playTrack,
-    loadingTrackId,
+    loadingTrackId,  // Existing string | null for backward compatibility
+    loadingState,    // New: full loading state from AudioContext
+    isLoading: loadingState.status !== 'idle',  // New: convenient boolean
   }
 }

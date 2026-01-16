@@ -182,22 +182,28 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
                       .slice((page - 1) * pageSize, page * pageSize)
                       .map((track, index) => ({
                         track: track.track,
-                        'track-id': (page - 1) * pageSize + index,
+                        'track-id': track['spotify-id'] || `discover-${(page - 1) * pageSize + index}`,
                         artist: track.artist,
                         'track-number': (page - 1) * pageSize + index + 1,
                       }))}
                     loadingTrackId={loadingTrackId}
                     onSelect={(trackItem) => {
-                      // Find the original DiscoverTrack from the filtered tracks array
-                      const trackIndex = trackItem['track-id']
-                      const originalTrack = filteredTracks[trackIndex]
+                      // Find the original DiscoverTrack by matching spotify-id or fallback pattern
+                      const trackId = trackItem['track-id']
+                      const originalTrack = filteredTracks.find((track) =>
+                        track['spotify-id'] === trackId ||
+                        (trackId.startsWith('discover-') && track.track === trackItem.track && track.artist === trackItem.artist)
+                      )
                       if (originalTrack) {
                         handlePlayTrack(originalTrack)
                       }
                     }}
                     renderIndicator={(trackItem) => {
-                      const trackIndex = trackItem['track-id']
-                      const originalTrack = filteredTracks[trackIndex]
+                      const trackId = trackItem['track-id']
+                      const originalTrack = filteredTracks.find((track) =>
+                        track['spotify-id'] === trackId ||
+                        (trackId.startsWith('discover-') && track.track === trackItem.track && track.artist === trackItem.artist)
+                      )
                       return (
                         <div className="text-xs text-slate-400 pr-2">
                           {originalTrack?.curator}
@@ -205,8 +211,11 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
                       )
                     }}
                     renderAction={(trackItem) => {
-                      const trackIndex = trackItem['track-id']
-                      const originalTrack = filteredTracks[trackIndex]
+                      const trackId = trackItem['track-id']
+                      const originalTrack = filteredTracks.find((track) =>
+                        track['spotify-id'] === trackId ||
+                        (trackId.startsWith('discover-') && track.track === trackItem.track && track.artist === trackItem.artist)
+                      )
                       if (!originalTrack) return null
                       return (
                         <button

@@ -449,6 +449,17 @@ npm run preview      # Preview production build
 - Added a global full-screen loading overlay for network-heavy actions (search, albums fetch, downloads). Short inline loading indicators remain for per-row feedback.
 - Removed the `/track/<hash>` URL behavior: tracks are no longer encoded into the URL and are loaded only via UI interactions (search results, album clicks, tracklist).
 
+### Enhanced Audio Player Loading States (January 16, 2026)
+**Files Modified**: `src/contexts/AudioContext.tsx`, `src/hooks/useTrackPlayer.ts`, `src/components/Player.tsx`, `src/components/TrackList.tsx`
+
+Implemented comprehensive loading state management providing immediate visual feedback during track loading and audio buffering:
+
+- **AudioContext Enhancement**: Added `AudioLoadingState` type with 'idle', 'fetching-stream', 'buffering', 'ready', 'error' states. Added audio event listeners (loadstart, waiting, canplay, play, error) for comprehensive loading detection. Enhanced all audio functions with loading state integration.
+- **Player Component**: Replaced play/pause buttons with Loader2 spinner during loading. Both desktop (h-12 w-12) and mobile (h-10 w-10) buttons show loading state with disabled interaction. Added proper styling: `disabled:opacity-50 disabled:cursor-not-allowed`.
+- **TrackList Enhancement**: Replaced "Loading..." text with Loader2 spinner icons (h-4 w-4, text-slate-400) in both album tracks view (line 65) and search results view (line 94).
+- **useTrackPlayer Integration**: Enhanced with dual loading tracking for API fetch and audio buffering phases. Maintained backward compatibility with `loadingTrackId` while adding new `loadingState` and `isLoading` properties.
+- **Loading State Flow**: User clicks track → 'fetching-stream' → API responds → 'buffering' → Audio ready → 'ready' → Playing → 'idle'. Provides clear visual feedback throughout entire loading process.
+
 ### Navigation & Player Polish (Latest)
 - Merged drawer into expandable player
 - Auto-expands to 80vh when album is loaded
@@ -472,6 +483,19 @@ npm run preview      # Preview production build
 - Auto-hides when installed
 
 ## Recent Changes
+
+### Track ID "undefined" Bug Fix (January 16, 2026)
+**File**: `src/pages/Albums.tsx` - Fixed critical bug where tracks from Digging > Tracks page showed `/play/undefined` URLs.
+
+**Root Cause**: Lines 183-188 were using array indices `(page - 1) * pageSize + index` as track IDs instead of actual Spotify IDs, causing backend API calls to fail.
+
+**Changes Made**:
+- **Track Mapping** (line 185): Changed `'track-id': (page - 1) * pageSize + index` to `'track-id': track['spotify-id'] || 'discover-${(page - 1) * pageSize + index}'`
+- **Track Lookup Logic**: Updated `onSelect`, `renderIndicator`, and `renderAction` callbacks to find tracks by spotify-id matching instead of array index lookup
+- **Fallback Handling**: Added `discover-` prefix for tracks with missing spotify-id values
+- **Type Safety**: Verified changes pass TypeScript compilation
+
+**Impact**: Track playback from Digging > Tracks page now generates valid URLs like `/play/[spotify-hash]` instead of `/play/undefined`, enabling proper audio streaming.
 
 ### Navbar Redesign (January 15, 2026)
 **File**: `src/App.tsx` - Made navbar sticky at top with restructured left/right layout (logo + tabs on left, auth controls on right).

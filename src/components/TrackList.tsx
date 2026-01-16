@@ -1,4 +1,5 @@
 import type { AlbumTrackItem } from '@/contexts/AudioContext'
+import { Loader2 } from 'lucide-react'
 
 type BaseTrack = {
   id: string
@@ -62,7 +63,9 @@ export function TrackList(props: TrackListProps) {
                 <div className="text-slate-400 text-xs truncate">{item.artist}</div>
               </div>
               {loading ? (
-                <div className="flex items-center text-slate-400 text-xs pr-2">Loading...</div>
+                <div className="flex items-center text-slate-400 text-xs pr-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
               ) : (
                 <>
                   {props.renderIndicator?.(item)}
@@ -91,7 +94,9 @@ export function TrackList(props: TrackListProps) {
               <div className="text-slate-500 text-xs truncate">{obj.album}</div>
             </div>
             {loading && (
-              <div className="flex items-center text-slate-400 text-xs">Loading...</div>
+              <div className="flex items-center text-slate-400 text-xs">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
             )}
           </div>
         )
