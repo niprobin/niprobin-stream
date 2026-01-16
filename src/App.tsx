@@ -186,7 +186,7 @@ function AppContent() {
       <GlobalLoadingOverlay />
       
       {/* Sticky Navbar */}
-      <nav className="sticky top-0 z-50 bg-slate-950 border-b border-slate-800">
+      <nav className="sticky top-0 z-50 bg-slate-950 md:border-b md:border-slate-800">
         <div className="w-full px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between">
           {/* Left: Logo + Tabs */}
           <div className="flex items-center gap-6">
@@ -233,34 +233,36 @@ function AppContent() {
                 {activePage === 'digging' && (
                   <>
                     <div className="w-px h-6 bg-slate-700" />
-                    <nav className="flex space-x-2" role="tablist" aria-label="Digging sections">
-                      <button
-                        type="button"
-                        role="tab"
-                        aria-selected={diggingTab === 'tracks'}
-                        onClick={() => setDiggingTab('tracks')}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition ${
-                          diggingTab === 'tracks'
-                            ? 'bg-slate-800 text-white'
-                            : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-                        }`}
-                      >
-                        Tracks
-                      </button>
-                      <button
-                        type="button"
-                        role="tab"
-                        aria-selected={diggingTab === 'albums'}
-                        onClick={() => setDiggingTab('albums')}
-                        className={`px-3 py-2 text-sm font-medium rounded-md transition ${
-                          diggingTab === 'albums'
-                            ? 'bg-slate-800 text-white'
-                            : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-                        }`}
-                      >
-                        Albums
-                      </button>
-                    </nav>
+                    <div className="border-b border-slate-700">
+                      <nav className="flex space-x-2 -mb-px" role="tablist" aria-label="Digging sections">
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={diggingTab === 'tracks'}
+                          onClick={() => setDiggingTab('tracks')}
+                          className={`px-3 py-2 text-sm font-medium border-b-2 transition ${
+                            diggingTab === 'tracks'
+                              ? 'border-white text-white'
+                              : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
+                          }`}
+                        >
+                          Tracks
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          aria-selected={diggingTab === 'albums'}
+                          onClick={() => setDiggingTab('albums')}
+                          className={`px-3 py-2 text-sm font-medium border-b-2 transition ${
+                            diggingTab === 'albums'
+                              ? 'border-white text-white'
+                              : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
+                          }`}
+                        >
+                          Albums
+                        </button>
+                      </nav>
+                    </div>
                   </>
                 )}
               </div>
@@ -306,35 +308,36 @@ function AppContent() {
             {/* Sub-tabs for Digging page on mobile */}
             {activePage === 'digging' && (
               <>
-                <div className="h-px bg-slate-800 my-3" />
-                <nav className="flex space-x-2 px-4 sm:px-6 lg:px-10" role="tablist" aria-label="Digging sections">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={diggingTab === 'tracks'}
-                    onClick={() => setDiggingTab('tracks')}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition ${
-                      diggingTab === 'tracks'
-                        ? 'bg-slate-800 text-white'
-                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-                    }`}
-                  >
-                    Tracks
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={diggingTab === 'albums'}
-                    onClick={() => setDiggingTab('albums')}
-                    className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition ${
-                      diggingTab === 'albums'
-                        ? 'bg-slate-800 text-white'
-                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-                    }`}
-                  >
-                    Albums
-                  </button>
-                </nav>
+                <div className="mt-3 border-b border-slate-800 px-4 sm:px-6 lg:px-10">
+                  <nav className="flex space-x-2 -mb-px" role="tablist" aria-label="Digging sections">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={diggingTab === 'tracks'}
+                      onClick={() => setDiggingTab('tracks')}
+                      className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition ${
+                        diggingTab === 'tracks'
+                          ? 'border-white text-white'
+                          : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
+                      }`}
+                    >
+                      Tracks
+                    </button>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={diggingTab === 'albums'}
+                      onClick={() => setDiggingTab('albums')}
+                      className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition ${
+                        diggingTab === 'albums'
+                          ? 'border-white text-white'
+                          : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
+                      }`}
+                    >
+                      Albums
+                    </button>
+                  </nav>
+                </div>
               </>
             )}
           </div>
