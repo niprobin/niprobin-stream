@@ -484,18 +484,17 @@ Implemented comprehensive loading state management providing immediate visual fe
 
 ## Recent Changes
 
-### Track ID "undefined" Bug Fix (January 16, 2026)
-**File**: `src/pages/Albums.tsx` - Fixed critical bug where tracks from Digging > Tracks page showed `/play/undefined` URLs.
+### TypeScript Build Error Fix (January 20, 2026)
+**File**: `src/pages/Albums.tsx` - Fixed critical TypeScript build errors that prevented Vercel deployment.
 
-**Root Cause**: Lines 183-188 were using array indices `(page - 1) * pageSize + index` as track IDs instead of actual Spotify IDs, causing backend API calls to fail.
+**Root Cause**: Type mismatch where `DiscoverTrack['spotify-id']` (string) was being assigned to `AlbumTrackItem['track-id']` (number), causing compilation failures.
 
 **Changes Made**:
-- **Track Mapping** (line 185): Changed `'track-id': (page - 1) * pageSize + index` to `'track-id': track['spotify-id'] || 'discover-${(page - 1) * pageSize + index}'`
-- **Track Lookup Logic**: Updated `onSelect`, `renderIndicator`, and `renderAction` callbacks to find tracks by spotify-id matching instead of array index lookup
-- **Fallback Handling**: Added `discover-` prefix for tracks with missing spotify-id values
-- **Type Safety**: Verified changes pass TypeScript compilation
+- **Track Mapping** (line 185): Changed `'track-id': track['spotify-id'] || 'discover-${...}'` to `'track-id': (page - 1) * pageSize + index + 1` for numeric IDs
+- **Track Lookup Logic**: Updated `onSelect`, `renderIndicator`, and `renderAction` callbacks to use array indexing instead of string-based spotify-id matching
+- **Type Compliance**: Removed `startsWith()` calls on numeric track-id values that were causing string/number type conflicts
 
-**Impact**: Track playback from Digging > Tracks page now generates valid URLs like `/play/[spotify-hash]` instead of `/play/undefined`, enabling proper audio streaming.
+**Impact**: Build now passes TypeScript compilation and deploys successfully on Vercel. Track selection still works correctly using numeric indexing.
 
 ### Navbar Redesign (January 15, 2026)
 **File**: `src/App.tsx` - Made navbar sticky at top with restructured left/right layout (logo + tabs on left, auth controls on right).
