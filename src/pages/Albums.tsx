@@ -87,19 +87,6 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
     }
   }
 
-  // Handle playing a track from the Tracks tab
-  const handlePlayTrack = (track: DiscoverTrack) => {
-    playTrack(
-      0, // trackId=0, backend will look it up from track+artist
-      track.track,
-      track.artist,
-      {
-        clearAlbum: true,
-        albumName: `Curated by ${track.curator}`,
-        spotifyId: track['spotify-id'],
-      }
-    )
-  }
 
   // Handle manual refresh (clear cache and reload)
   const handleRefresh = () => {
