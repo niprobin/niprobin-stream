@@ -11,21 +11,6 @@ import { useHideItem } from '@/hooks/useHideItem'
 
 type DiggingTab = 'tracks' | 'albums'
 
-const CURATORS = [
-  'niprobin',
-  'FIP Best Of',
-  'Tim Reaper',
-  'Infinite Loop',
-  'Joe-Armon Jones',
-  'Athens of the North',
-  'Somewhere Soul',
-  'Jazz & Joint',
-  'Skinshape',
-  'Tom Misch',
-  'Touching Bass',
-  'Jazzafip',
-  'Laurent Garnier',
-]
 
 const ALBUMS_CACHE_KEY = 'niprobin-albums-cache'
 const TRACKS_CACHE_KEY = 'niprobin-tracks-cache'
@@ -157,7 +142,9 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
               className="bg-slate-800 text-white text-xs border border-slate-700 rounded-md h-9 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-600"
             >
               <option value="all">All Curators</option>
-              {CURATORS.map((curator) => (
+              {tracks && Array.from(
+                new Set(tracks.map(track => track.curator).filter(Boolean))
+              ).sort().map((curator) => (
                 <option key={curator} value={curator}>
                   {curator}
                 </option>

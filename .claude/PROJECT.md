@@ -496,6 +496,18 @@ Implemented comprehensive loading state management providing immediate visual fe
 
 **Impact**: Build now passes TypeScript compilation and deploys successfully on Vercel. Track selection still works correctly using numeric indexing.
 
+### Dynamic Curator Dropdown (January 20, 2026)
+**File**: `src/pages/Albums.tsx` - Made curator dropdown populate dynamically from actual track data instead of hardcoded list.
+
+**Root Cause**: The curator dropdown was populated from a hardcoded `CURATORS` array that didn't reflect new curators added to the backend track data.
+
+**Changes Made**:
+- **Removed hardcoded array** (lines 14-28): Deleted static `CURATORS` array
+- **Dynamic curator extraction** (lines 145-151): Dropdown now extracts unique curators from track data using `Array.from(new Set(...)).sort()`
+- **Real-time updates**: Curator options automatically reflect any new curators in the track data without code changes
+
+**Impact**: Dropdown now shows all curators present in the actual track data, automatically including any new curators added via the backend without requiring frontend updates.
+
 ### Navbar Redesign (January 15, 2026)
 **File**: `src/App.tsx` - Made navbar sticky at top with restructured left/right layout (logo + tabs on left, auth controls on right).
 
