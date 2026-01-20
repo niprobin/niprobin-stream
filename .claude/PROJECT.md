@@ -508,6 +508,19 @@ Implemented comprehensive loading state management providing immediate visual fe
 
 **Impact**: Dropdown now shows all curators present in the actual track data, automatically including any new curators added via the backend without requiring frontend updates.
 
+### Like Button State Fix (January 20, 2026)
+**File**: `src/components/Player.tsx` - Fixed like button staying active across different tracks.
+
+**Root Cause**: Like button state was tracked using potentially non-unique track IDs, causing different tracks to incorrectly appear as "liked" when they shared similar IDs.
+
+**Changes Made**:
+- **Improved like tracking** (line 194): Changed from track ID to `track|artist` combination for reliable uniqueness
+- **Updated isTrackLiked function** (line 191): Now uses `title` and `artist` parameters instead of potentially duplicate `trackId`
+- **Fixed like storage** (line 227): Like state now stored using `${title}|${artist}` key format
+- **Updated all call sites**: Removed unused trackId parameters and pass track title/artist instead
+
+**Impact**: Like button now correctly shows liked state only for the specific track+artist combination, preventing false positives when switching between tracks.
+
 ### Navbar Redesign (January 15, 2026)
 **File**: `src/App.tsx` - Made navbar sticky at top with restructured left/right layout (logo + tabs on left, auth controls on right).
 

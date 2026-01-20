@@ -188,9 +188,11 @@ export function Player() {
     setIsExpanded(!isExpanded)
   }
 
-  const isTrackLiked = (trackId?: string | null) => {
-    if (!trackId) return false
-    return likedTrackIds.includes(trackId)
+  const isTrackLiked = (title?: string, artist?: string) => {
+    if (!title || !artist) return false
+    // Use track+artist combination for more reliable like tracking
+    const likeKey = `${title}|${artist}`
+    return likedTrackIds.includes(likeKey)
   }
 
   const openLikeModal = (trackId: string, title: string, artist: string, spotifyId?: string) => {
@@ -222,8 +224,9 @@ export function Player() {
         'spotify-id': likeModalTrack.spotifyId || '',
       })
       if (result.status === 'success') {
+        const likeKey = `${likeModalTrack.title}|${likeModalTrack.artist}`
         setLikedTrackIds((prev) =>
-          prev.includes(likeModalTrack.id) ? prev : [...prev, likeModalTrack.id]
+          prev.includes(likeKey) ? prev : [...prev, likeKey]
         )
         showNotification(result.message, 'success')
         closeLikeModal()
@@ -303,13 +306,13 @@ export function Player() {
                     size="icon"
                     variant="ghost"
                     className={`text-slate-300 hover:text-red-400 hover:bg-slate-800 ${
-                      isTrackLiked(currentTrack.id) ? 'text-red-400' : ''
+                      isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
                     }`}
-                    aria-pressed={isTrackLiked(currentTrack.id)}
+                    aria-pressed={isTrackLiked(currentTrack.title, currentTrack.artist)}
                   >
                     <Heart
                       className="h-5 w-5"
-                      fill={isTrackLiked(currentTrack.id) ? 'currentColor' : 'none'}
+                      fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
                     />
                   </Button>
                 )}
@@ -355,13 +358,13 @@ export function Player() {
                     size="icon"
                     variant="ghost"
                     className={`text-white hover:text-red-400 hover:bg-slate-800 ${
-                      isTrackLiked(currentTrack.id) ? 'text-red-400' : ''
+                      isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
                     }`}
-                    aria-pressed={isTrackLiked(currentTrack.id)}
+                    aria-pressed={isTrackLiked(currentTrack.title, currentTrack.artist)}
                   >
                     <Heart
                       className="h-5 w-5"
-                      fill={isTrackLiked(currentTrack.id) ? 'currentColor' : 'none'}
+                      fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
                     />
                   </Button>
                 )}
@@ -496,7 +499,7 @@ export function Player() {
             {albumTracks.map((track, index) => {
               const trackId = track['track-id'].toString()
               const isCurrentTrack = currentTrack?.id === trackId
-              const liked = isTrackLiked(trackId)
+              const liked = isTrackLiked(track.track, track.artist)
               return (
                 <div
                   key={`${track['track-id']}-${index}`}
