@@ -32,7 +32,7 @@ export function TrackList(props: TrackListProps) {
   const data = props.tracks
 
   const containerClasses = isAlbumVariant
-    ? 'divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-900/40'
+    ? 'divide-y divide-slate-800 border border-slate-800 bg-slate-900/40'
     : 'divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-900/70 overflow-hidden shadow-lg'
 
   return (
