@@ -44,7 +44,7 @@ export function TrackList(props: TrackListProps) {
 
         if (isAlbumVariant) {
           const item = track as AlbumTrackItem
-          const trackId = `${item.track}-${item.artist}`
+          const trackId = item['track-id'].toString()
           const loading = props.loadingTrackId === trackId
 
           return (

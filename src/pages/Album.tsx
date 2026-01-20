@@ -6,6 +6,7 @@ import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { getAlbumById, rateAlbum, type AlbumTrack } from '@/services/api'
 import { Button } from '@/components/ui/button'
+import { TrackList } from '@/components/TrackList'
 import { Play, Star, ArrowLeft, Share2 } from 'lucide-react'
 
 type AlbumPageProps = {
@@ -216,56 +217,27 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
       </div>
 
       {/* Tracklist */}
-      <div className="divide-y divide-slate-800 rounded-xl border border-slate-800 bg-slate-900/40">
-        {tracks.map((track, index) => {
-          const trackId = `${track.track}-${track.artist}`
-          const isCurrentTrack = currentTrack?.id === track['track-id'].toString()
-          const isLoading = loadingTrackId === trackId
-
-          return (
-            <div
-              key={`${track['track-id']}-${index}`}
-              onClick={() => handlePlayTrack(track)}
-              className={`flex items-center gap-3 p-3 hover:bg-slate-800 cursor-pointer transition-colors group ${
-                isCurrentTrack ? 'bg-slate-800' : ''
-              }`}
-            >
-              {/* Track Number */}
-              <div
-                className={`text-sm font-medium w-8 text-center ${
-                  isCurrentTrack ? 'text-white' : 'text-slate-500'
-                } group-hover:text-white`}
-              >
-                {track['track-number']}
-              </div>
-
-              {/* Track Info */}
-              <div className="flex-1 min-w-0">
-                <div
-                  className={`text-sm font-medium truncate ${
-                    isCurrentTrack ? 'text-white' : 'text-white'
-                  }`}
-                >
-                  {track.track}
-                </div>
-                <div className="text-xs text-slate-400 truncate">
-                  {track.artist}
-                </div>
-              </div>
-
-              {/* Status Indicator */}
-              {isLoading && (
-                <div className="text-slate-400 text-xs pr-2">Loading...</div>
-              )}
-              {isCurrentTrack && !isLoading && (
-                <div className="text-white text-xs pr-2">
-                  {isPlaying ? '▶' : '❚❚'}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+      <TrackList
+        variant="album"
+        tracks={tracks.map(track => ({
+          track: track.track,
+          'track-id': track['track-id'],
+          artist: track.artist,
+          'track-number': track['track-number'],
+        }))}
+        loadingTrackId={loadingTrackId}
+        onSelect={(trackItem) => {
+          const originalTrack = tracks.find(t => t['track-id'] === trackItem['track-id'])
+          if (originalTrack) handlePlayTrack(originalTrack)
+        }}
+        renderIndicator={(trackItem) => {
+          const isCurrentTrack = currentTrack?.id === trackItem['track-id'].toString()
+          if (isCurrentTrack && !loadingTrackId) {
+            return <div className="text-white text-xs pr-2">{isPlaying ? '▶' : '❚❚'}</div>
+          }
+          return null
+        }}
+      />
     </div>
   )
 }

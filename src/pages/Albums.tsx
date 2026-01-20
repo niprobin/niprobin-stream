@@ -180,7 +180,17 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
                       const trackIndex = trackItem['track-id'] - pageStartIndex - 1
                       const originalTrack = filteredTracks.slice(pageStartIndex, page * pageSize)[trackIndex]
                       if (originalTrack) {
-                        handlePlayTrack(originalTrack)
+                        // Use the trackItem's track-id to ensure loading state consistency
+                        playTrack(
+                          trackItem['track-id'],
+                          originalTrack.track,
+                          originalTrack.artist,
+                          {
+                            clearAlbum: true,
+                            albumName: `Curated by ${originalTrack.curator}`,
+                            spotifyId: originalTrack['spotify-id'],
+                          }
+                        )
                       }
                     }}
                     renderIndicator={(trackItem) => {
