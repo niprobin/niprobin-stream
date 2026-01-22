@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { searchTracks, searchAlbums } from '@/services/api'
+import { searchTracks, searchAlbums, saveAlbum } from '@/services/api'
 import type { SearchResult, AlbumResult } from '@/services/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { Search as SearchIcon, ChevronDown } from 'lucide-react'
+import { Search as SearchIcon, ChevronDown, BookmarkPlus, Loader2 } from 'lucide-react'
 import { TrackList } from '@/components/TrackList'
 
 export function Search() {
@@ -15,6 +15,7 @@ export function Search() {
   const [searchType, setSearchType] = useState<'tracks' | 'albums'>('tracks')
   const [albumResults, setAlbumResults] = useState<AlbumResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
+  const [savingAlbumId, setSavingAlbumId] = useState<number | null>(null)
 
   const { showNotification } = useNotification()
   const { playTrack, loadingTrackId } = useTrackPlayer()
@@ -64,6 +65,25 @@ export function Search() {
   const handleAlbumClick = (album: AlbumResult) => {
     window.history.pushState({}, '', `/album/${album['album-id']}`)
     window.dispatchEvent(new PopStateEvent('popstate'))
+  }
+
+  const handleSaveAlbum = async (album: AlbumResult) => {
+    setSavingAlbumId(album['album-id'])
+
+    try {
+      const response = await saveAlbum({
+        album: album.album,
+        artist: album.artist,
+        'album-id': album['album-id']
+      })
+
+      showNotification(response.message, response.status)
+    } catch (err) {
+      showNotification('Failed to save album', 'error')
+      console.error(err)
+    } finally {
+      setSavingAlbumId(null)
+    }
   }
 
   return (
@@ -150,13 +170,38 @@ export function Search() {
               </div>
 
               {/* Album Info */}
-              <div className="px-1">
-                <div className="text-white font-semibold text-sm line-clamp-2 mb-1">
-                  {album.album}
+              <div className="px-1 space-y-2">
+                <div>
+                  <div className="text-white font-semibold text-sm line-clamp-2 mb-1">
+                    {album.album}
+                  </div>
+                  <div className="text-slate-400 text-xs line-clamp-1">
+                    {album.artist}
+                  </div>
                 </div>
-                <div className="text-slate-400 text-xs line-clamp-1">
-                  {album.artist}
-                </div>
+
+                <Button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleSaveAlbum(album)
+                  }}
+                  disabled={savingAlbumId === album['album-id']}
+                  size="sm"
+                  variant="outline"
+                  className="w-full h-8 text-xs bg-transparent border-slate-600 text-slate-300 hover:bg-slate-800 hover:border-slate-500"
+                >
+                  {savingAlbumId === album['album-id'] ? (
+                    <>
+                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <BookmarkPlus className="h-3 w-3 mr-1" />
+                      Save for Later
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
           ))}

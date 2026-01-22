@@ -277,6 +277,28 @@ export async function rateAlbum(payload: RateAlbumPayload): Promise<LikeTrackRes
   })
 }
 
+type SaveAlbumPayload = {
+  album: string
+  artist: string
+  'album-id': number
+}
+
+export async function saveAlbum(payload: SaveAlbumPayload): Promise<LikeTrackResponse> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/save-album', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const rawBody = await response.text()
+  return parseApiResponse(response, rawBody, {
+    successMessage: 'Album saved for later',
+    errorMessage: 'Failed to save album',
+  })
+}
+
 export async function getAlbumsToDiscover(): Promise<DiscoverAlbum[]> {
   const response = await fetch('https://n8n.niprobin.com/webhook/albums-to-discover', {
     method: 'GET',
