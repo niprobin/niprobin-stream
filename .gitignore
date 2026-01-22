@@ -1,5 +1,6 @@
 niprobin-stream-docs.md
 .env.local
+.claude/
 
 # Logs
 logs
