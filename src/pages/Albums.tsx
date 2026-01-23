@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, X } from 'lucide-react'
+import { RefreshCw, X, Search } from 'lucide-react'
 import { getAlbumsToDiscover, hideAlbum, getTracksToDiscover, hideTrack, getAlbumTracks, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useNotification } from '@/contexts/NotificationContext'
@@ -8,6 +8,7 @@ import { TrackList } from '@/components/TrackList'
 import { useCachedData } from '@/hooks/useCachedData'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
+import { useDiscoverySearch, albumFilterFunction } from '@/hooks/useDiscoverySearch'
 
 type DiggingTab = 'tracks' | 'albums'
 
@@ -65,6 +66,13 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
     }
   )
 
+  // Search hook for albums only
+  const albumsSearch = useDiscoverySearch({
+    data: albums || [],
+    filterFunction: albumFilterFunction,
+    setCurrentPage: setPage,
+  })
+
   // Handle clicking an album to navigate to album page
   const handleAlbumClick = async (album: DiscoverAlbum) => {
     increment()
@@ -100,6 +108,10 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
 
   useEffect(() => {
     setPage(1)
+    // Clear search when switching tabs
+    if (activeTab === 'albums') {
+      albumsSearch.clearSearch()
+    }
   }, [activeTab])
 
   useEffect(() => {
@@ -108,6 +120,7 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
 
   return (
     <div className="w-full space-y-0">
+
       {activeTab === 'tracks' && (
         <div>
           {/* Sync Tracks Button and Curator Filter */}
@@ -243,31 +256,71 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
 
       {activeTab === 'albums' && (
         <div>
-          {/* Sync Albums Button */}
-          <div className="flex justify-center pb-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              className="text-xs text-slate-500 hover:text-white flex items-center gap-1.5"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Sync Albums
-            </Button>
+          {/* Search Bar and Sync Button */}
+          <div className="px-2 pt-4 pb-3">
+            <div className="flex items-center gap-3">
+              {/* Search Input - 80% width */}
+              <div className="relative flex-1 min-w-0" style={{ flexBasis: '80%' }}>
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search albums..."
+                  value={albumsSearch.searchQuery}
+                  onChange={(e) => albumsSearch.setSearchQuery(e.target.value)}
+                  className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
+                />
+                {albumsSearch.isSearchActive && (
+                  <button
+                    onClick={albumsSearch.clearSearch}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 hover:text-white"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Sync Albums Button - 20% width */}
+              <div className="flex-shrink-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefresh}
+                  className="text-xs text-slate-500 hover:text-white flex items-center gap-1.5 h-10 px-4"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Sync Albums
+                </Button>
+              </div>
+            </div>
+
+            {/* Results count */}
+            {albumsSearch.isSearchActive && (
+              <div className="text-xs text-slate-400 mt-2 px-1">
+                Showing {albumsSearch.resultsCount} results for "{albumsSearch.searchQuery}"
+              </div>
+            )}
           </div>
 
           {!albums || albums.length === 0 ? (
             <div className="text-center text-slate-400 py-12">
               No albums available yet. Check back soon.
             </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {albums
-                  .filter((album) => !hiddenAlbums.has(`${album.album}-${album.artist}`))
-                  .slice((page - 1) * pageSize, page * pageSize)
-                  .map((album, index) => (
+          ) : albumsSearch.isSearchActive && albumsSearch.resultsCount === 0 ? (
+            <div className="text-center text-slate-400 py-12">
+              No albums found matching "{albumsSearch.searchQuery}". Try a different search term.
+            </div>
+          ) : (() => {
+              const filteredAlbums = albumsSearch.filteredData
+                .filter((album) => !hiddenAlbums.has(`${album.album}-${album.artist}`))
+
+              return (
+                <>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {filteredAlbums
+                      .slice((page - 1) * pageSize, page * pageSize)
+                      .map((album, index) => (
                     <div
                       key={`${album.album}-${(page - 1) * pageSize + index}`}
                       onClick={() => handleAlbumClick(album)}
@@ -296,40 +349,41 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
                       {album.artist}
                     </p>
                   </div>
-                </div>
-                  ))}
-              </div>
-              {albums.length > pageSize && (
-                <div className="text-xs text-slate-400 flex items-center justify-center gap-3 pt-4 pb-12">
-                  <Button
-                    className="text-xs"
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={page === 1}
-                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  >
-                    Prev
-                  </Button>
-                  <span>
-                    Page {page} of {Math.ceil(albums.length / pageSize)}
-                  </span>
-                  <Button
-                    className="text-xs"
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={page >= Math.ceil(albums.length / pageSize)}
-                    onClick={() =>
-                      setPage((prev) => Math.min(Math.ceil(albums.length / pageSize), prev + 1))
-                    }
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
+                    </div>
+                      ))}
+                  </div>
+                  {filteredAlbums.length > pageSize && (
+                    <div className="text-xs text-slate-400 flex items-center justify-center gap-3 pt-4 pb-12">
+                      <Button
+                        className="text-xs"
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={page === 1}
+                        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                      >
+                        Prev
+                      </Button>
+                      <span>
+                        Page {page} of {Math.ceil(filteredAlbums.length / pageSize)}
+                      </span>
+                      <Button
+                        className="text-xs"
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={page >= Math.ceil(filteredAlbums.length / pageSize)}
+                        onClick={() =>
+                          setPage((prev) => Math.min(Math.ceil(filteredAlbums.length / pageSize), prev + 1))
+                        }
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
         </div>
       )}
     </div>
