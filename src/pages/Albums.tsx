@@ -123,33 +123,41 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
 
       {activeTab === 'tracks' && (
         <div>
-          {/* Sync Tracks Button and Curator Filter */}
-          <div className="flex items-center justify-left gap-3 w-full p-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={handleRefresh}
-              className="text-xs text-slate-500 hover:text-white flex items-center gap-1.5"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Sync Tracks
-            </Button>
+          {/* Curator Filter and Sync Button */}
+          <div className="px-2 pt-4 pb-3">
+            <div className="flex items-center gap-3">
+              {/* Curator Filter - 80% width */}
+              <div className="flex-1 min-w-0" style={{ flexBasis: '80%' }}>
+                <select
+                  value={selectedCurator}
+                  onChange={(e) => setSelectedCurator(e.target.value)}
+                  className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600"
+                >
+                  <option value="all">All Curators</option>
+                  {tracks && Array.from(
+                    new Set(tracks.map(track => track.curator).filter(Boolean))
+                  ).sort().map((curator) => (
+                    <option key={curator} value={curator}>
+                      {curator}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            <select
-              value={selectedCurator}
-              onChange={(e) => setSelectedCurator(e.target.value)}
-              className="bg-slate-800 text-white text-xs border border-slate-700 rounded-md h-9 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-slate-600"
-            >
-              <option value="all">All Curators</option>
-              {tracks && Array.from(
-                new Set(tracks.map(track => track.curator).filter(Boolean))
-              ).sort().map((curator) => (
-                <option key={curator} value={curator}>
-                  {curator}
-                </option>
-              ))}
-            </select>
+              {/* Sync Tracks Button - 20% width */}
+              <div className="flex-shrink-0">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRefresh}
+                  className="text-xs text-slate-500 hover:text-white flex items-center gap-1.5 h-10 px-4"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Sync Tracks
+                </Button>
+              </div>
+            </div>
           </div>
 
           {!tracks || tracks.length === 0 ? (
