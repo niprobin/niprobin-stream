@@ -78,3 +78,25 @@ export function parsePageFromUrl(url?: string): number {
     return 1
   }
 }
+
+/**
+ * Share a track by copying its URL to clipboard
+ * @param hash - The track hash from the backend
+ * @param showNotification - Function to show notification messages
+ */
+export function shareTrack(hash: string, showNotification: (message: string, type: 'success' | 'error') => void): void {
+  if (!hash) {
+    showNotification('Cannot share this track', 'error')
+    return
+  }
+
+  const trackUrl = `${window.location.origin}/play/${hash}`
+
+  try {
+    navigator.clipboard.writeText(trackUrl)
+    showNotification('Track link copied to clipboard', 'success')
+  } catch (err) {
+    console.error('Failed to copy track URL to clipboard:', err)
+    showNotification('Failed to copy link', 'error')
+  }
+}

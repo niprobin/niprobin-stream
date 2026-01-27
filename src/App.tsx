@@ -114,7 +114,7 @@ function AppContent() {
           // Fetch track data from the hash
           const streamResponse = await getTrackByHash(trackHash)
 
-          // Load the track (paused, not playing)
+          // Load the track from shared link (paused, not playing)
           loadTrack({
             id: streamResponse.trackId,
             hashUrl: streamResponse.hashUrl,
@@ -125,7 +125,8 @@ function AppContent() {
             coverArt: streamResponse.cover,
           })
 
-          // Stay on home page when loading from URL
+          // Redirect URL to home page after successful track load
+          window.history.replaceState({}, '', '/')
           setActivePage('home')
         } catch (err) {
           console.error('Failed to load track from URL:', err)

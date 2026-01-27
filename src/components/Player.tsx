@@ -3,8 +3,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Play, Pause, Download, Maximize2, Heart, X, Star, Loader2 } from 'lucide-react'
+import { Play, Pause, Download, Maximize2, Heart, X, Star, Loader2, Share2 } from 'lucide-react'
 import { downloadTrack, likeTrack, rateAlbum, rateDiscoveryAlbum } from '@/services/api'
+import { shareTrack } from '@/utils/urlBuilder'
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
@@ -167,6 +168,15 @@ export function Player() {
     }
   }
 
+  // Share the current track
+  const handleShare = () => {
+    if (!currentTrack?.hashUrl) {
+      showNotification('Cannot share this track', 'error')
+      return
+    }
+    shareTrack(currentTrack.hashUrl, showNotification)
+  }
+
   // Handle clicking a track from the album tracklist
   const handlePlayAlbumTrack = async (track: AlbumTrackItem) => {
     if (!albumInfo) return
@@ -309,91 +319,72 @@ export function Player() {
               </div>
 
               {/* Right: Buttons */}
-              <div className="flex justify-end gap-2">
-                {isAuthenticated && currentTrack && (
+              <div className="flex justify-end items-center gap-3">
+                {/* Track Action Buttons - Grouped container */}
+                <div className="flex gap-2 px-2 py-1 rounded-lg bg-slate-800/30">
+                  {isAuthenticated && currentTrack && (
+                    <Button
+                      onClick={() =>
+                        openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)
+                      }
+                      size="icon"
+                      variant="ghost"
+                      className={`text-slate-300 hover:text-red-400 hover:bg-slate-800 ${
+                        isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
+                      }`}
+                      aria-pressed={isTrackLiked(currentTrack.title, currentTrack.artist)}
+                    >
+                      <Heart
+                        className="h-5 w-5"
+                        fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
+                      />
+                    </Button>
+                  )}
                   <Button
-                    onClick={() =>
-                      openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)
-                    }
+                    onClick={handleShare}
                     size="icon"
                     variant="ghost"
-                    className={`text-slate-300 hover:text-red-400 hover:bg-slate-800 ${
-                      isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
-                    }`}
-                    aria-pressed={isTrackLiked(currentTrack.title, currentTrack.artist)}
+                    className="text-white hover:text-blue-400 hover:bg-slate-800"
                   >
-                    <Heart
-                      className="h-5 w-5"
-                      fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
-                    />
+                    <Share2 className="h-5 w-5" />
                   </Button>
-                )}
+                  <Button
+                    onClick={handleDownload}
+                    size="icon"
+                    variant="ghost"
+                    disabled={isGlobalLoading}
+                    className="text-white hover:text-white hover:bg-slate-800"
+                  >
+                    <Download className={`h-5 w-5 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
+                  </Button>
+                </div>
+
+                {/* Player Control Button - Separated */}
                 {hasAlbumContext && (
                   <Button
                     onClick={toggleExpand}
                     size="icon"
                     variant="ghost"
-                    className="text-white hover:text-white hover:bg-slate-800"
+                    className="text-white/70 hover:text-white hover:bg-slate-800"
                   >
                     <Maximize2 className="h-5 w-5" />
                   </Button>
                 )}
-                <Button
-                  onClick={handleDownload}
-                  size="icon"
-                  variant="ghost"
-                  disabled={isGlobalLoading}
-                  className="text-white hover:text-white hover:bg-slate-800"
-                >
-                  <Download className={`h-5 w-5 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
-                </Button>
               </div>
             </div>
 
-            {/* Mobile Layout: Centered */}
-            <div className="md:hidden flex flex-col items-center gap-1 mb-2">
-              {/* Track Info - centered, side by side */}
+            {/* Mobile Layout: Play button left, action buttons right */}
+            <div className="md:hidden flex flex-col gap-1 mb-2">
+              {/* Track Info - centered */}
               <div className="text-center text-sm text-white truncate max-w-full px-4">
                 <span className="font-semibold">{currentTrack.title}</span>
                 <span className="text-slate-400"> – {currentTrack.artist}</span>
               </div>
 
-              {/* Buttons Row */}
-              <div className="flex items-center gap-2 mb-2 mt-2">
-                
-                {/* Like Button */}
-                {isAuthenticated && currentTrack && (
-                  <Button
-                    onClick={() =>
-                      openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)
-                    }
-                    size="icon"
-                    variant="ghost"
-                    className={`text-white hover:text-red-400 hover:bg-slate-800 ${
-                      isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
-                    }`}
-                    aria-pressed={isTrackLiked(currentTrack.title, currentTrack.artist)}
-                  >
-                    <Heart
-                      className="h-5 w-5"
-                      fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
-                    />
-                  </Button>
-                )}
+              {/* Buttons Row: Play on left, actions on right */}
+              <div className="flex items-center justify-between mb-2 mt-2">
 
-                {/* Show Album Button */}
-                {hasAlbumContext && (
-                  <Button
-                    onClick={toggleExpand}
-                    size="icon"
-                    variant="ghost"
-                    className="text-white hover:text-white hover:bg-slate-800"
-                  >
-                    <Maximize2 className="h-5 w-5" />
-                  </Button>
-                )}
-                
-                {/* Play/Pause Button */}
+                {/* Left: Play/Pause Button */}
                 <Button
                   onClick={handlePlayPause}
                   size="icon"
@@ -410,17 +401,65 @@ export function Player() {
                   )}
                 </Button>
 
-                {/* Download Button */}
-                <Button
-                  onClick={handleDownload}
-                  size="icon"
-                  variant="ghost"
-                  disabled={isGlobalLoading}
-                  className="text-white hover:text-white hover:bg-slate-800"
-                >
-                  <Download className={`h-5 w-5 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
-                </Button>
-                                
+                {/* Right: Action Buttons */}
+                <div className="flex items-center gap-3">
+                  {/* Track Action Buttons - Grouped container */}
+                  <div className="flex gap-2 px-2 py-1 rounded-lg bg-slate-800/30">
+                    {/* Like Button */}
+                    {isAuthenticated && currentTrack && (
+                      <Button
+                        onClick={() =>
+                          openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)
+                        }
+                        size="icon"
+                        variant="ghost"
+                        className={`text-white hover:text-red-400 hover:bg-slate-800 ${
+                          isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
+                        }`}
+                        aria-pressed={isTrackLiked(currentTrack.title, currentTrack.artist)}
+                      >
+                        <Heart
+                          className="h-5 w-5"
+                          fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
+                        />
+                      </Button>
+                    )}
+
+                    {/* Share Button */}
+                    <Button
+                      onClick={handleShare}
+                      size="icon"
+                      variant="ghost"
+                      className="text-white hover:text-blue-400 hover:bg-slate-800"
+                    >
+                      <Share2 className="h-5 w-5" />
+                    </Button>
+
+                    {/* Download Button */}
+                    <Button
+                      onClick={handleDownload}
+                      size="icon"
+                      variant="ghost"
+                      disabled={isGlobalLoading}
+                      className="text-white hover:text-white hover:bg-slate-800"
+                    >
+                      <Download className={`h-5 w-5 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
+                    </Button>
+                  </div>
+
+                  {/* Player Control Button - Separated */}
+                  {hasAlbumContext && (
+                    <Button
+                      onClick={toggleExpand}
+                      size="icon"
+                      variant="ghost"
+                      className="text-white/70 hover:text-white hover:bg-slate-800"
+                    >
+                      <Maximize2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
               </div>
             </div>
 
