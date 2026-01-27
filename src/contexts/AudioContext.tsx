@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { getStreamUrl } from '@/services/api'
-import { buildTrackUrl } from '@/utils/urlBuilder'
 
 // TypeScript: Define what a Track looks like
 type Track = {
@@ -40,7 +39,7 @@ type AudioContextType = {
   duration: number
   volume: number
   albumTracks: AlbumTrackItem[]
-  albumInfo: { name: string; artist: string; cover: string } | null
+  albumInfo: { name: string; artist: string; cover: string; id?: string } | null
   loadingState: AudioLoadingState
   play: (track: Track) => void
   pause: () => void
@@ -49,7 +48,7 @@ type AudioContextType = {
   setVolume: (volume: number) => void
   setAlbumContext: (
     tracks: AlbumTrackItem[],
-    albumInfo: { name: string; artist: string; cover: string },
+    albumInfo: { name: string; artist: string; cover: string; id?: string },
     options?: { expand?: boolean; loadFirst?: boolean },
   ) => void
   albumAutoExpand?: boolean
@@ -70,7 +69,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0)
   const [volume, setVolumeState] = useState(1) // 0 to 1
   const [albumTracks, setAlbumTracks] = useState<AlbumTrackItem[]>([])
-  const [albumInfo, setAlbumInfo] = useState<{ name: string; artist: string; cover: string } | null>(null)
+  const [albumInfo, setAlbumInfo] = useState<{ name: string; artist: string; cover: string; id?: string } | null>(null)
   const [albumAutoExpand, setAlbumAutoExpand] = useState(true)
   const [loadingState, setLoadingState] = useState<AudioLoadingState>({ status: 'idle' })
 
@@ -98,11 +97,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       // Simple loading state: set to buffering when starting playback
       setLoadingState({ status: 'buffering', trackId: track.id })
 
-      // Update URL to reflect current track
-      if (track.hashUrl) {
-        const trackUrl = buildTrackUrl(track.hashUrl)
-        window.history.pushState({}, '', trackUrl)
-      }
 
       // Update Media Session metadata/controls for current track
       if ('mediaSession' in navigator) {
@@ -279,11 +273,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       setCurrentTrack(track)
       setIsPlaying(false)
 
-      // Update URL to reflect current track
-      if (track.hashUrl) {
-        const trackUrl = buildTrackUrl(track.hashUrl)
-        window.history.pushState({}, '', trackUrl)
-      }
 
       // Initialize audio element with source but don't play
       if (typeof Audio === 'undefined') return
@@ -313,7 +302,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // Function: Set album context with tracklist
   const setAlbumContext = (
     tracks: AlbumTrackItem[],
-    info: { name: string; artist: string; cover: string },
+    info: { name: string; artist: string; cover: string; id?: string },
     options?: { expand?: boolean; loadFirst?: boolean },
   ) => {
     setAlbumTracks(tracks)

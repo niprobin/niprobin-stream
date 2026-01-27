@@ -55,7 +55,7 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
             artist: t.artist,
             'track-number': t['track-number'],
           })),
-          { name: data.album, artist: data.artist, cover: data.cover },
+          { name: data.album, artist: data.artist, cover: data.cover, id: data.id },
           { expand: false, loadFirst: false }
         )
       } catch (err) {

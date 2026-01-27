@@ -4,7 +4,7 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Play, Pause, Download, Maximize2, Heart, X, Star, Loader2 } from 'lucide-react'
-import { downloadTrack, likeTrack, rateAlbum } from '@/services/api'
+import { downloadTrack, likeTrack, rateAlbum, rateDiscoveryAlbum } from '@/services/api'
 import { useState, useEffect, useRef, type FormEvent } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
@@ -251,11 +251,23 @@ export function Player() {
     }
     setAlbumRating(value)
     try {
-      const response = await rateAlbum({
-        album: albumInfo.name,
-        artist: albumInfo.artist,
-        rating: value,
-      })
+      let response
+      if (albumInfo.id) {
+        // Discovery album with MD5 hash ID
+        response = await rateDiscoveryAlbum({
+          id: albumInfo.id,
+          album: albumInfo.name,
+          artist: albumInfo.artist,
+          rating: value,
+        })
+      } else {
+        // Regular album without ID
+        response = await rateAlbum({
+          album: albumInfo.name,
+          artist: albumInfo.artist,
+          rating: value,
+        })
+      }
       showNotification(response.message, response.status)
     } catch (err) {
       console.error('Failed to rate album:', err)

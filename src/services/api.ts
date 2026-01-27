@@ -35,6 +35,7 @@ export type AlbumResponse = {
   album: string
   artist: string
   cover: string
+  id?: string // MD5 hash ID when available
 }
 
 // Type for stream response
@@ -66,6 +67,13 @@ type RateAlbumPayload = {
   rating: number
 }
 
+type RateDiscoveryAlbumPayload = {
+  id: string // MD5 hash ID required for discovery albums
+  album: string
+  artist: string
+  rating: number
+}
+
 export type LibraryAlbum = {
   album: string
   artist: string
@@ -74,6 +82,7 @@ export type LibraryAlbum = {
 }
 
 export type DiscoverAlbum = {
+  id: string // MD5 hash ID for rate/hide operations
   album: string
   artist: string
   cover_url: string
@@ -242,6 +251,7 @@ export async function getAlbumById(albumId: number): Promise<AlbumResponse> {
     album: data.album || (tracks.length > 0 ? tracks[0].album || '' : ''),
     artist: data.artist || (tracks.length > 0 ? tracks[0].artist : ''),
     cover: data.cover || (tracks.length > 0 ? tracks[0].cover || '' : ''),
+    id: data.id, // Include MD5 hash ID if present
   }
 }
 
@@ -262,6 +272,22 @@ export async function likeTrack(payload: LikeTrackPayload): Promise<LikeTrackRes
 }
 
 export async function rateAlbum(payload: RateAlbumPayload): Promise<LikeTrackResponse> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/rate-album', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  const rawBody = await response.text()
+  return parseApiResponse(response, rawBody, {
+    successMessage: 'Rating saved',
+    errorMessage: 'Failed to rate album',
+  })
+}
+
+export async function rateDiscoveryAlbum(payload: RateDiscoveryAlbumPayload): Promise<LikeTrackResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/rate-album', {
     method: 'POST',
     headers: {
@@ -367,6 +393,12 @@ type HideAlbumPayload = {
   artist: string
 }
 
+type HideDiscoveryAlbumPayload = {
+  id: string // MD5 hash ID required for discovery albums
+  album: string
+  artist: string
+}
+
 export async function hideAlbum(payload: HideAlbumPayload): Promise<void> {
   const response = await fetch('https://n8n.niprobin.com/webhook/hide-album', {
     method: 'POST',
@@ -378,6 +410,20 @@ export async function hideAlbum(payload: HideAlbumPayload): Promise<void> {
 
   if (!response.ok) {
     throw new Error('Failed to hide album')
+  }
+}
+
+export async function hideDiscoveryAlbum(payload: HideDiscoveryAlbumPayload): Promise<void> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/hide-album', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to hide discovery album')
   }
 }
 

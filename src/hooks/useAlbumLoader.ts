@@ -1,4 +1,4 @@
-import { getAlbumTracks } from '@/services/api'
+import { getAlbumById } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
@@ -19,24 +19,23 @@ export function useAlbumLoader() {
 
   const loadAlbum = async (
     albumId: number,
-    albumName: string,
-    artistName: string,
     coverUrl?: string,
     options: AlbumLoaderOptions = { expand: false, loadFirst: true }
   ) => {
     increment()
 
     try {
-      // Fetch album tracks
-      const tracks = await getAlbumTracks(albumId, albumName, artistName)
+      // Fetch album data including tracks and metadata (with potential ID)
+      const albumData = await getAlbumById(albumId)
 
       // Populate the player with album context (doesn't auto-play unless configured)
       setAlbumContext(
-        tracks,
+        albumData.tracks,
         {
-          name: albumName,
-          artist: artistName,
-          cover: coverUrl || '',
+          name: albumData.album,
+          artist: albumData.artist,
+          cover: albumData.cover || coverUrl || '',
+          id: albumData.id, // Include MD5 hash ID if present
         },
         options
       )

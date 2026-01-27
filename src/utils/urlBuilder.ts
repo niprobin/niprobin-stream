@@ -40,3 +40,41 @@ export function extractAlbumIdFromPath(path: string): number | null {
   const match = path.match(/^\/album\/(\d+)$/)
   return match ? parseInt(match[1], 10) : null
 }
+
+/**
+ * Build a digging URL with optional page parameter
+ * @param tab - The digging tab ('tracks' or 'albums')
+ * @param page - Optional page number (defaults to 1, omitted from URL if 1)
+ * @returns The path to the digging page (e.g., "/digging/albums" or "/digging/albums?page=3")
+ */
+export function buildDiggingUrl(tab: 'tracks' | 'albums', page?: number): string {
+  const basePath = `/digging/${tab}`
+  if (!page || page <= 1) {
+    return basePath
+  }
+  return `${basePath}?page=${page}`
+}
+
+/**
+ * Parse page number from URL query parameters
+ * @param url - The full URL or search params string (e.g., "?page=3" or "https://example.com/path?page=3")
+ * @returns The page number or 1 if not found or invalid
+ */
+export function parsePageFromUrl(url?: string): number {
+  if (!url) return 1
+
+  try {
+    // Handle both full URLs and search param strings
+    const searchParams = url.includes('?')
+      ? new URLSearchParams(url.split('?')[1])
+      : new URLSearchParams(url)
+
+    const pageParam = searchParams.get('page')
+    if (!pageParam) return 1
+
+    const pageNumber = parseInt(pageParam, 10)
+    return isNaN(pageNumber) || pageNumber < 1 ? 1 : pageNumber
+  } catch {
+    return 1
+  }
+}

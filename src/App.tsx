@@ -11,7 +11,7 @@ import { LogIn } from 'lucide-react'
 import { AlbumsPage } from './pages/Albums'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
-import { extractTrackHashFromPath, extractAlbumIdFromPath } from './utils/urlBuilder'
+import { extractTrackHashFromPath, extractAlbumIdFromPath, parsePageFromUrl, buildDiggingUrl } from './utils/urlBuilder'
 import { getTrackByHash } from './services/api'
 import { AlbumPage } from './pages/Album'
 
@@ -89,12 +89,15 @@ function AppContent() {
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
+  const [diggingPage, setDiggingPage] = useState<number>(1)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const syncFromLocation = async () => {
       const path = window.location.pathname
+      const search = window.location.search
+      console.log(`syncFromLocation: path=${path}, search=${search}`)
 
       // Check if this is an album URL (/album/:id)
       const albumId = extractAlbumIdFromPath(path)
@@ -133,11 +136,27 @@ function AppContent() {
         return
       }
 
-      // Existing page routing logic
-      const wantsDigging = path === '/digging'
-      if (wantsDigging) {
+      // Existing page routing logic - check pathname only (no query params)
+      const isDiggingRoute = path === '/digging' || path === '/digging/tracks' || path === '/digging/albums'
+      console.log(`syncFromLocation: isDiggingRoute=${isDiggingRoute}`)
+      if (isDiggingRoute) {
         if (isAuthenticated) {
           setActivePage('digging')
+
+          // Parse page from URL query parameters
+          const currentPage = parsePageFromUrl(window.location.search)
+          console.log(`syncFromLocation: parsed page=${currentPage}`)
+          setDiggingPage(currentPage)
+
+          // Set tab based on URL
+          if (path === '/digging/albums') {
+            setDiggingTab('albums')
+          } else if (path === '/digging/tracks') {
+            setDiggingTab('tracks')
+          } else {
+            // Default /digging to tracks
+            setDiggingTab('tracks')
+          }
         } else {
           window.history.replaceState({}, '', '/')
           setActivePage('home')
@@ -155,16 +174,26 @@ function AppContent() {
     }
   }, [isAuthenticated, loadTrack])
 
-  const navigate = (page: 'home' | 'digging' | 'album', albumId?: number) => {
+  const navigate = (page: 'home' | 'digging' | 'album', albumId?: number, diggingTabOverride?: 'tracks' | 'albums', pageNumber?: number) => {
     if (page === 'digging' && !isAuthenticated) {
       return
     }
 
     let path = '/'
-    if (page === 'digging') path = '/digging'
-    else if (page === 'album' && albumId) path = `/album/${albumId}`
+    if (page === 'digging') {
+      const targetTab = diggingTabOverride || diggingTab
+      const targetPage = pageNumber !== undefined ? pageNumber : diggingPage
+      path = buildDiggingUrl(targetTab, targetPage)
+      console.log(`navigate: building digging URL - tab=${targetTab}, page=${targetPage}, result=${path}`)
+    } else if (page === 'album' && albumId) {
+      path = `/album/${albumId}`
+    }
 
-    if (typeof window !== 'undefined' && window.location.pathname !== path) {
+    const currentUrl = window.location.pathname + window.location.search
+    console.log(`navigate: currentUrl=${currentUrl}, newPath=${path}`)
+
+    if (typeof window !== 'undefined' && currentUrl !== path) {
+      console.log(`navigate: updating URL from ${currentUrl} to ${path}`)
       window.history.pushState({}, '', path)
     }
 
@@ -173,11 +202,32 @@ function AppContent() {
     } else {
       setCurrentAlbumId(null)
     }
+
+    if (page === 'digging') {
+      if (diggingTabOverride) {
+        setDiggingTab(diggingTabOverride)
+      }
+      if (pageNumber !== undefined) {
+        setDiggingPage(pageNumber)
+      }
+    }
+
     setActivePage(page)
+  }
+
+  const navigateToDiggingTab = (tab: 'tracks' | 'albums', page?: number) => {
+    navigate('digging', undefined, tab, page !== undefined ? page : 1)
   }
 
   const handleAlbumBack = () => {
     window.history.back()
+  }
+
+  const navigateToDiggingPage = (page: number) => {
+    // Validate page number - ensure it's at least 1
+    const validPage = Math.max(1, Math.floor(page))
+    console.log(`navigateToDiggingPage: page=${page}, validPage=${validPage}, diggingTab=${diggingTab}`)
+    navigate('digging', undefined, diggingTab, validPage)
   }
 
   return (
@@ -239,7 +289,7 @@ function AppContent() {
                           type="button"
                           role="tab"
                           aria-selected={diggingTab === 'tracks'}
-                          onClick={() => setDiggingTab('tracks')}
+                          onClick={() => navigateToDiggingTab('tracks')}
                           className={`px-3 py-2 text-sm font-medium border-b-2 transition ${
                             diggingTab === 'tracks'
                               ? 'border-white text-white'
@@ -252,7 +302,7 @@ function AppContent() {
                           type="button"
                           role="tab"
                           aria-selected={diggingTab === 'albums'}
-                          onClick={() => setDiggingTab('albums')}
+                          onClick={() => navigateToDiggingTab('albums')}
                           className={`px-3 py-2 text-sm font-medium border-b-2 transition ${
                             diggingTab === 'albums'
                               ? 'border-white text-white'
@@ -314,7 +364,7 @@ function AppContent() {
                       type="button"
                       role="tab"
                       aria-selected={diggingTab === 'tracks'}
-                      onClick={() => setDiggingTab('tracks')}
+                      onClick={() => navigateToDiggingTab('tracks')}
                       className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition ${
                         diggingTab === 'tracks'
                           ? 'border-white text-white'
@@ -327,7 +377,7 @@ function AppContent() {
                       type="button"
                       role="tab"
                       aria-selected={diggingTab === 'albums'}
-                      onClick={() => setDiggingTab('albums')}
+                      onClick={() => navigateToDiggingTab('albums')}
                       className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition ${
                         diggingTab === 'albums'
                           ? 'border-white text-white'
@@ -353,7 +403,7 @@ function AppContent() {
             {activePage === 'album' && currentAlbumId ? (
               <AlbumPage key={currentAlbumId} albumId={currentAlbumId} onBack={handleAlbumBack} />
             ) : activePage === 'digging' ? (
-              <AlbumsPage activeTab={diggingTab} onTabChange={setDiggingTab} />
+              <AlbumsPage activeTab={diggingTab} currentPage={diggingPage} onPageChange={navigateToDiggingPage} />
             ) : (
               <Search />
             )}

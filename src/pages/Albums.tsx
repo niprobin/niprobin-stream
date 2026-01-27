@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { RefreshCw, X, Search } from 'lucide-react'
-import { getAlbumsToDiscover, hideAlbum, getTracksToDiscover, hideTrack, getAlbumTracks, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
+import { getAlbumsToDiscover, hideDiscoveryAlbum, getTracksToDiscover, hideTrack, getAlbumTracks, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { TrackList } from '@/components/TrackList'
@@ -19,12 +19,14 @@ const CACHE_DURATION_MS = 6 * 60 * 60 * 1000 // 6 hours
 
 interface AlbumsPageProps {
   activeTab: DiggingTab
-  onTabChange: (tab: DiggingTab) => void
+  currentPage: number
+  onPageChange: (page: number) => void
 }
 
-export function AlbumsPage({ activeTab }: AlbumsPageProps) {
-  const [page, setPage] = useState(1)
+export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageProps) {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  console.log(`AlbumsPage: activeTab=${activeTab}, currentPage=${currentPage}`)
   const [selectedCurator, setSelectedCurator] = useState<string>('all')
   const pageSize = 10
 
@@ -34,7 +36,7 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
 
   // Use hide item hooks for albums and tracks
   const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem<DiscoverAlbum>(
-    (album) => hideAlbum({ album: album.album, artist: album.artist }),
+    (album) => hideDiscoveryAlbum({ id: album.id, album: album.album, artist: album.artist }),
     (album) => `${album.album}-${album.artist}`
   )
 
@@ -70,7 +72,7 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
   const albumsSearch = useDiscoverySearch({
     data: albums || [],
     filterFunction: albumFilterFunction,
-    setCurrentPage: setPage,
+    setCurrentPage: onPageChange,
   })
 
   // Handle clicking an album to navigate to album page
@@ -107,7 +109,7 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
   }
 
   useEffect(() => {
-    setPage(1)
+    onPageChange(1)
     // Clear search when switching tabs
     if (activeTab === 'albums') {
       albumsSearch.clearSearch()
@@ -115,7 +117,7 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
   }, [activeTab])
 
   useEffect(() => {
-    setPage(1)
+    onPageChange(1)
   }, [selectedCurator])
 
   return (
@@ -174,19 +176,19 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
                   <TrackList
                     variant="album"
                     tracks={filteredTracks
-                      .slice((page - 1) * pageSize, page * pageSize)
+                      .slice((currentPage - 1) * pageSize, currentPage * pageSize)
                       .map((track, index) => ({
                         track: track.track,
-                        'track-id': (page - 1) * pageSize + index + 1,
+                        'track-id': (currentPage - 1) * pageSize + index + 1,
                         artist: track.artist,
-                        'track-number': (page - 1) * pageSize + index + 1,
+                        'track-number': (currentPage - 1) * pageSize + index + 1,
                       }))}
                     loadingTrackId={loadingTrackId}
                     onSelect={(trackItem) => {
                       // Find the original DiscoverTrack by matching track and artist
-                      const pageStartIndex = (page - 1) * pageSize
+                      const pageStartIndex = (currentPage - 1) * pageSize
                       const trackIndex = trackItem['track-id'] - pageStartIndex - 1
-                      const originalTrack = filteredTracks.slice(pageStartIndex, page * pageSize)[trackIndex]
+                      const originalTrack = filteredTracks.slice(pageStartIndex, currentPage * pageSize)[trackIndex]
                       if (originalTrack) {
                         // Use the trackItem's track-id to ensure loading state consistency
                         playTrack(
@@ -202,9 +204,9 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
                       }
                     }}
                     renderIndicator={(trackItem) => {
-                      const pageStartIndex = (page - 1) * pageSize
+                      const pageStartIndex = (currentPage - 1) * pageSize
                       const trackIndex = trackItem['track-id'] - pageStartIndex - 1
-                      const originalTrack = filteredTracks.slice(pageStartIndex, page * pageSize)[trackIndex]
+                      const originalTrack = filteredTracks.slice(pageStartIndex, currentPage * pageSize)[trackIndex]
                       return (
                         <div className="text-xs text-slate-400 pr-2">
                           {originalTrack?.curator}
@@ -212,9 +214,9 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
                       )
                     }}
                     renderAction={(trackItem) => {
-                      const pageStartIndex = (page - 1) * pageSize
+                      const pageStartIndex = (currentPage - 1) * pageSize
                       const trackIndex = trackItem['track-id'] - pageStartIndex - 1
-                      const originalTrack = filteredTracks.slice(pageStartIndex, page * pageSize)[trackIndex]
+                      const originalTrack = filteredTracks.slice(pageStartIndex, currentPage * pageSize)[trackIndex]
                       if (!originalTrack) return null
                       return (
                         <button
@@ -234,22 +236,22 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        disabled={page === 1}
-                        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                       >
                         Prev
                       </Button>
                       <span>
-                        Page {page} of {Math.ceil(filteredTracks.length / pageSize)}
+                        Page {currentPage} of {Math.ceil(filteredTracks.length / pageSize)}
                       </span>
                       <Button
                         className="text-xs"
                         type="button"
                         variant="ghost"
                         size="sm"
-                        disabled={page >= Math.ceil(filteredTracks.length / pageSize)}
+                        disabled={currentPage >= Math.ceil(filteredTracks.length / pageSize)}
                         onClick={() =>
-                          setPage((prev) => Math.min(Math.ceil(filteredTracks.length / pageSize), prev + 1))
+                          onPageChange(Math.min(Math.ceil(filteredTracks.length / pageSize), currentPage + 1))
                         }
                       >
                         Next
@@ -327,10 +329,10 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     {filteredAlbums
-                      .slice((page - 1) * pageSize, page * pageSize)
+                      .slice((currentPage - 1) * pageSize, currentPage * pageSize)
                       .map((album, index) => (
                     <div
-                      key={`${album.album}-${(page - 1) * pageSize + index}`}
+                      key={`${album.album}-${(currentPage - 1) * pageSize + index}`}
                       onClick={() => handleAlbumClick(album)}
                       className="group cursor-pointer"
                     >
@@ -367,22 +369,22 @@ export function AlbumsPage({ activeTab }: AlbumsPageProps) {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        disabled={page === 1}
-                        onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                       >
                         Prev
                       </Button>
                       <span>
-                        Page {page} of {Math.ceil(filteredAlbums.length / pageSize)}
+                        Page {currentPage} of {Math.ceil(filteredAlbums.length / pageSize)}
                       </span>
                       <Button
                         className="text-xs"
                         type="button"
                         variant="ghost"
                         size="sm"
-                        disabled={page >= Math.ceil(filteredAlbums.length / pageSize)}
+                        disabled={currentPage >= Math.ceil(filteredAlbums.length / pageSize)}
                         onClick={() =>
-                          setPage((prev) => Math.min(Math.ceil(filteredAlbums.length / pageSize), prev + 1))
+                          onPageChange(Math.min(Math.ceil(filteredAlbums.length / pageSize), currentPage + 1))
                         }
                       >
                         Next
