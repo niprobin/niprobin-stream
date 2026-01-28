@@ -37,12 +37,14 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   // Use hide item hooks for albums and tracks
   const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem<DiscoverAlbum>(
     (album) => hideDiscoveryAlbum({ id: album.id, album: album.album, artist: album.artist }),
-    (album) => `${album.album}-${album.artist}`
+    (album) => `${album.album}-${album.artist}`,
+    { persistentCacheKey: 'niprobin-hidden-albums' }
   )
 
   const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem<DiscoverTrack>(
     (track) => hideTrack({ track: track.track, artist: track.artist, 'spotify-id': track['spotify-id'] }),
-    (track) => `${track.track}-${track.artist}`
+    (track) => `${track.track}-${track.artist}`,
+    { persistentCacheKey: 'niprobin-hidden-tracks' }
   )
 
   // Use cached data hooks for albums and tracks
