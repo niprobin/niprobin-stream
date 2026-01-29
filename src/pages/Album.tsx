@@ -138,7 +138,7 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
       await hideAlbumItem({
         album: albumName,
         artist: artistName,
-        id: albumId_md5
+        id: albumId.toString()
       })
 
       showNotification('Album hidden successfully', 'success')
