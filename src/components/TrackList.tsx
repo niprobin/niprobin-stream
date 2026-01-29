@@ -99,12 +99,11 @@ export function TrackList(props: TrackListProps) {
       const result = await likeTrack({
         track: likeModalTrack.title,
         artist: likeModalTrack.artist,
-        album: undefined,
-        discogs: undefined,
-        playlist: selectedPlaylist
+        playlist: selectedPlaylist,
+        'spotify-id': ''
       })
 
-      if (result.success) {
+      if (result.status === 'success') {
         // Update localStorage
         const likedTracks = JSON.parse(localStorage.getItem('likedTracks') || '[]')
         const newTrack = {
@@ -122,7 +121,7 @@ export function TrackList(props: TrackListProps) {
           const track = data.find(t => (t as AlbumTrackItem)['track-id'].toString() === likeModalTrack.id)
           if (track) props.onLikeTrack(track as AlbumTrackItem)
         }
-      } else {
+      } else if (result.status === 'error') {
         showNotification(result.message || 'Failed to add track to playlist', 'error')
       }
     } catch (error) {
