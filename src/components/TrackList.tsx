@@ -1,31 +1,8 @@
 import type { AlbumTrackItem } from '@/contexts/AudioContext'
 import { Loader2, Heart, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useState, type FormEvent } from 'react'
-import { likeTrack } from '@/services/api'
-import { useNotification } from '@/contexts/NotificationContext'
-
-const PLAYLISTS = [
-  'Afrobeat & Highlife',
-  'Beats',
-  'Bossa Nova',
-  'Brazilian Music',
-  'Disco Dancefloor',
-  'DNB',
-  'Downtempo Trip-hop',
-  'Funk & Rock',
-  'Hip-hop',
-  'House Chill',
-  'House Dancefloor',
-  'Jazz Classic',
-  'Jazz Funk',
-  'Latin Music',
-  'Morning Chill',
-  'Neo Soul',
-  'Reggae',
-  'RNB Mood',
-  'Soul Oldies',
-] as const
+import { useLikeModal } from '@/hooks/useLikeModal'
+import type { FormEvent } from 'react'
 
 type BaseTrack = {
   id: string
@@ -61,73 +38,28 @@ type TrackListProps = (AlbumListProps | SearchListProps)
 export function TrackList(props: TrackListProps) {
   const isAlbumVariant = props.variant === 'album'
   const data = props.tracks
-  const { showNotification } = useNotification()
 
-  // Modal state for like functionality (moved from Player)
-  const [isLikeModalOpen, setIsLikeModalOpen] = useState(false)
-  const [likeModalTrack, setLikeModalTrack] = useState<{ id: string; title: string; artist: string } | null>(null)
-  const [selectedPlaylist, setSelectedPlaylist] = useState<string>(PLAYLISTS[0])
-  const [isSubmittingLike, setIsSubmittingLike] = useState(false)
+  const {
+    isLikeModalOpen,
+    likeModalTrack,
+    selectedPlaylist,
+    isSubmittingLike,
+    PLAYLISTS,
+    isTrackLiked,
+    openLikeModal,
+    closeLikeModal,
+    handleSubmitLike: handleModalSubmit,
+    setSelectedPlaylist,
+  } = useLikeModal()
 
-  // Helper function to check if track is liked (same logic as Player)
-  const isTrackLiked = (title?: string, artist?: string) => {
-    if (!title || !artist) return false
-    const likedTracks = JSON.parse(localStorage.getItem('likedTracks') || '[]')
-    return likedTracks.some((track: any) => track.title === title && track.artist === artist)
-  }
-
-  // Modal handlers
-  const openLikeModal = (trackId: string, title: string, artist: string) => {
-    setLikeModalTrack({ id: trackId, title, artist })
-    setSelectedPlaylist(PLAYLISTS[0])
-    setIsLikeModalOpen(true)
-  }
-
-  const closeLikeModal = () => {
-    setIsLikeModalOpen(false)
-    setLikeModalTrack(null)
-    setSelectedPlaylist(PLAYLISTS[0])
-    setIsSubmittingLike(false)
-  }
-
+  // Wrapper to handle parent callback after successful like
   const handleSubmitLike = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!likeModalTrack || !selectedPlaylist) return
+    const result = await handleModalSubmit(event)
 
-    setIsSubmittingLike(true)
-    try {
-      const result = await likeTrack({
-        track: likeModalTrack.title,
-        artist: likeModalTrack.artist,
-        playlist: selectedPlaylist,
-        'spotify-id': ''
-      })
-
-      if (result.status === 'success') {
-        // Update localStorage
-        const likedTracks = JSON.parse(localStorage.getItem('likedTracks') || '[]')
-        const newTrack = {
-          title: likeModalTrack.title,
-          artist: likeModalTrack.artist,
-          playlist: selectedPlaylist
-        }
-        const updatedTracks = [...likedTracks, newTrack]
-        localStorage.setItem('likedTracks', JSON.stringify(updatedTracks))
-
-        showNotification(`Added "${likeModalTrack.title}" to ${selectedPlaylist}`, 'success')
-
-        // Call the parent's like handler if provided
-        if (isAlbumVariant && props.onLikeTrack) {
-          const track = data.find(t => (t as AlbumTrackItem)['track-id'].toString() === likeModalTrack.id)
-          if (track) props.onLikeTrack(track as AlbumTrackItem)
-        }
-      } else if (result.status === 'error') {
-        showNotification(result.message || 'Failed to add track to playlist', 'error')
-      }
-    } catch (error) {
-      showNotification('Failed to add track to playlist', 'error')
-    } finally {
-      closeLikeModal()
+    // Call the parent's like handler if provided and like was successful
+    if (result?.success && isAlbumVariant && props.onLikeTrack && likeModalTrack) {
+      const track = data.find(t => (t as AlbumTrackItem)['track-id'].toString() === likeModalTrack.id)
+      if (track) props.onLikeTrack(track as AlbumTrackItem)
     }
   }
 

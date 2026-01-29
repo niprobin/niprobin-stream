@@ -3,12 +3,13 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Play, Pause, Download, Maximize2, Heart, Star, Loader2, Share2 } from 'lucide-react'
-import { downloadTrack, likeTrack, rateAlbum, rateDiscoveryAlbum } from '@/services/api'
+import { Play, Pause, Download, Maximize2, Heart, Star, Loader2, Share2, X } from 'lucide-react'
+import { downloadTrack, rateAlbum, rateDiscoveryAlbum } from '@/services/api'
 import { shareTrack } from '@/utils/urlBuilder'
 import { useState, useEffect, useRef } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
+import { useLikeModal } from '@/hooks/useLikeModal'
 import { TrackList } from '@/components/TrackList'
 
 // PLAYLISTS constant and LikeModalTrack type moved to TrackList component
@@ -19,8 +20,19 @@ export function Player() {
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
   const { playTrack, loadingTrackId, loadingState } = useTrackPlayer()
+  const {
+    isLikeModalOpen,
+    likeModalTrack,
+    selectedPlaylist,
+    isSubmittingLike,
+    PLAYLISTS,
+    isTrackLiked,
+    openLikeModal,
+    closeLikeModal,
+    handleSubmitLike,
+    setSelectedPlaylist,
+  } = useLikeModal()
   const [isExpanded, setIsExpanded] = useState(false)
-  const [likedTrackIds, setLikedTrackIds] = useState<string[]>([])
   const [albumRating, setAlbumRating] = useState(0)
   const playerRef = useRef<HTMLDivElement>(null)
 
@@ -164,47 +176,13 @@ export function Player() {
     setIsExpanded(!isExpanded)
   }
 
-  const isTrackLiked = (title?: string, artist?: string) => {
-    if (!title || !artist) return false
-    // Use track+artist combination for more reliable like tracking
-    const likeKey = `${title}|${artist}`
-    return likedTrackIds.includes(likeKey)
-  }
+  // isTrackLiked function now comes from useLikeModal hook
 
   // Like track handler for TrackList component
   const handleLikeTrack = (track: AlbumTrackItem) => {
-    // The TrackList component handles the full like flow
+    // The TrackList component handles the full like flow using useLikeModal hook
     // This handler is called after successful like operations
-    const likeKey = `${track.track}|${track.artist}`
-    setLikedTrackIds((prev) =>
-      prev.includes(likeKey) ? prev : [...prev, likeKey]
-    )
-  }
-
-  // Simple like handler for player controls
-  const handleLikeCurrentTrack = async () => {
-    if (!currentTrack || !isAuthenticated) return
-
-    try {
-      const result = await likeTrack({
-        track: currentTrack.title,
-        artist: currentTrack.artist,
-        playlist: 'House Chill', // Default playlist for quick likes
-        'spotify-id': currentTrack.spotifyId || '',
-      })
-
-      if (result.status === 'success') {
-        const likeKey = `${currentTrack.title}|${currentTrack.artist}`
-        setLikedTrackIds((prev) =>
-          prev.includes(likeKey) ? prev : [...prev, likeKey]
-        )
-        showNotification(result.message, 'success')
-      } else {
-        showNotification(result.message, 'error')
-      }
-    } catch (error) {
-      showNotification('Failed to add track to playlist', 'error')
-    }
+    console.log('Track liked:', track.track, track.artist)
   }
 
   useEffect(() => {
@@ -280,7 +258,7 @@ export function Player() {
                 <div className="flex gap-2 px-2 py-1 rounded-lg bg-slate-800/30">
                   {isAuthenticated && currentTrack && (
                     <Button
-                      onClick={handleLikeCurrentTrack}
+                      onClick={() => openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)}
                       size="icon"
                       variant="ghost"
                       className={`text-slate-300 hover:text-red-400 hover:bg-slate-800 ${
@@ -362,7 +340,7 @@ export function Player() {
                     {/* Like Button */}
                     {isAuthenticated && currentTrack && (
                       <Button
-                        onClick={handleLikeCurrentTrack}
+                        onClick={() => openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)}
                         size="icon"
                         variant="ghost"
                         className={`text-white hover:text-red-400 hover:bg-slate-800 ${
@@ -515,6 +493,75 @@ export function Player() {
       )}
     </div>
 
+    {/* Like Modal */}
+    {isLikeModalOpen && likeModalTrack && (
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+        role="dialog"
+        aria-modal="true"
+      >
+        <form
+          onSubmit={handleSubmitLike}
+          className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase text-slate-400 tracking-wide">Add to playlist</p>
+              <p className="text-white text-lg font-semibold truncate">{likeModalTrack.title}</p>
+              <p className="text-slate-400 text-sm truncate">{likeModalTrack.artist}</p>
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-slate-400 hover:text-white"
+              onClick={closeLikeModal}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+            {PLAYLISTS.map((playlist) => {
+              const isSelected = selectedPlaylist === playlist
+              return (
+                <button
+                  type="button"
+                  key={playlist}
+                  onClick={() => setSelectedPlaylist(playlist)}
+                  className={`text-left text-sm px-3 py-2 rounded-lg border transition-colors ${
+                    isSelected
+                      ? 'border-white bg-white/10 text-white'
+                      : 'border-slate-800 text-slate-300 hover:border-slate-600'
+                  }`}
+                >
+                  {playlist}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              className="text-slate-300 hover:text-white"
+              onClick={closeLikeModal}
+              disabled={isSubmittingLike}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-white text-black hover:bg-white/90"
+              disabled={isSubmittingLike || !selectedPlaylist}
+            >
+              {isSubmittingLike ? 'Saving...' : 'Add'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    )}
 
     </>
   )

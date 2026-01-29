@@ -220,24 +220,20 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
             </Button>
 
             {/* Secondary Actions - grouped */}
-            <div className="flex gap-2 px-2 py-1 rounded-lg bg-slate-800/30">
+            <div className="flex px-1 py-1 rounded-lg bg-slate-800/30">
               <Button
                 onClick={handleShareAlbum}
-                variant="outline"
-                className="rounded-full border-slate-600 text-white hover:bg-slate-800"
+                className="text-white text-center hover:bg-slate-800"
               >
-                <Share2 className="h-5 w-5 mr-2" />
-                Share
+                <Share2 className="h-5 w-5" />
               </Button>
 
               {isAuthenticated && (
                 <Button
                   onClick={handleHideAlbum}
-                  variant="outline"
-                  className="rounded-full border-slate-600 text-white hover:bg-slate-800"
+                  className="text-white text-center hover:bg-slate-800"
                 >
-                  <X className="h-5 w-5 mr-2" />
-                  Hide
+                  <X className="h-5 w-5" />
                 </Button>
               )}
             </div>
