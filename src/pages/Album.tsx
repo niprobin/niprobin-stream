@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useAudio } from '@/contexts/AudioContext'
+import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
@@ -27,6 +27,13 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
   const { playTrack, loadingTrackId } = useTrackPlayer()
+
+  // Like functionality handler
+  const handleLikeTrack = (track: AlbumTrackItem) => {
+    // The TrackList component handles the full like flow including localStorage and API calls
+    // This handler is called after successful like operations for any additional logic
+    console.log('Track liked:', track)
+  }
 
   // Load album data on mount or when albumId changes
   const contextRef = useRef({ increment, decrement, showNotification, setAlbumContext })
@@ -230,13 +237,11 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
           const originalTrack = tracks.find(t => t['track-id'] === trackItem['track-id'])
           if (originalTrack) handlePlayTrack(originalTrack)
         }}
-        renderIndicator={(trackItem) => {
-          const isCurrentTrack = currentTrack?.id === trackItem['track-id'].toString()
-          if (isCurrentTrack && !loadingTrackId) {
-            return <div className="text-white text-xs pr-2">{isPlaying ? '▶' : '❚❚'}</div>
-          }
-          return null
-        }}
+        enableLikeButtons={isAuthenticated}
+        onLikeTrack={handleLikeTrack}
+        currentTrackId={currentTrack?.id}
+        isPlaying={isPlaying}
+        isAuthenticated={isAuthenticated}
       />
     </div>
   )
