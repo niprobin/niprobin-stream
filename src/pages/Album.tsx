@@ -21,7 +21,6 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
   const [artistName, setArtistName] = useState('')
   const [coverUrl, setCoverUrl] = useState('')
   const [albumRating, setAlbumRating] = useState(0)
-  const [albumId_md5, setAlbumId_md5] = useState<string | undefined>()
   const [error, setError] = useState<string | null>(null)
 
   const { currentTrack, isPlaying, setAlbumContext } = useAudio()
@@ -68,7 +67,6 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
         setAlbumName(data.album)
         setArtistName(data.artist)
         setCoverUrl(data.cover)
-        setAlbumId_md5(data.id) // Capture MD5 ID if present
 
         // Set album context for player integration
         contextRef.current.setAlbumContext(
