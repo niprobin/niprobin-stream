@@ -4,10 +4,11 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { getAlbumById, rateAlbum, type AlbumTrack } from '@/services/api'
+import { getAlbumById, rateAlbum, hideAlbum, hideDiscoveryAlbum, type AlbumTrack } from '@/services/api'
 import { Button } from '@/components/ui/button'
 import { TrackList } from '@/components/TrackList'
-import { Play, Star, ArrowLeft, Share2 } from 'lucide-react'
+import { useHideItem } from '@/hooks/useHideItem'
+import { Play, Star, ArrowLeft, Share2, X } from 'lucide-react'
 
 type AlbumPageProps = {
   albumId: number
@@ -20,6 +21,7 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
   const [artistName, setArtistName] = useState('')
   const [coverUrl, setCoverUrl] = useState('')
   const [albumRating, setAlbumRating] = useState(0)
+  const [albumId_md5, setAlbumId_md5] = useState<string | undefined>()
   const [error, setError] = useState<string | null>(null)
 
   const { currentTrack, isPlaying, setAlbumContext } = useAudio()
@@ -27,6 +29,19 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
   const { playTrack, loadingTrackId } = useTrackPlayer()
+
+  // Hide functionality
+  const { hideItem: hideAlbumItem } = useHideItem(
+    (album: { album: string; artist: string; id?: string }) => {
+      if (album.id) {
+        return hideDiscoveryAlbum({ id: album.id, album: album.album, artist: album.artist })
+      } else {
+        return hideAlbum({ album: album.album, artist: album.artist })
+      }
+    },
+    (album) => `${album.album}-${album.artist}`,
+    { persistentCacheKey: 'niprobin-hidden-albums' }
+  )
 
   // Like functionality handler
   const handleLikeTrack = (track: AlbumTrackItem) => {
@@ -53,6 +68,7 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
         setAlbumName(data.album)
         setArtistName(data.artist)
         setCoverUrl(data.cover)
+        setAlbumId_md5(data.id) // Capture MD5 ID if present
 
         // Set album context for player integration
         contextRef.current.setAlbumContext(
@@ -116,6 +132,27 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
     showNotification('Album link copied to clipboard', 'success')
   }
 
+  // Handle hide album
+  const handleHideAlbum = async () => {
+    try {
+      await hideAlbumItem({
+        album: albumName,
+        artist: artistName,
+        id: albumId_md5
+      })
+
+      showNotification('Album hidden successfully', 'success')
+
+      setTimeout(() => {
+        onBack()
+      }, 1000)
+
+    } catch (err) {
+      console.error('Failed to hide album:', err)
+      showNotification('Failed to hide album', 'error')
+    }
+  }
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -171,8 +208,9 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
           </h1>
           <p className="text-lg text-slate-300 mb-4">{artistName}</p>
 
-          {/* Play Button and Rating */}
-          <div className="flex items-center gap-4 justify-center md:justify-start">
+          {/* Desktop Layout */}
+          <div className="hidden md:flex items-center gap-4 justify-start">
+            {/* Play Button - standalone */}
             <Button
               onClick={handlePlayAlbum}
               className="bg-white text-black hover:bg-white/90 rounded-full px-6"
@@ -181,19 +219,33 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
               Play
             </Button>
 
-            <Button
-              onClick={handleShareAlbum}
-              variant="outline"
-              className="rounded-full px-6 border-slate-600 text-white hover:bg-slate-800"
-            >
-              <Share2 className="h-5 w-5 mr-2" />
-              Share
-            </Button>
+            {/* Secondary Actions - grouped */}
+            <div className="flex gap-2 px-2 py-1 rounded-lg bg-slate-800/30">
+              <Button
+                onClick={handleShareAlbum}
+                variant="outline"
+                className="rounded-full border-slate-600 text-white hover:bg-slate-800"
+              >
+                <Share2 className="h-5 w-5 mr-2" />
+                Share
+              </Button>
 
-            {/* Rating (authenticated only) */}
+              {isAuthenticated && (
+                <Button
+                  onClick={handleHideAlbum}
+                  variant="outline"
+                  className="rounded-full border-slate-600 text-white hover:bg-slate-800"
+                >
+                  <X className="h-5 w-5 mr-2" />
+                  Hide
+                </Button>
+              )}
+            </div>
+
+            {/* Rating - separate group */}
             {isAuthenticated && (
               <div
-                className="flex items-center gap-1"
+                className="flex gap-1 px-2 py-1 rounded-lg bg-slate-800/30"
                 role="radiogroup"
                 aria-label="Album rating"
               >
@@ -219,6 +271,75 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
                 })}
               </div>
             )}
+          </div>
+
+          {/* Mobile Layout */}
+          <div className="md:hidden flex flex-col gap-3 items-center">
+            {/* Row 1: Play Button */}
+            <Button
+              onClick={handlePlayAlbum}
+              className="bg-white text-black hover:bg-white/90 rounded-full px-6"
+            >
+              <Play className="h-5 w-5 mr-2" fill="currentColor" />
+              Play
+            </Button>
+
+            {/* Row 2: Secondary actions grouped */}
+            <div className="flex gap-3">
+              <div className="flex gap-2 px-2 py-1 rounded-lg bg-slate-800/30">
+                <Button
+                  onClick={handleShareAlbum}
+                  size="icon"
+                  variant="ghost"
+                  className="text-white hover:bg-slate-800"
+                  aria-label="Share album"
+                >
+                  <Share2 className="h-5 w-5" />
+                </Button>
+
+                {isAuthenticated && (
+                  <Button
+                    onClick={handleHideAlbum}
+                    size="icon"
+                    variant="ghost"
+                    className="text-white hover:bg-slate-800"
+                    aria-label="Hide album"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                )}
+              </div>
+
+              {/* Rating stars - separate group */}
+              {isAuthenticated && (
+                <div
+                  className="flex gap-1 px-2 py-1 rounded-lg bg-slate-800/30"
+                  role="radiogroup"
+                  aria-label="Album rating"
+                >
+                  {[1, 2, 3, 4, 5].map((value) => {
+                    const isActive = albumRating >= value
+                    return (
+                      <Button
+                        key={value}
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className={`h-8 w-8 ${isActive ? 'text-yellow-300' : 'text-slate-500'} hover:text-yellow-300`}
+                        aria-pressed={isActive}
+                        aria-label={`${value} star${value === 1 ? '' : 's'}`}
+                        onClick={() => handleRateAlbum(value)}
+                      >
+                        <Star
+                          className="h-4 w-4"
+                          fill={isActive ? 'currentColor' : 'none'}
+                        />
+                      </Button>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
