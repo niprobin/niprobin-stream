@@ -53,7 +53,7 @@ type LikeTrackPayload = {
   track: string
   artist: string
   playlist: string
-  'spotify-id': string
+  'spotify-id'?: string
 }
 
 export type LikeTrackResponse = {
@@ -92,7 +92,7 @@ export type DiscoverTrack = {
   track: string
   artist: string
   curator: string
-  'spotify-id': string
+  'spotify-id'?: string
 }
 
 // Search for tracks
@@ -430,7 +430,7 @@ export async function hideDiscoveryAlbum(payload: HideDiscoveryAlbumPayload): Pr
 type HideTrackPayload = {
   track: string
   artist: string
-  'spotify-id': string
+  'spotify-id'?: string
 }
 
 export async function hideTrack(payload: HideTrackPayload): Promise<void> {

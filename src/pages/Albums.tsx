@@ -4,6 +4,7 @@ import { RefreshCw, X, Search } from 'lucide-react'
 import { getAlbumsToDiscover, hideDiscoveryAlbum, getTracksToDiscover, hideTrack, getAlbumTracks, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useNotification } from '@/contexts/NotificationContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { TrackList } from '@/components/TrackList'
 import { useCachedData } from '@/hooks/useCachedData'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
@@ -33,6 +34,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { increment, decrement } = useLoading()
   const { showNotification } = useNotification()
+  const { isAuthenticated } = useAuth()
 
   // Use hide item hooks for albums and tracks
   const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem<DiscoverAlbum>(
@@ -42,7 +44,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   )
 
   const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem<DiscoverTrack>(
-    (track) => hideTrack({ track: track.track, artist: track.artist, 'spotify-id': track['spotify-id'] }),
+    (track) => hideTrack({ track: track.track, artist: track.artist }),
     (track) => `${track.track}-${track.artist}`,
     { persistentCacheKey: 'niprobin-hidden-tracks' }
   )
@@ -99,6 +101,24 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     }
   }
 
+  // Generate stable track IDs based on track content for persistent likes
+  const generateStableTrackId = (track: string, artist: string): number => {
+    // Create stable hash from track + artist
+    const str = `${track}-${artist}`
+    return Math.abs(
+      str.split('').reduce((hash, char) => {
+        hash = ((hash << 5) - hash) + char.charCodeAt(0)
+        return hash & hash
+      }, 0)
+    )
+  }
+
+  // Handle track like operations
+  const handleLikeTrack = (track: any) => {
+    // Called after successful like operation
+    // TrackList handles the full like modal flow internally
+    console.log('Track liked successfully:', track.track, track.artist)
+  }
 
   // Handle manual refresh (clear cache and reload)
   const handleRefresh = () => {
@@ -181,45 +201,37 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                       .slice((currentPage - 1) * pageSize, currentPage * pageSize)
                       .map((track, index) => ({
                         track: track.track,
-                        'track-id': (currentPage - 1) * pageSize + index + 1,
+                        'track-id': generateStableTrackId(track.track, track.artist),
                         artist: track.artist,
                         'track-number': (currentPage - 1) * pageSize + index + 1,
                       }))}
                     loadingTrackId={loadingTrackId}
+                    enableLikeButtons={isAuthenticated}
+                    onLikeTrack={handleLikeTrack}
+                    isAuthenticated={isAuthenticated}
                     onSelect={(trackItem) => {
-                      // Find the original DiscoverTrack by matching track and artist
-                      const pageStartIndex = (currentPage - 1) * pageSize
-                      const trackIndex = trackItem['track-id'] - pageStartIndex - 1
-                      const originalTrack = filteredTracks.slice(pageStartIndex, currentPage * pageSize)[trackIndex]
+                      // Find original track using stable ID matching
+                      const originalTrack = filteredTracks.find(track =>
+                        generateStableTrackId(track.track, track.artist) === trackItem['track-id']
+                      )
                       if (originalTrack) {
-                        // Use the trackItem's track-id to ensure loading state consistency
                         playTrack(
-                          trackItem['track-id'],
+                          0, // Global rule: use 0 for streaming tracks without real database IDs
                           originalTrack.track,
                           originalTrack.artist,
                           {
                             clearAlbum: true,
-                            albumName: `Curated by ${originalTrack.curator}`,
-                            spotifyId: originalTrack['spotify-id'],
+                            albumName: `Curated by ${originalTrack.curator}`
                           }
                         )
                       }
                     }}
-                    renderIndicator={(trackItem) => {
-                      const pageStartIndex = (currentPage - 1) * pageSize
-                      const trackIndex = trackItem['track-id'] - pageStartIndex - 1
-                      const originalTrack = filteredTracks.slice(pageStartIndex, currentPage * pageSize)[trackIndex]
-                      return (
-                        <div className="text-xs text-slate-400 pr-2">
-                          {originalTrack?.curator}
-                        </div>
-                      )
-                    }}
                     renderAction={(trackItem) => {
-                      const pageStartIndex = (currentPage - 1) * pageSize
-                      const trackIndex = trackItem['track-id'] - pageStartIndex - 1
-                      const originalTrack = filteredTracks.slice(pageStartIndex, currentPage * pageSize)[trackIndex]
+                      const originalTrack = filteredTracks.find(track =>
+                        generateStableTrackId(track.track, track.artist) === trackItem['track-id']
+                      )
                       if (!originalTrack) return null
+
                       return (
                         <button
                           onClick={(e) => hideTrackItem(originalTrack, e)}
