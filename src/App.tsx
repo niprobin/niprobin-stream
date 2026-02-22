@@ -241,7 +241,10 @@ function AppContent() {
         <div className="w-full px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between">
           {/* Left: Logo + Tabs */}
           <div className="flex items-center gap-6">
-            <h1 className="text-white text-2xl font-semibold tracking-tight">
+            <h1
+              className="text-white text-2xl font-semibold tracking-tight cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => navigate('home')}
+            >
               nipstream
             </h1>
             
