@@ -196,27 +196,24 @@ function AppContent() {
     if (typeof window !== 'undefined' && currentUrl !== path) {
       console.log(`navigate: updating URL from ${currentUrl} to ${path}`)
       window.history.pushState({}, '', path)
-      // Trigger syncFromLocation to handle the new URL
-      window.dispatchEvent(new PopStateEvent('popstate'))
-    } else {
-      // URL didn't change, but we still need to update state for programmatic navigation
-      if (page === 'album' && albumId) {
-        setCurrentAlbumId(albumId)
-      } else {
-        setCurrentAlbumId(null)
-      }
-
-      if (page === 'digging') {
-        if (diggingTabOverride) {
-          setDiggingTab(diggingTabOverride)
-        }
-        if (pageNumber !== undefined) {
-          setDiggingPage(pageNumber)
-        }
-      }
-
-      setActivePage(page)
     }
+
+    if (page === 'album' && albumId) {
+      setCurrentAlbumId(albumId)
+    } else {
+      setCurrentAlbumId(null)
+    }
+
+    if (page === 'digging') {
+      if (diggingTabOverride) {
+        setDiggingTab(diggingTabOverride)
+      }
+      if (pageNumber !== undefined) {
+        setDiggingPage(pageNumber)
+      }
+    }
+
+    setActivePage(page)
   }
 
   const navigateToDiggingTab = (tab: 'tracks' | 'albums', page?: number) => {
