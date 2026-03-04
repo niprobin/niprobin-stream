@@ -220,10 +220,6 @@ function AppContent() {
     navigate('digging', undefined, tab, page !== undefined ? page : 1)
   }
 
-  const handleAlbumBack = () => {
-    window.history.back()
-  }
-
   const navigateToDiggingPage = (page: number) => {
     // Validate page number - ensure it's at least 1
     const validPage = Math.max(1, Math.floor(page))
@@ -405,7 +401,7 @@ function AppContent() {
 
           <div className="w-full">
             {activePage === 'album' && currentAlbumId ? (
-              <AlbumPage key={currentAlbumId} albumId={currentAlbumId} onBack={handleAlbumBack} />
+              <AlbumPage key={currentAlbumId} albumId={currentAlbumId} />
             ) : activePage === 'digging' ? (
               <AlbumsPage activeTab={diggingTab} currentPage={diggingPage} onPageChange={navigateToDiggingPage} />
             ) : (
