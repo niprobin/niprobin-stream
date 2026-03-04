@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { RefreshCw, X, Search } from 'lucide-react'
+import { RefreshCw, X, Search, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { getAlbumsToDiscover, hideDiscoveryAlbum, getTracksToDiscover, hideTrack, getAlbumTracks, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useNotification } from '@/contexts/NotificationContext'
@@ -251,6 +251,18 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         variant="ghost"
                         size="sm"
                         disabled={currentPage === 1}
+                        onClick={() => onPageChange(1)}
+                        aria-label="Go to first page"
+                      >
+                        <ChevronsLeft className="h-3 w-3 mr-1" />
+                        First
+                      </Button>
+                      <Button
+                        className="text-xs"
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={currentPage === 1}
                         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                       >
                         Prev
@@ -269,6 +281,18 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         }
                       >
                         Next
+                      </Button>
+                      <Button
+                        className="text-xs"
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={currentPage >= Math.ceil(filteredTracks.length / pageSize)}
+                        onClick={() => onPageChange(Math.ceil(filteredTracks.length / pageSize))}
+                        aria-label="Go to last page"
+                      >
+                        Last
+                        <ChevronsRight className="h-3 w-3 ml-1" />
                       </Button>
                     </div>
                   )}
@@ -384,6 +408,18 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         variant="ghost"
                         size="sm"
                         disabled={currentPage === 1}
+                        onClick={() => onPageChange(1)}
+                        aria-label="Go to first page"
+                      >
+                        <ChevronsLeft className="h-3 w-3 mr-1" />
+                        First
+                      </Button>
+                      <Button
+                        className="text-xs"
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={currentPage === 1}
                         onClick={() => onPageChange(Math.max(1, currentPage - 1))}
                       >
                         Prev
@@ -402,6 +438,18 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         }
                       >
                         Next
+                      </Button>
+                      <Button
+                        className="text-xs"
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={currentPage >= Math.ceil(filteredAlbums.length / pageSize)}
+                        onClick={() => onPageChange(Math.ceil(filteredAlbums.length / pageSize))}
+                        aria-label="Go to last page"
+                      >
+                        Last
+                        <ChevronsRight className="h-3 w-3 ml-1" />
                       </Button>
                     </div>
                   )}
