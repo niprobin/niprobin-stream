@@ -8,14 +8,13 @@ import { getAlbumById, rateAlbum, hideAlbum, hideDiscoveryAlbum, type AlbumTrack
 import { Button } from '@/components/ui/button'
 import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
-import { Play, Star, ArrowLeft, Share2, X } from 'lucide-react'
+import { Play, Star, Share2, X } from 'lucide-react'
 
 type AlbumPageProps = {
   albumId: number
-  onBack: () => void
 }
 
-export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
+export function AlbumPage({ albumId }: AlbumPageProps) {
   const [tracks, setTracks] = useState<AlbumTrack[]>([])
   const [albumName, setAlbumName] = useState('')
   const [artistName, setArtistName] = useState('')
@@ -141,10 +140,6 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
 
       showNotification('Album hidden successfully', 'success')
 
-      setTimeout(() => {
-        onBack()
-      }, 1000)
-
     } catch (err) {
       console.error('Failed to hide album:', err)
       showNotification('Failed to hide album', 'error')
@@ -154,11 +149,7 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-slate-400 mb-4">{error}</p>
-        <Button onClick={onBack} variant="ghost">
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Go Back
-        </Button>
+        <p className="text-slate-400">{error}</p>
       </div>
     )
   }
@@ -173,16 +164,6 @@ export function AlbumPage({ albumId, onBack }: AlbumPageProps) {
 
   return (
     <div className="w-full p-4 sm:p-6 lg:p-8 pb-32">
-      {/* Back Button */}
-      <Button
-        onClick={onBack}
-        variant="ghost"
-        className="mb-4 text-slate-400 hover:text-white"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
-
       {/* Album Header */}
       <div className="flex flex-col md:flex-row gap-6 mb-8">
         {/* Album Cover */}
