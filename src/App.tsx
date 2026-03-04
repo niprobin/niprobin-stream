@@ -227,6 +227,10 @@ function AppContent() {
     navigate('digging', undefined, diggingTab, validPage)
   }
 
+  const navigateToAlbum = (albumId: number) => {
+    navigate('album', albumId)
+  }
+
   return (
     <>
       <NotificationBanner />
@@ -403,7 +407,12 @@ function AppContent() {
             {activePage === 'album' && currentAlbumId ? (
               <AlbumPage key={currentAlbumId} albumId={currentAlbumId} />
             ) : activePage === 'digging' ? (
-              <AlbumsPage activeTab={diggingTab} currentPage={diggingPage} onPageChange={navigateToDiggingPage} />
+              <AlbumsPage
+                activeTab={diggingTab}
+                currentPage={diggingPage}
+                onPageChange={navigateToDiggingPage}
+                onAlbumClick={navigateToAlbum}
+              />
             ) : (
               <Search />
             )}
