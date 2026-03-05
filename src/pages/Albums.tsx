@@ -22,10 +22,9 @@ interface AlbumsPageProps {
   activeTab: DiggingTab
   currentPage: number
   onPageChange: (page: number) => void
-  onAlbumClick: (albumId: number) => void
 }
 
-export function AlbumsPage({ activeTab, currentPage, onPageChange, onAlbumClick }: AlbumsPageProps) {
+export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageProps) {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   console.log(`AlbumsPage: activeTab=${activeTab}, currentPage=${currentPage}`)
@@ -89,7 +88,8 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange, onAlbumClick 
       // Get album ID from first track
       const albumId = tracks[0]?.['album-id']
       if (albumId) {
-        onAlbumClick(albumId)
+        window.history.pushState({}, '', `/album/${albumId}`)
+        window.dispatchEvent(new PopStateEvent('popstate'))
       } else {
         showNotification('Could not find album', 'error')
       }
