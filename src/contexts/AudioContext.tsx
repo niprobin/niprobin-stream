@@ -56,6 +56,9 @@ type AudioContextType = {
   clearAlbumContext: () => void
   loadTrack: (track: Track) => void
   setLoadingState: (state: AudioLoadingState) => void
+  playNextTrack: () => void
+  playPreviousTrack: () => void
+  currentTrackIndex: number
 }
 
 // Create the Context - this is our "box" that holds audio state
@@ -186,6 +189,49 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [currentTrackIndex, albumTracks, albumInfo, startPlayback])
 
+  // Function: Play previous track in album or auto-play context
+  const playPreviousTrack = useCallback(async () => {
+    if (!albumTracks || albumTracks.length === 0 || !albumInfo) {
+      console.log('No album tracks available for previous track')
+      return
+    }
+
+    const prevIndex = currentTrackIndex - 1
+    if (prevIndex < 0) {
+      console.log('Already at first track')
+      return
+    }
+
+    const prevTrack = albumTracks[prevIndex]
+    if (prevTrack) {
+      try {
+        setCurrentTrackIndex(prevIndex)
+
+        // Handle auto-play contexts vs real albums (same as playNextTrack)
+        const isAutoPlayContext = albumInfo.artist === "Auto-play"
+        const trackIdToUse = isAutoPlayContext ? 0 : prevTrack['track-id']
+
+        const streamResponse = await getStreamUrl(
+          trackIdToUse,
+          prevTrack.track,
+          prevTrack.artist
+        )
+        startPlayback({
+          id: streamResponse.trackId,
+          hashUrl: streamResponse.hashUrl,
+          title: streamResponse.track,
+          artist: streamResponse.artist,
+          album: streamResponse.album || albumInfo.name,
+          streamUrl: streamResponse.streamUrl,
+          coverArt: streamResponse.cover || albumInfo.cover,
+        })
+      } catch (err) {
+        console.error('Failed to load previous track:', err)
+        setIsPlaying(false)
+      }
+    }
+  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback])
+
   // Initialize audio element and bind lifecycle events once
   useEffect(() => {
     if (typeof Audio === 'undefined') {
@@ -242,6 +288,26 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       audio.removeEventListener('error', handleError)
     }
   }, [playNextTrack])
+
+  // Set up MediaSession navigation handlers
+  useEffect(() => {
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('previoustrack', () => {
+        void playPreviousTrack()
+      })
+
+      navigator.mediaSession.setActionHandler('nexttrack', () => {
+        void playNextTrack()
+      })
+    }
+
+    return () => {
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.setActionHandler('previoustrack', null)
+        navigator.mediaSession.setActionHandler('nexttrack', null)
+      }
+    }
+  }, [playPreviousTrack, playNextTrack])
 
   // URL sync removed: tracks are not encoded into the URL anymore.
 
@@ -384,6 +450,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         albumAutoExpand,
         loadTrack,
         setLoadingState,
+        playNextTrack,
+        playPreviousTrack,
+        currentTrackIndex,
       }}
     >
       {children}

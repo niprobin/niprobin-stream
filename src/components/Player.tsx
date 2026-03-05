@@ -4,7 +4,7 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { StarRating } from '@/components/ui/StarRating'
-import { Play, Pause, Download, Maximize2, Heart, Loader2, Share2, X } from 'lucide-react'
+import { Play, Pause, Download, Maximize2, Heart, Loader2, Share2, X, SkipBack, SkipForward } from 'lucide-react'
 import { downloadTrack, rateAlbum, rateDiscoveryAlbum } from '@/services/api'
 import { shareTrack } from '@/utils/urlBuilder'
 import { useState, useEffect, useRef } from 'react'
@@ -16,7 +16,7 @@ import { TrackList } from '@/components/TrackList'
 // PLAYLISTS constant and LikeModalTrack type moved to TrackList component
 
 export function Player() {
-  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, albumAutoExpand, setAutoPlayContext } = useAudio()
+  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, albumAutoExpand, setAutoPlayContext, playNextTrack, playPreviousTrack, currentTrackIndex } = useAudio()
   const { isAuthenticated } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
@@ -180,6 +180,19 @@ export function Player() {
     setIsExpanded(!isExpanded)
   }
 
+  // Navigation handlers
+  const handlePreviousTrack = () => {
+    playPreviousTrack()
+  }
+
+  const handleNextTrack = () => {
+    playNextTrack()
+  }
+
+  // Button state management
+  const canGoToPrevious = albumTracks.length > 0 && albumInfo && currentTrackIndex > 0
+  const canGoToNext = albumTracks.length > 0 && albumInfo && currentTrackIndex < albumTracks.length - 1
+
   // isTrackLiked function now comes from useLikeModal hook
 
   // Like track handler for TrackList component
@@ -237,8 +250,22 @@ export function Player() {
                   <div className="text-sm text-slate-400 truncate">{currentTrack.artist}</div>
                 </div>
 
-              {/* Center: Play/Pause Button */}
-              <div className="flex justify-center">
+              {/* Center: Navigation and Play Controls */}
+              <div className="flex justify-center items-center gap-2">
+                {/* Previous Button */}
+                {hasAlbumContext && (
+                  <Button
+                    onClick={handlePreviousTrack}
+                    size="icon"
+                    variant="ghost"
+                    className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
+                    disabled={!canGoToPrevious}
+                  >
+                    <SkipBack className="h-5 w-5" />
+                  </Button>
+                )}
+
+                {/* Play/Pause Button */}
                 <Button
                   onClick={handlePlayPause}
                   size="icon"
@@ -254,6 +281,19 @@ export function Player() {
                     <Play className="h-6 w-6" />
                   )}
                 </Button>
+
+                {/* Next Button */}
+                {hasAlbumContext && (
+                  <Button
+                    onClick={handleNextTrack}
+                    size="icon"
+                    variant="ghost"
+                    className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
+                    disabled={!canGoToNext}
+                  >
+                    <SkipForward className="h-5 w-5" />
+                  </Button>
+                )}
               </div>
 
               {/* Right: Buttons */}
@@ -317,10 +357,36 @@ export function Player() {
                 <span className="text-slate-400"> – {currentTrack.artist}</span>
               </div>
 
-              {/* Buttons Row: Play on left, actions on right */}
+              {/* Buttons Row: Navigation on left, play center, actions on right */}
               <div className="flex items-center justify-between mb-2 mt-2">
 
-                {/* Left: Play/Pause Button */}
+                {/* Left: Navigation Controls */}
+                <div className="flex items-center gap-1">
+                  {hasAlbumContext && (
+                    <>
+                      <Button
+                        onClick={handlePreviousTrack}
+                        size="icon"
+                        variant="ghost"
+                        className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
+                        disabled={!canGoToPrevious}
+                      >
+                        <SkipBack className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={handleNextTrack}
+                        size="icon"
+                        variant="ghost"
+                        className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
+                        disabled={!canGoToNext}
+                      >
+                        <SkipForward className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+
+                {/* Center: Play/Pause Button */}
                 <Button
                   onClick={handlePlayPause}
                   size="icon"
