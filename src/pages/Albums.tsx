@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Pagination } from '@/components/ui/Pagination'
+import { AlbumCard } from '@/components/ui/AlbumCard'
 import { RefreshCw, X, Search, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { getAlbumsToDiscover, hideDiscoveryAlbum, getTracksToDiscover, hideTrack, getAlbumTracks, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useLoading } from '@/contexts/LoadingContext'
@@ -10,6 +12,7 @@ import { useCachedData } from '@/hooks/useCachedData'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
 import { useDiscoverySearch, albumFilterFunction } from '@/hooks/useDiscoverySearch'
+import { generateStableTrackId } from '@/utils/trackUtils'
 
 type DiggingTab = 'tracks' | 'albums'
 
@@ -101,17 +104,6 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     }
   }
 
-  // Generate stable track IDs based on track content for persistent likes
-  const generateStableTrackId = (track: string, artist: string): number => {
-    // Create stable hash from track + artist
-    const str = `${track}-${artist}`
-    return Math.abs(
-      str.split('').reduce((hash, char) => {
-        hash = ((hash << 5) - hash) + char.charCodeAt(0)
-        return hash & hash
-      }, 0)
-    )
-  }
 
   // Handle track like operations
   const handleLikeTrack = (track: any) => {
@@ -244,57 +236,13 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                     }}
                   />
                   {filteredTracks.length > pageSize && (
-                    <div className="text-xs text-slate-400 flex items-center justify-center gap-3 pt-2 pb-12">
-                      <Button
-                        className="text-xs"
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentPage === 1}
-                        onClick={() => onPageChange(1)}
-                        aria-label="Go to first page"
-                      >
-                        <ChevronsLeft className="h-3 w-3 mr-1" />
-                        First
-                      </Button>
-                      <Button
-                        className="text-xs"
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentPage === 1}
-                        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                      >
-                        Prev
-                      </Button>
-                      <span>
-                        Page {currentPage} of {Math.ceil(filteredTracks.length / pageSize)}
-                      </span>
-                      <Button
-                        className="text-xs"
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentPage >= Math.ceil(filteredTracks.length / pageSize)}
-                        onClick={() =>
-                          onPageChange(Math.min(Math.ceil(filteredTracks.length / pageSize), currentPage + 1))
-                        }
-                      >
-                        Next
-                      </Button>
-                      <Button
-                        className="text-xs"
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentPage >= Math.ceil(filteredTracks.length / pageSize)}
-                        onClick={() => onPageChange(Math.ceil(filteredTracks.length / pageSize))}
-                        aria-label="Go to last page"
-                      >
-                        Last
-                        <ChevronsRight className="h-3 w-3 ml-1" />
-                      </Button>
-                    </div>
+                    <Pagination
+                      currentPage={currentPage}
+                      totalItems={filteredTracks.length}
+                      pageSize={pageSize}
+                      onPageChange={onPageChange}
+                      className="pt-2 pb-12"
+                    />
                   )}
                 </>
               )
@@ -369,89 +317,30 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                     {filteredAlbums
                       .slice((currentPage - 1) * pageSize, currentPage * pageSize)
                       .map((album, index) => (
-                    <div
-                      key={`${album.album}-${(currentPage - 1) * pageSize + index}`}
-                      onClick={() => handleAlbumClick(album)}
-                      className="group cursor-pointer"
-                    >
-                  <div className="border border-slate-700 aspect-square rounded-xl overflow-hidden bg-slate-900 relative">
-                    <img
-                      src={album.cover_url}
-                      alt={`${album.album} by ${album.artist}`}
-                      className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
-                    <button
-                      onClick={(e) => hideAlbumItem(album, e)}
-                      className="absolute top-2 right-2 w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                      aria-label="Hide album"
-                    >
-                      <X className="h-5 w-5 md:h-4 md:w-4 text-white" />
-                    </button>
-                  </div>
-                  <div className="px-1 mt-2">
-                    <p className="text-white font-semibold text-sm line-clamp-2">
-                      {album.album}
-                    </p>
-                    <p className="text-slate-400 text-xs mt-0.5 line-clamp-1">
-                      {album.artist}
-                    </p>
-                  </div>
-                    </div>
+                        <AlbumCard
+                          key={`${album.album}-${(currentPage - 1) * pageSize + index}`}
+                          album={album}
+                          onClick={() => handleAlbumClick(album)}
+                          actionButton={
+                            <button
+                              onClick={(e) => hideAlbumItem(album, e)}
+                              className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                              aria-label="Hide album"
+                            >
+                              <X className="h-5 w-5 md:h-4 md:w-4 text-white" />
+                            </button>
+                          }
+                        />
                       ))}
                   </div>
                   {filteredAlbums.length > pageSize && (
-                    <div className="text-xs text-slate-400 flex items-center justify-center gap-3 pt-4 pb-12">
-                      <Button
-                        className="text-xs"
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentPage === 1}
-                        onClick={() => onPageChange(1)}
-                        aria-label="Go to first page"
-                      >
-                        <ChevronsLeft className="h-3 w-3 mr-1" />
-                        First
-                      </Button>
-                      <Button
-                        className="text-xs"
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentPage === 1}
-                        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                      >
-                        Prev
-                      </Button>
-                      <span>
-                        Page {currentPage} of {Math.ceil(filteredAlbums.length / pageSize)}
-                      </span>
-                      <Button
-                        className="text-xs"
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentPage >= Math.ceil(filteredAlbums.length / pageSize)}
-                        onClick={() =>
-                          onPageChange(Math.min(Math.ceil(filteredAlbums.length / pageSize), currentPage + 1))
-                        }
-                      >
-                        Next
-                      </Button>
-                      <Button
-                        className="text-xs"
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentPage >= Math.ceil(filteredAlbums.length / pageSize)}
-                        onClick={() => onPageChange(Math.ceil(filteredAlbums.length / pageSize))}
-                        aria-label="Go to last page"
-                      >
-                        Last
-                        <ChevronsRight className="h-3 w-3 ml-1" />
-                      </Button>
-                    </div>
+                    <Pagination
+                      currentPage={currentPage}
+                      totalItems={filteredAlbums.length}
+                      pageSize={pageSize}
+                      onPageChange={onPageChange}
+                      className="pt-4 pb-12"
+                    />
                   )}
                 </>
               )

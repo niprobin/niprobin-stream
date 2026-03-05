@@ -6,9 +6,10 @@ import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { getAlbumById, rateAlbum, hideAlbum, hideDiscoveryAlbum, type AlbumTrack } from '@/services/api'
 import { Button } from '@/components/ui/button'
+import { StarRating } from '@/components/ui/StarRating'
 import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
-import { Play, Star, Share2, X } from 'lucide-react'
+import { Play, Share2, X } from 'lucide-react'
 
 type AlbumPageProps = {
   albumId: number
@@ -219,32 +220,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
 
             {/* Rating - separate group */}
             {isAuthenticated && (
-              <div
-                className="flex gap-1 px-2 py-1 rounded-lg bg-slate-800/30"
-                role="radiogroup"
-                aria-label="Album rating"
-              >
-                {[1, 2, 3, 4, 5].map((value) => {
-                  const isActive = albumRating >= value
-                  return (
-                    <Button
-                      key={value}
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className={`h-8 w-8 ${isActive ? 'text-yellow-300' : 'text-slate-500'} hover:text-yellow-300`}
-                      aria-pressed={isActive}
-                      aria-label={`${value} star${value === 1 ? '' : 's'}`}
-                      onClick={() => handleRateAlbum(value)}
-                    >
-                      <Star
-                        className="h-4 w-4"
-                        fill={isActive ? 'currentColor' : 'none'}
-                      />
-                    </Button>
-                  )
-                })}
-              </div>
+              <StarRating
+                rating={albumRating}
+                onRatingChange={handleRateAlbum}
+                disabled={false}
+              />
             )}
           </div>
 
@@ -287,32 +267,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
 
               {/* Rating stars - separate group */}
               {isAuthenticated && (
-                <div
-                  className="flex gap-1 px-2 py-1 rounded-lg bg-slate-800/30"
-                  role="radiogroup"
-                  aria-label="Album rating"
-                >
-                  {[1, 2, 3, 4, 5].map((value) => {
-                    const isActive = albumRating >= value
-                    return (
-                      <Button
-                        key={value}
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className={`h-8 w-8 ${isActive ? 'text-yellow-300' : 'text-slate-500'} hover:text-yellow-300`}
-                        aria-pressed={isActive}
-                        aria-label={`${value} star${value === 1 ? '' : 's'}`}
-                        onClick={() => handleRateAlbum(value)}
-                      >
-                        <Star
-                          className="h-4 w-4"
-                          fill={isActive ? 'currentColor' : 'none'}
-                        />
-                      </Button>
-                    )
-                  })}
-                </div>
+                <StarRating
+                  rating={albumRating}
+                  onRatingChange={handleRateAlbum}
+                  disabled={false}
+                />
               )}
             </div>
           </div>

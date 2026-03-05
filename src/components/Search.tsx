@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { AlbumCard } from '@/components/ui/AlbumCard'
 import { searchTracks, searchAlbums, saveAlbum } from '@/services/api'
 import type { SearchResult, AlbumResult } from '@/services/api'
 import { useNotification } from '@/contexts/NotificationContext'
@@ -153,33 +154,11 @@ export function Search() {
       {searchType === 'albums' && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {albumResults.map((album, index) => (
-            <div
+            <AlbumCard
               key={`${album['album-id']}-${index}`}
+              album={album}
               onClick={() => handleAlbumClick(album)}
-              className="group cursor-pointer"
-            >
-              {/* Album Cover */}
-              <div className="border border-slate-600 aspect-square rounded-lg overflow-hidden bg-gray-800 mb-2 relative">
-                <img
-                  src={album.cover}
-                  alt={`${album.album} by ${album.artist}`}
-                  className="w-full h-full object-cover transition-transform"
-                />
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-opacity" />
-              </div>
-
-              {/* Album Info */}
-              <div className="px-1 space-y-2">
-                <div>
-                  <div className="text-white font-semibold text-sm line-clamp-2 mb-1">
-                    {album.album}
-                  </div>
-                  <div className="text-slate-400 text-xs line-clamp-1">
-                    {album.artist}
-                  </div>
-                </div>
-
+              bottomButton={
                 <Button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -202,8 +181,8 @@ export function Search() {
                     </>
                   )}
                 </Button>
-              </div>
-            </div>
+              }
+            />
           ))}
         </div>
       )}

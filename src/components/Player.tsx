@@ -3,7 +3,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Play, Pause, Download, Maximize2, Heart, Star, Loader2, Share2, X } from 'lucide-react'
+import { StarRating } from '@/components/ui/StarRating'
+import { Play, Pause, Download, Maximize2, Heart, Loader2, Share2, X } from 'lucide-react'
 import { downloadTrack, rateAlbum, rateDiscoveryAlbum } from '@/services/api'
 import { shareTrack } from '@/utils/urlBuilder'
 import { useState, useEffect, useRef } from 'react'
@@ -450,27 +451,13 @@ export function Player() {
                 {albumInfo.name}
               </h3>
               <p className="text-sm text-slate-400">{albumInfo.artist}</p>
-              <div className="flex items-center gap-1 mt-2" role="radiogroup" aria-label="Album rating">
-                {[1, 2, 3, 4, 5].map((value) => {
-                  const isActive = albumRating >= value
-                  return (
-                    <Button
-                      key={value}
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className={`h-8 w-8 text-sm ${isActive ? 'text-yellow-300' : 'text-slate-500'} hover:text-yellow-300`}
-                      aria-pressed={isActive}
-                      aria-label={`${value} star${value === 1 ? '' : 's'}`}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        handleRateAlbum(value)
-                      }}
-                    >
-                      <Star className="h-4 w-4" fill={isActive ? 'currentColor' : 'none'} />
-                    </Button>
-                  )
-                })}
+              <div className="mt-2" onClick={(event) => event.stopPropagation()}>
+                <StarRating
+                  rating={albumRating}
+                  onRatingChange={handleRateAlbum}
+                  disabled={false}
+                />
+              </div>
               </div>
             </div>
           </div>
