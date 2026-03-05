@@ -460,7 +460,6 @@ export function Player() {
               </div>
               </div>
             </div>
-          </div>
 
           {/* Track List */}
           <div className="overflow-y-auto max-h-full">
@@ -477,8 +476,8 @@ export function Player() {
             />
           </div>
         </div>
-      )}
     </div>
+      )}
 
     {/* Like Modal */}
     {isLikeModalOpen && likeModalTrack && (
