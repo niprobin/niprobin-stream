@@ -476,8 +476,8 @@ export function Player() {
             />
           </div>
         </div>
-    </div>
       )}
+    </div>
 
     {/* Like Modal */}
     {isLikeModalOpen && likeModalTrack && (
