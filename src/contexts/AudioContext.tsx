@@ -51,6 +51,7 @@ type AudioContextType = {
     albumInfo: { name: string; artist: string; cover: string; id?: string },
     options?: { expand?: boolean; loadFirst?: boolean },
   ) => void
+  setAutoPlayContext: (tracks: AlbumTrackItem[], startIndex: number, contextName: string) => void
   albumAutoExpand?: boolean
   clearAlbumContext: () => void
   loadTrack: (track: Track) => void
@@ -72,6 +73,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [albumInfo, setAlbumInfo] = useState<{ name: string; artist: string; cover: string; id?: string } | null>(null)
   const [albumAutoExpand, setAlbumAutoExpand] = useState(true)
   const [loadingState, setLoadingState] = useState<AudioLoadingState>({ status: 'idle' })
+  const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
 
   // Ref: Holds the actual Audio object (doesn't trigger re-renders when changed)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -138,23 +140,33 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     [volume]
   )
 
-  // Function: Play next track in album
+  // Function: Play next track in album or auto-play context
   const playNextTrack = useCallback(async () => {
-    if (!currentTrack || albumTracks.length === 0 || !albumInfo) {
+    if (!albumTracks || albumTracks.length === 0 || !albumInfo) {
+      console.log('No album tracks available for auto-play')
       setIsPlaying(false)
       return
     }
 
-    const currentIndex = albumTracks.findIndex(
-      (track) => track['track-id'].toString() === currentTrack.id
-    )
+    const nextIndex = currentTrackIndex + 1
+    if (nextIndex >= albumTracks.length) {
+      console.log('Reached end of auto-play context')
+      setIsPlaying(false)
+      return
+    }
 
-    if (currentIndex !== -1 && currentIndex < albumTracks.length - 1) {
-      const nextTrack = albumTracks[currentIndex + 1]
-
+    const nextTrack = albumTracks[nextIndex]
+    if (nextTrack) {
       try {
+        setCurrentTrackIndex(nextIndex)
+
+        // For auto-play contexts (discovery tracks, search results), use 0
+        // For real albums, use the actual track-id
+        const isAutoPlayContext = albumInfo.artist === "Auto-play"
+        const trackIdToUse = isAutoPlayContext ? 0 : nextTrack['track-id']
+
         const streamResponse = await getStreamUrl(
-          nextTrack['track-id'],
+          trackIdToUse,
           nextTrack.track,
           nextTrack.artist
         )
@@ -171,10 +183,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         console.error('Failed to load next track:', err)
         setIsPlaying(false)
       }
-    } else {
-      setIsPlaying(false)
     }
-  }, [currentTrack, albumTracks, albumInfo, startPlayback])
+  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback])
 
   // Initialize audio element and bind lifecycle events once
   useEffect(() => {
@@ -308,6 +318,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setAlbumTracks(tracks)
     setAlbumInfo(info)
     setAlbumAutoExpand(options?.expand ?? true)
+    setCurrentTrackIndex(0)
 
     if (options?.loadFirst && tracks.length > 0) {
       ;(async () => {
@@ -330,10 +341,24 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Function: Set auto-play context for any track list
+  const setAutoPlayContext = (tracks: AlbumTrackItem[], startIndex: number, contextName: string) => {
+    setAlbumTracks(tracks)
+    setAlbumInfo({
+      name: contextName,
+      artist: "Auto-play",
+      cover: tracks[startIndex]?.track ? "" : "", // No cover for auto-play contexts
+      id: undefined
+    })
+    setCurrentTrackIndex(startIndex)
+    setAlbumAutoExpand(false) // Don't auto-expand for auto-play contexts
+  }
+
   // Function: Clear album context
   const clearAlbumContext = () => {
     setAlbumTracks([])
     setAlbumInfo(null)
+    setCurrentTrackIndex(0)
   }
 
   // Provide all this to children components
@@ -354,6 +379,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         seek,
         setVolume,
         setAlbumContext,
+        setAutoPlayContext,
         clearAlbumContext,
         albumAutoExpand,
         loadTrack,

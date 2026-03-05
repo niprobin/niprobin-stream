@@ -6,6 +6,7 @@ import type { SearchResult, AlbumResult } from '@/services/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
+import { useAudio } from '@/contexts/AudioContext'
 import { Search as SearchIcon, ChevronDown, BookmarkPlus, Loader2 } from 'lucide-react'
 import { TrackList } from '@/components/TrackList'
 
@@ -20,6 +21,7 @@ export function Search() {
 
   const { showNotification } = useNotification()
   const { playTrack, loadingTrackId } = useTrackPlayer()
+  const { setAutoPlayContext } = useAudio()
 
   // Handle search submission
   const handleSearch = async (e: React.FormEvent) => {
@@ -55,7 +57,7 @@ export function Search() {
       result.track,
       result.artist,
       {
-        clearAlbum: true,
+        clearAlbum: false,  // Keep auto-play context
         albumName: result.album,
         coverArt: result.cover,
       }
@@ -138,7 +140,17 @@ export function Search() {
             cover: result.cover,
           }))}
           loadingTrackId={loadingTrackId}
-          onSelect={(track) =>
+          onSelect={(track, trackIndex) => {
+            // Convert search results to auto-play format
+            const searchTracks = results.map((result, index) => ({
+              track: result.track,
+              'track-id': Number(result['track-id']),
+              artist: result.artist,
+              'track-number': index + 1,
+            }))
+
+            setAutoPlayContext(searchTracks, trackIndex, "Search Results")
+
             handlePlayTrack({
               track: track.title,
               artist: track.artist,
@@ -146,7 +158,7 @@ export function Search() {
               'track-id': track.id,
               cover: track.cover ?? '',
             })
-          }
+          }}
         />
       )}
 

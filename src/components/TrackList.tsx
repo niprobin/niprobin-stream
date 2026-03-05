@@ -15,7 +15,7 @@ type BaseTrack = {
 type AlbumListProps = {
   variant: 'album'
   tracks: AlbumTrackItem[]
-  onSelect: (track: AlbumTrackItem) => void
+  onSelect: (track: AlbumTrackItem, trackIndex: number) => void
   renderIndicator?: (track: AlbumTrackItem) => React.ReactNode
   renderAction?: (track: AlbumTrackItem) => React.ReactNode
   loadingTrackId?: string | null
@@ -24,13 +24,19 @@ type AlbumListProps = {
   currentTrackId?: string | null
   isPlaying?: boolean
   isAuthenticated?: boolean
+  autoPlayContext?: {
+    contextName: string  // e.g., "Discovery Tracks - Page 1", "Search Results"
+  }
 }
 
 type SearchListProps = {
   variant: 'search'
   tracks: (BaseTrack & { cover: string; album: string })[]
   loadingTrackId?: string | null
-  onSelect: (track: BaseTrack & { cover: string; album: string }) => void
+  onSelect: (track: BaseTrack & { cover: string; album: string }, trackIndex: number) => void
+  autoPlayContext?: {
+    contextName: string  // e.g., "Discovery Tracks - Page 1", "Search Results"
+  }
 }
 
 type TrackListProps = (AlbumListProps | SearchListProps)
@@ -96,7 +102,7 @@ export function TrackList(props: TrackListProps) {
               </div>
               <div
                 className="flex-1 min-w-0"
-                onClick={() => props.onSelect(item)}
+                onClick={() => props.onSelect(item, index)}
               >
                 <div className="text-sm font-medium text-white truncate">{item.track}</div>
                 <div className="text-slate-400 text-xs truncate">{item.artist}</div>
@@ -143,7 +149,7 @@ export function TrackList(props: TrackListProps) {
         return (
           <div
             key={key}
-            onClick={() => props.onSelect(obj)}
+            onClick={() => props.onSelect(obj, index)}
             className="flex gap-3 p-3 hover:bg-slate-800/70 cursor-pointer transition-colors"
           >
             <div className="w-14 h-14 rounded-md overflow-hidden bg-gray-800 flex-shrink-0">

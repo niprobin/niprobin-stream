@@ -16,7 +16,7 @@ import { TrackList } from '@/components/TrackList'
 // PLAYLISTS constant and LikeModalTrack type moved to TrackList component
 
 export function Player() {
-  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, albumAutoExpand } = useAudio()
+  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, albumAutoExpand, setAutoPlayContext } = useAudio()
   const { isAuthenticated } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
@@ -157,8 +157,11 @@ export function Player() {
   }
 
   // Handle clicking a track from the album tracklist
-  const handlePlayAlbumTrack = async (track: AlbumTrackItem) => {
+  const handlePlayAlbumTrack = async (track: AlbumTrackItem, trackIndex: number) => {
     if (!albumInfo) return
+
+    // Update the current track index for proper auto-play sequencing
+    setAutoPlayContext(albumTracks, trackIndex, albumInfo.name)
 
     playTrack(
       track['track-id'],

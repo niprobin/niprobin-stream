@@ -13,6 +13,7 @@ import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
 import { useDiscoverySearch, albumFilterFunction } from '@/hooks/useDiscoverySearch'
 import { generateStableTrackId } from '@/utils/trackUtils'
+import { useAudio } from '@/contexts/AudioContext'
 
 type DiggingTab = 'tracks' | 'albums'
 
@@ -35,6 +36,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const pageSize = 10
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
+  const { setAutoPlayContext } = useAudio()
   const { increment, decrement } = useLoading()
   const { showNotification } = useNotification()
   const { isAuthenticated } = useAuth()
@@ -201,19 +203,35 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                     enableLikeButtons={isAuthenticated}
                     onLikeTrack={handleLikeTrack}
                     isAuthenticated={isAuthenticated}
-                    onSelect={(trackItem) => {
+                    onSelect={(trackItem, trackIndex) => {
                       // Find original track using stable ID matching
                       const originalTrack = filteredTracks.find(track =>
                         generateStableTrackId(track.track, track.artist) === trackItem['track-id']
                       )
                       if (originalTrack) {
+                        // Set auto-play context with current page tracks
+                        const currentPageTracks = filteredTracks
+                          .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                          .map((track, index) => ({
+                            track: track.track,
+                            'track-id': generateStableTrackId(track.track, track.artist),
+                            artist: track.artist,
+                            'track-number': (currentPage - 1) * pageSize + index + 1,
+                          }))
+
+                        setAutoPlayContext(
+                          currentPageTracks,
+                          trackIndex,
+                          `Curated Tracks - Page ${currentPage}`
+                        )
+
                         playTrack(
                           0, // Global rule: use 0 for streaming tracks without real database IDs
                           originalTrack.track,
                           originalTrack.artist,
                           {
-                            clearAlbum: true,
-                            albumName: `Curated by ${originalTrack.curator}`
+                            clearAlbum: false,  // Keep auto-play context
+                            albumName: `Curated Tracks - Page ${currentPage}`
                           }
                         )
                       }

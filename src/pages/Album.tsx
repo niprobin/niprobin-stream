@@ -23,7 +23,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [albumRating, setAlbumRating] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
-  const { currentTrack, isPlaying, setAlbumContext } = useAudio()
+  const { currentTrack, isPlaying, setAlbumContext, setAutoPlayContext } = useAudio()
   const { isAuthenticated } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
@@ -288,9 +288,20 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
           'track-number': track['track-number'],
         }))}
         loadingTrackId={loadingTrackId}
-        onSelect={(trackItem) => {
+        onSelect={(trackItem, trackIndex) => {
           const originalTrack = tracks.find(t => t['track-id'] === trackItem['track-id'])
-          if (originalTrack) handlePlayTrack(originalTrack)
+          if (originalTrack) {
+            // Update the current track index for proper auto-play sequencing
+            const albumTracksForContext = tracks.map((t) => ({
+              track: t.track,
+              'track-id': t['track-id'],
+              artist: t.artist,
+              'track-number': t['track-number'],
+            }))
+            setAutoPlayContext(albumTracksForContext, trackIndex, albumName)
+
+            handlePlayTrack(originalTrack)
+          }
         }}
         enableLikeButtons={isAuthenticated}
         onLikeTrack={handleLikeTrack}
