@@ -203,7 +203,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                     enableLikeButtons={isAuthenticated}
                     onLikeTrack={handleLikeTrack}
                     isAuthenticated={isAuthenticated}
-                    onSelect={(trackItem, trackIndex) => {
+                    onSelect={(trackItem) => {
                       // Find original track using stable ID matching
                       const originalTrack = filteredTracks.find(track =>
                         generateStableTrackId(track.track, track.artist) === trackItem['track-id']
