@@ -3,9 +3,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { StarRating } from '@/components/ui/StarRating'
 import { Play, Pause, Download, Maximize2, Heart, Loader2, Share2, X, SkipBack, SkipForward } from 'lucide-react'
-import { downloadTrack, rateAlbum, rateDiscoveryAlbum } from '@/services/api'
+import { downloadTrack } from '@/services/api'
 import { shareTrack } from '@/utils/urlBuilder'
 import { useState, useEffect, useRef } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
@@ -34,7 +33,6 @@ export function Player() {
     setSelectedPlaylist,
   } = useLikeModal()
   const [isExpanded, setIsExpanded] = useState(false)
-  const [albumRating, setAlbumRating] = useState(0)
   const playerRef = useRef<HTMLDivElement>(null)
 
   // Determine if current track is loading
@@ -202,39 +200,6 @@ export function Player() {
     console.log('Track liked:', track.track, track.artist)
   }
 
-  useEffect(() => {
-    setAlbumRating(0)
-  }, [albumInfo])
-
-  const handleRateAlbum = async (value: number) => {
-    if (!albumInfo) {
-      return
-    }
-    setAlbumRating(value)
-    try {
-      let response
-      if (albumInfo.id) {
-        // Discovery album with MD5 hash ID
-        response = await rateDiscoveryAlbum({
-          id: albumInfo.id,
-          album: albumInfo.name,
-          artist: albumInfo.artist,
-          rating: value,
-        })
-      } else {
-        // Regular album without ID
-        response = await rateAlbum({
-          album: albumInfo.name,
-          artist: albumInfo.artist,
-          rating: value,
-        })
-      }
-      showNotification(response.message, response.status)
-    } catch (err) {
-      console.error('Failed to rate album:', err)
-      showNotification('Failed to rate album', 'error')
-    }
-  }
 
   return (
     <>
@@ -506,29 +471,15 @@ export function Player() {
       {/* Album Tracklist - Only visible when expanded */}
       {hasAlbumContext && isExpanded && (
         <div className="flex-1 overflow-y-auto w-full pt-8">
-          {/* Album Header */}
-          <div className="flex gap-4 px-2 p-3 bg-slate-800">
-            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-800 flex-shrink-0">
-              <img
-                src={albumInfo.cover}
-                alt={`${albumInfo.name} cover`}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base font-semibold text-white line-clamp-1 mb-1">
-                {albumInfo.name}
-              </h3>
-              <p className="text-sm text-slate-400">{albumInfo.artist}</p>
-              <div className="mt-2" onClick={(event) => event.stopPropagation()}>
-                <StarRating
-                  rating={albumRating}
-                  onRatingChange={handleRateAlbum}
-                  disabled={false}
-                />
-              </div>
-              </div>
-            </div>
+          {/* Queue Header */}
+          <div className="flex flex-col gap-1 px-4 py-3 bg-slate-800">
+            <h3 className="text-base font-semibold text-white line-clamp-1">
+              {albumInfo.artist === "Auto-play" ? "Queue" : albumInfo.name}
+            </h3>
+            <p className="text-sm text-slate-400">
+              {albumInfo.artist === "Auto-play" ? "Upcoming tracks" : albumInfo.artist}
+            </p>
+          </div>
 
           {/* Track List */}
           <div className="overflow-y-auto max-h-full">

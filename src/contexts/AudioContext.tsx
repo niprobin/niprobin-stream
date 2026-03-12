@@ -31,6 +31,9 @@ export type AudioLoadingState =
   | { status: 'ready', trackId: string }
   | { status: 'error', trackId: string, error?: string }
 
+// TypeScript: Define dynamic queue provider function type
+type QueueProvider = () => AlbumTrackItem[]
+
 // TypeScript: Define what our audio context contains
 type AudioContextType = {
   currentTrack: Track | null
@@ -51,7 +54,8 @@ type AudioContextType = {
     albumInfo: { name: string; artist: string; cover: string; id?: string },
     options?: { expand?: boolean; loadFirst?: boolean },
   ) => void
-  setAutoPlayContext: (tracks: AlbumTrackItem[], startIndex: number, contextName: string) => void
+  setAutoPlayContext: (tracks: AlbumTrackItem[], startIndex: number, contextName: string, queueProvider?: QueueProvider) => void
+  updateDynamicQueue: () => void
   albumAutoExpand?: boolean
   clearAlbumContext: () => void
   loadTrack: (track: Track) => void
@@ -77,6 +81,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [albumAutoExpand, setAlbumAutoExpand] = useState(true)
   const [loadingState, setLoadingState] = useState<AudioLoadingState>({ status: 'idle' })
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
+  const [queueProvider, setQueueProvider] = useState<QueueProvider | null>(null)
 
   // Ref: Holds the actual Audio object (doesn't trigger re-renders when changed)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -143,8 +148,45 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     [volume]
   )
 
+  // Function: Update dynamic queue if provider is available
+  const updateDynamicQueue = useCallback(() => {
+    if (!queueProvider || !albumInfo || albumInfo.artist !== "Auto-play") {
+      return
+    }
+
+    const newTracks = queueProvider()
+
+    if (!currentTrack) {
+      setAlbumTracks(newTracks)
+      setCurrentTrackIndex(0)
+      return
+    }
+
+    // Find current track in updated list to maintain position
+    const currentTrackKey = `${currentTrack.title}-${currentTrack.artist}`
+    const newIndex = newTracks.findIndex(track =>
+      `${track.track}-${track.artist}` === currentTrackKey
+    )
+
+    if (newIndex >= 0) {
+      // Current track found in updated list
+      setAlbumTracks(newTracks)
+      setCurrentTrackIndex(newIndex)
+    } else {
+      // Current track not in updated list (e.g., was hidden)
+      // Keep current track playing but update queue for next tracks
+      setAlbumTracks(newTracks)
+      // Keep current index - will naturally advance to new queue on next track
+    }
+  }, [queueProvider, albumInfo, currentTrack])
+
   // Function: Play next track in album or auto-play context
   const playNextTrack = useCallback(async () => {
+    // For dynamic contexts, refresh queue before proceeding
+    if (queueProvider && albumInfo?.artist === "Auto-play") {
+      updateDynamicQueue()
+    }
+
     if (!albumTracks || albumTracks.length === 0 || !albumInfo) {
       console.log('No album tracks available for auto-play')
       setIsPlaying(false)
@@ -187,7 +229,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setIsPlaying(false)
       }
     }
-  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback])
+  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback, queueProvider, updateDynamicQueue])
 
   // Function: Play previous track in album or auto-play context
   const playPreviousTrack = useCallback(async () => {
@@ -230,7 +272,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setIsPlaying(false)
       }
     }
-  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback])
+  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback, queueProvider, updateDynamicQueue])
 
   // Initialize audio element and bind lifecycle events once
   useEffect(() => {
@@ -408,7 +450,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }
 
   // Function: Set auto-play context for any track list
-  const setAutoPlayContext = (tracks: AlbumTrackItem[], startIndex: number, contextName: string) => {
+  const setAutoPlayContext = (tracks: AlbumTrackItem[], startIndex: number, contextName: string, dynamicQueueProvider?: QueueProvider) => {
     setAlbumTracks(tracks)
     setAlbumInfo({
       name: contextName,
@@ -418,6 +460,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     })
     setCurrentTrackIndex(startIndex)
     setAlbumAutoExpand(false) // Don't auto-expand for auto-play contexts
+    setQueueProvider(dynamicQueueProvider || null)
   }
 
   // Function: Clear album context
@@ -425,6 +468,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setAlbumTracks([])
     setAlbumInfo(null)
     setCurrentTrackIndex(0)
+    setQueueProvider(null)
   }
 
   // Provide all this to children components
@@ -446,6 +490,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setVolume,
         setAlbumContext,
         setAutoPlayContext,
+        updateDynamicQueue,
         clearAlbumContext,
         albumAutoExpand,
         loadTrack,

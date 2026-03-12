@@ -21,7 +21,7 @@ export function Search() {
 
   const { showNotification } = useNotification()
   const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { setAutoPlayContext } = useAudio()
+  const { setAutoPlayContext, updateDynamicQueue } = useAudio()
 
   // Handle search submission
   const handleSearch = async (e: React.FormEvent) => {
@@ -37,6 +37,9 @@ export function Search() {
         const searchResults = await searchTracks(query)
         setResults(searchResults)
         setAlbumResults([]) // Clear album results
+
+        // Update dynamic queue if currently in search context
+        updateDynamicQueue()
       } else {
         const searchResults = await searchAlbums(query)
         setAlbumResults(searchResults)
@@ -149,7 +152,17 @@ export function Search() {
               'track-number': index + 1,
             }))
 
-            setAutoPlayContext(searchTracks, trackIndex, "Search Results")
+            // Create dynamic queue provider for search results
+            const queueProvider = () => {
+              return results.map((result, index) => ({
+                track: result.track,
+                'track-id': Number(result['track-id']),
+                artist: result.artist,
+                'track-number': index + 1,
+              }))
+            }
+
+            setAutoPlayContext(searchTracks, trackIndex, "Search Results", queueProvider)
 
             handlePlayTrack({
               track: track.title,

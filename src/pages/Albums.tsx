@@ -209,20 +209,39 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         generateStableTrackId(track.track, track.artist) === trackItem['track-id']
                       )
                       if (originalTrack) {
-                        // Set auto-play context with current page tracks
-                        const currentPageTracks = filteredTracks
-                          .slice((currentPage - 1) * pageSize, currentPage * pageSize)
-                          .map((track, index) => ({
+                        // Create queue from all filtered tracks for seamless discovery
+                        const allFilteredTracksQueue = filteredTracks.map((track, index) => ({
+                          track: track.track,
+                          'track-id': generateStableTrackId(track.track, track.artist),
+                          artist: track.artist,
+                          'track-number': index + 1,
+                        }))
+
+                        // Find the index of the selected track in the full filtered list
+                        const globalTrackIndex = filteredTracks.findIndex(track =>
+                          generateStableTrackId(track.track, track.artist) === trackItem['track-id']
+                        )
+
+                        // Create dynamic queue provider that always returns current filtered tracks
+                        const queueProvider = () => {
+                          const currentFilteredTracks = tracks
+                            ?.filter((track) => !hiddenTracks.has(`${track.track}-${track.artist}`))
+                            .filter((track) => selectedCurator === 'all' || track.curator === selectedCurator)
+                            || []
+
+                          return currentFilteredTracks.map((track, index) => ({
                             track: track.track,
                             'track-id': generateStableTrackId(track.track, track.artist),
                             artist: track.artist,
-                            'track-number': (currentPage - 1) * pageSize + index + 1,
+                            'track-number': index + 1,
                           }))
+                        }
 
                         setAutoPlayContext(
-                          currentPageTracks,
-                          trackIndex,
-                          `Curated Tracks - Page ${currentPage}`
+                          allFilteredTracksQueue,
+                          globalTrackIndex,
+                          `Discovery Tracks`,
+                          queueProvider
                         )
 
                         playTrack(
@@ -231,7 +250,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                           originalTrack.artist,
                           {
                             clearAlbum: false,  // Keep auto-play context
-                            albumName: `Curated Tracks - Page ${currentPage}`
+                            albumName: `Discovery Tracks`
                           }
                         )
                       }
@@ -245,10 +264,10 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                       return (
                         <button
                           onClick={(e) => hideTrackItem(originalTrack, e)}
-                          className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center md:opacity-0 md:group-hover:opacity-100 hover:bg-slate-700 rounded transition-opacity"
+                          className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded transition-colors mr-1"
                           aria-label="Hide track"
                         >
-                          <X className="h-4 w-4 md:h-3 md:w-3 text-slate-400 hover:text-white" />
+                          <X className="h-4 w-4 text-slate-400 hover:text-white" />
                         </button>
                       )
                     }}

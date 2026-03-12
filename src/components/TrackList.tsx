@@ -150,18 +150,15 @@ export function TrackList(props: TrackListProps) {
           <div
             key={key}
             onClick={() => props.onSelect(obj, index)}
-            className="flex gap-3 p-3 hover:bg-slate-800/70 cursor-pointer transition-colors"
+            className="flex flex-col p-3 hover:bg-slate-800/70 cursor-pointer transition-colors"
           >
-            <div className="w-14 h-14 rounded-md overflow-hidden bg-gray-800 flex-shrink-0">
-              <img src={obj.cover} alt={`${obj.album} cover`} className="w-full h-full object-cover" />
-            </div>
             <div className="flex-1 min-w-0">
               <div className="text-white font-semibold truncate">{obj.title}</div>
               <div className="text-slate-400 text-sm truncate">{obj.artist}</div>
               <div className="text-slate-500 text-xs truncate">{obj.album}</div>
             </div>
             {loading && (
-              <div className="flex items-center text-slate-400 text-xs">
+              <div className="flex items-center text-slate-400 text-xs mt-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
             )}
