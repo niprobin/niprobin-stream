@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Pagination } from '@/components/ui/Pagination'
 import { AlbumCard } from '@/components/ui/AlbumCard'
 import { RefreshCw, X, Search } from 'lucide-react'
-import { getAlbumsToDiscover, hideDiscoveryAlbum, getTracksToDiscover, hideTrack, getAlbumTracks, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
+import { getAlbumsToDiscover, getTracksToDiscover, hideTrack, getAlbumTracks, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -43,7 +43,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
   // Use hide item hooks for albums and tracks
   const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem<DiscoverAlbum>(
-    (album) => hideDiscoveryAlbum({ id: album.id, album: album.album, artist: album.artist }),
+    (album) => hideAlbum({ album: album.album, artist: album.artist }),
     (album) => `${album.album}-${album.artist}`,
     { persistentCacheKey: 'niprobin-hidden-albums' }
   )

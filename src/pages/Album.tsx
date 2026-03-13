@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { getAlbumById, rateAlbum, hideAlbum, hideDiscoveryAlbum, type AlbumTrack } from '@/services/api'
+import { getAlbumById, rateAlbum, hideAlbum, type AlbumTrack } from '@/services/api'
 import { Button } from '@/components/ui/button'
 import { StarRating } from '@/components/ui/StarRating'
 import { TrackList } from '@/components/TrackList'
@@ -31,13 +31,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
 
   // Hide functionality
   const { hideItem: hideAlbumItem } = useHideItem(
-    (album: { album: string; artist: string; id?: string }) => {
-      if (album.id) {
-        return hideDiscoveryAlbum({ id: album.id, album: album.album, artist: album.artist })
-      } else {
-        return hideAlbum({ album: album.album, artist: album.artist })
-      }
-    },
+    (album: { album: string; artist: string }) => hideAlbum({ album: album.album, artist: album.artist }),
     (album) => `${album.album}-${album.artist}`,
     { persistentCacheKey: 'niprobin-hidden-albums' }
   )
@@ -136,7 +130,6 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       await hideAlbumItem({
         album: albumName,
         artist: artistName
-        // No ID - regular albums don't have discovery MD5 hash IDs
       })
 
       showNotification('Album hidden successfully', 'success')
