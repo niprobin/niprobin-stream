@@ -22,6 +22,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [coverUrl, setCoverUrl] = useState('')
   const [albumRating, setAlbumRating] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [databaseAlbumId, setDatabaseAlbumId] = useState<string | undefined>(undefined)
 
   const { currentTrack, isPlaying, setAlbumContext, setAutoPlayContext } = useAudio()
   const { isAuthenticated } = useAuth()
@@ -67,6 +68,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         setAlbumName(data.album)
         setArtistName(data.artist)
         setCoverUrl(data.cover)
+        setDatabaseAlbumId(data.id)
 
         // Set album context for player integration
         contextRef.current.setAlbumContext(
@@ -136,7 +138,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       await hideAlbumItem({
         album: albumName,
         artist: artistName,
-        id: albumId.toString()
+        id: databaseAlbumId
       })
 
       showNotification('Album hidden successfully', 'success')
