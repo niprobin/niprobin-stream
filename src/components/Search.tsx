@@ -170,7 +170,7 @@ export function Search() {
               track: track.title,
               artist: track.artist,
               album: track.album ?? '',
-              'track-id': 0,
+              'track-id': "0",
               cover: track.cover ?? '',
             })
           }}

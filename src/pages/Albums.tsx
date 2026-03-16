@@ -12,7 +12,7 @@ import { useCachedData } from '@/hooks/useCachedData'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
 import { useDiscoverySearch, albumFilterFunction } from '@/hooks/useDiscoverySearch'
-import { generateStableTrackId, TrackIdSource } from '@/utils/trackUtils'
+import { TrackIdSource } from '@/utils/trackUtils'
 import { useAudio } from '@/contexts/AudioContext'
 
 type DiggingTab = 'tracks' | 'albums'
