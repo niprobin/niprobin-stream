@@ -12,7 +12,7 @@ import { useCachedData } from '@/hooks/useCachedData'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
 import { useDiscoverySearch, albumFilterFunction } from '@/hooks/useDiscoverySearch'
-import { generateStableTrackId } from '@/utils/trackUtils'
+import { generateStableTrackId, TrackIdSource } from '@/utils/trackUtils'
 import { useAudio } from '@/contexts/AudioContext'
 
 type DiggingTab = 'tracks' | 'albums'
@@ -195,7 +195,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                       .slice((currentPage - 1) * pageSize, currentPage * pageSize)
                       .map((track, index) => ({
                         track: track.track,
-                        'track-id': generateStableTrackId(track.track, track.artist),
+                        'track-id': 0,
                         artist: track.artist,
                         'track-number': (currentPage - 1) * pageSize + index + 1,
                       }))}
@@ -203,23 +203,23 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                     enableLikeButtons={isAuthenticated}
                     onLikeTrack={handleLikeTrack}
                     isAuthenticated={isAuthenticated}
-                    onSelect={(trackItem, _trackIndex) => {
-                      // Find original track using stable ID matching
+                    onSelect={(trackItem) => {
+                      // Find original track using track name and artist matching
                       const originalTrack = filteredTracks.find(track =>
-                        generateStableTrackId(track.track, track.artist) === trackItem['track-id']
+                        track.track === trackItem.track && track.artist === trackItem.artist
                       )
                       if (originalTrack) {
                         // Create queue from all filtered tracks for seamless discovery
                         const allFilteredTracksQueue = filteredTracks.map((track, index) => ({
                           track: track.track,
-                          'track-id': generateStableTrackId(track.track, track.artist),
+                          'track-id': 0,
                           artist: track.artist,
                           'track-number': index + 1,
                         }))
 
                         // Find the index of the selected track in the full filtered list
                         const globalTrackIndex = filteredTracks.findIndex(track =>
-                          generateStableTrackId(track.track, track.artist) === trackItem['track-id']
+                          track.track === trackItem.track && track.artist === trackItem.artist
                         )
 
                         // Create dynamic queue provider that always returns current filtered tracks
@@ -231,7 +231,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
                           return currentFilteredTracks.map((track, index) => ({
                             track: track.track,
-                            'track-id': generateStableTrackId(track.track, track.artist),
+                            'track-id': 0,
                             artist: track.artist,
                             'track-number': index + 1,
                           }))
@@ -245,19 +245,20 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         )
 
                         playTrack(
-                          0, // Global rule: use 0 for streaming tracks without real database IDs
+                          0, // Discovery tracks use consistent fallback (handled by normalization)
                           originalTrack.track,
                           originalTrack.artist,
                           {
                             clearAlbum: false,  // Keep auto-play context
-                            albumName: `Discovery Tracks`
+                            albumName: `Discovery Tracks`,
+                            source: TrackIdSource.Discovery
                           }
                         )
                       }
                     }}
                     renderAction={(trackItem) => {
                       const originalTrack = filteredTracks.find(track =>
-                        generateStableTrackId(track.track, track.artist) === trackItem['track-id']
+                        track.track === trackItem.track && track.artist === trackItem.artist
                       )
                       if (!originalTrack) return null
 

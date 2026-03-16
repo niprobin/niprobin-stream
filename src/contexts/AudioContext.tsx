@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { getStreamUrl } from '@/services/api'
+import { normalizeTrackId, TrackIdSource } from '@/utils/trackUtils'
 
 // TypeScript: Define what a Track looks like
 type Track = {
@@ -205,13 +206,18 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       try {
         setCurrentTrackIndex(nextIndex)
 
-        // For auto-play contexts (discovery tracks, search results), use 0
-        // For real albums, use the actual track-id
+        // Determine track source and normalize track ID
         const isAutoPlayContext = albumInfo.artist === "Auto-play"
-        const trackIdToUse = isAutoPlayContext ? 0 : nextTrack['track-id']
+        const source = isAutoPlayContext ? TrackIdSource.Discovery : TrackIdSource.Album
+        const normalizedTrackId = normalizeTrackId(
+          nextTrack['track-id'],
+          nextTrack.track,
+          nextTrack.artist,
+          source
+        )
 
         const streamResponse = await getStreamUrl(
-          trackIdToUse,
+          normalizedTrackId,
           nextTrack.track,
           nextTrack.artist
         )
@@ -249,12 +255,18 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       try {
         setCurrentTrackIndex(prevIndex)
 
-        // Handle auto-play contexts vs real albums (same as playNextTrack)
+        // Determine track source and normalize track ID (same as playNextTrack)
         const isAutoPlayContext = albumInfo.artist === "Auto-play"
-        const trackIdToUse = isAutoPlayContext ? 0 : prevTrack['track-id']
+        const source = isAutoPlayContext ? TrackIdSource.Discovery : TrackIdSource.Album
+        const normalizedTrackId = normalizeTrackId(
+          prevTrack['track-id'],
+          prevTrack.track,
+          prevTrack.artist,
+          source
+        )
 
         const streamResponse = await getStreamUrl(
-          trackIdToUse,
+          normalizedTrackId,
           prevTrack.track,
           prevTrack.artist
         )
@@ -272,7 +284,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setIsPlaying(false)
       }
     }
-  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback, queueProvider, updateDynamicQueue])
+  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback])
 
   // Initialize audio element and bind lifecycle events once
   useEffect(() => {
@@ -432,7 +444,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       ;(async () => {
         try {
           const first = tracks[0]
-          const streamResponse = await getStreamUrl(first['track-id'], first.track, first.artist)
+          const normalizedTrackId = normalizeTrackId(
+            first['track-id'],
+            first.track,
+            first.artist,
+            TrackIdSource.Album
+          )
+          const streamResponse = await getStreamUrl(normalizedTrackId, first.track, first.artist)
           loadTrack({
             id: streamResponse.trackId,
             hashUrl: streamResponse.hashUrl,

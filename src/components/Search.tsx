@@ -7,6 +7,7 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useAudio } from '@/contexts/AudioContext'
+import { TrackIdSource } from '@/utils/trackUtils'
 import { Search as SearchIcon, ChevronDown, BookmarkPlus, Loader2 } from 'lucide-react'
 import { TrackList } from '@/components/TrackList'
 
@@ -56,13 +57,14 @@ export function Search() {
   // Handle clicking a track to play it
   const handlePlayTrack = async (result: SearchResult) => {
     playTrack(
-      Number(result['track-id']),
+      result['track-id'],
       result.track,
       result.artist,
       {
         clearAlbum: false,  // Keep auto-play context
         albumName: result.album,
         coverArt: result.cover,
+        source: TrackIdSource.Search,
       }
     )
   }
@@ -147,7 +149,7 @@ export function Search() {
             // Convert search results to auto-play format
             const searchTracks = results.map((result, index) => ({
               track: result.track,
-              'track-id': Number(result['track-id']),
+              'track-id': 0,
               artist: result.artist,
               'track-number': index + 1,
             }))
@@ -156,7 +158,7 @@ export function Search() {
             const queueProvider = () => {
               return results.map((result, index) => ({
                 track: result.track,
-                'track-id': Number(result['track-id']),
+                'track-id': 0,
                 artist: result.artist,
                 'track-number': index + 1,
               }))
@@ -168,7 +170,7 @@ export function Search() {
               track: track.title,
               artist: track.artist,
               album: track.album ?? '',
-              'track-id': track.id,
+              'track-id': 0,
               cover: track.cover ?? '',
             })
           }}

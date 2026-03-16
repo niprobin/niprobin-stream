@@ -10,6 +10,7 @@ import { StarRating } from '@/components/ui/StarRating'
 import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
 import { Play, Share2, X } from 'lucide-react'
+import { TrackIdSource } from '@/utils/trackUtils'
 
 type AlbumPageProps = {
   albumId: number
@@ -66,7 +67,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         contextRef.current.setAlbumContext(
           data.tracks.map((t) => ({
             track: t.track,
-            'track-id': t['track-id'],
+            'track-id': 0,
             artist: t.artist,
             'track-number': t['track-number'],
           })),
@@ -91,6 +92,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       clearAlbum: false,
       albumName: albumName,
       coverArt: coverUrl,
+      source: TrackIdSource.Album,
     })
   }
 
@@ -276,18 +278,18 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         variant="album"
         tracks={tracks.map(track => ({
           track: track.track,
-          'track-id': track['track-id'],
+          'track-id': 0,
           artist: track.artist,
           'track-number': track['track-number'],
         }))}
         loadingTrackId={loadingTrackId}
         onSelect={(trackItem, trackIndex) => {
-          const originalTrack = tracks.find(t => t['track-id'] === trackItem['track-id'])
+          const originalTrack = tracks.find(t => t.track === trackItem.track && t.artist === trackItem.artist)
           if (originalTrack) {
             // Update the current track index for proper auto-play sequencing
             const albumTracksForContext = tracks.map((t) => ({
               track: t.track,
-              'track-id': t['track-id'],
+              'track-id': 0,
               artist: t.artist,
               'track-number': t['track-number'],
             }))

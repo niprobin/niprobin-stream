@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { getStreamUrl } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
+import { normalizeTrackId, TrackIdSource } from '@/utils/trackUtils'
 
 export type TrackPlayerOptions = {
   clearAlbum?: boolean
   albumName?: string
   coverArt?: string
   spotifyId?: string
+  source?: TrackIdSource
 }
 
 /**
@@ -30,10 +32,12 @@ export function useTrackPlayer() {
       albumName,
       coverArt,
       spotifyId,
+      source = TrackIdSource.Album, // Default to album for backward compatibility
     } = options
 
-    // Use track ID as loading key, or fallback to track-artist combo
-    const loadingKey = String(trackId)
+    // Normalize track ID for consistent webhook calls
+    const normalizedTrackId = normalizeTrackId(trackId, trackName, artistName, source)
+    const loadingKey = String(normalizedTrackId)
     setLoadingTrackId(loadingKey)
 
     // Set loading state for API fetch
@@ -47,7 +51,7 @@ export function useTrackPlayer() {
 
       // Fetch stream URL and track metadata from backend
       const streamResponse = await getStreamUrl(
-        typeof trackId === 'string' ? Number(trackId) || 0 : trackId,
+        normalizedTrackId,
         trackName,
         artistName
       )
