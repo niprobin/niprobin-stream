@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Play, Pause, Download, Maximize2, Heart, Loader2, Share2, X, SkipBack, SkipForward } from 'lucide-react'
+import { Play, Pause, Download, Maximize2, Heart, Loader2, Share2, X, SkipBack, SkipForward, Music } from 'lucide-react'
 import { downloadTrack } from '@/services/api'
 import { shareTrack } from '@/utils/urlBuilder'
 import { useState, useEffect, useRef } from 'react'
@@ -209,10 +209,39 @@ export function Player() {
           <>
             {/* Desktop Layout: 3 columns */}
             <div className="hidden md:grid md:grid-cols-3 items-center gap-4 mb-4">
-                {/* Left: Track Info */}
-                <div className="text-left">
-                  <div className="font-semibold text-white truncate">{currentTrack.title}</div>
-                  <div className="text-sm text-slate-400 truncate">{currentTrack.artist}</div>
+                {/* Left: Album Cover and Track Info */}
+                <div className="flex items-center gap-3 text-left">
+                  {/* Album Cover */}
+                  <div className="flex-shrink-0">
+                    {currentTrack.coverArt ? (
+                      <img
+                        src={currentTrack.coverArt}
+                        alt={`${currentTrack.title} cover`}
+                        className="w-12 h-12 rounded-lg object-cover bg-slate-800"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none'
+                          const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                          if (nextElement) {
+                            nextElement.style.display = 'flex'
+                          }
+                        }}
+                      />
+                    ) : null}
+                    {/* Fallback when no cover or image fails to load */}
+                    <div
+                      className={`w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center ${
+                        currentTrack.coverArt ? 'hidden' : 'flex'
+                      }`}
+                    >
+                      <Music className="h-6 w-6 text-slate-400" />
+                    </div>
+                  </div>
+
+                  {/* Track Info */}
+                  <div className="min-w-0 flex-1">
+                    <div className="font-semibold text-white truncate">{currentTrack.title}</div>
+                    <div className="text-sm text-slate-400 truncate">{currentTrack.artist}</div>
+                  </div>
                 </div>
 
               {/* Center: Navigation and Play Controls */}
@@ -316,10 +345,39 @@ export function Player() {
 
             {/* Mobile Layout: Play button left, action buttons right */}
             <div className="md:hidden flex flex-col gap-1 mb-2">
-              {/* Track Info - centered */}
-              <div className="text-center text-sm text-white truncate max-w-full px-4">
-                <span className="font-semibold">{currentTrack.title}</span>
-                <span className="text-slate-400"> – {currentTrack.artist}</span>
+              {/* Track Info with Cover - centered */}
+              <div className="flex items-center justify-center gap-3 px-4 mb-2">
+                {/* Album Cover */}
+                <div className="flex-shrink-0">
+                  {currentTrack.coverArt ? (
+                    <img
+                      src={currentTrack.coverArt}
+                      alt={`${currentTrack.title} cover`}
+                      className="w-10 h-10 rounded-lg object-cover bg-slate-800"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none'
+                        const nextElement = e.currentTarget.nextElementSibling as HTMLElement
+                        if (nextElement) {
+                          nextElement.style.display = 'flex'
+                        }
+                      }}
+                    />
+                  ) : null}
+                  {/* Fallback when no cover or image fails to load */}
+                  <div
+                    className={`w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center ${
+                      currentTrack.coverArt ? 'hidden' : 'flex'
+                    }`}
+                  >
+                    <Music className="h-5 w-5 text-slate-400" />
+                  </div>
+                </div>
+
+                {/* Track Info */}
+                <div className="text-center text-sm text-white truncate max-w-full min-w-0 flex-1">
+                  <span className="font-semibold">{currentTrack.title}</span>
+                  <span className="text-slate-400"> – {currentTrack.artist}</span>
+                </div>
               </div>
 
               {/* Buttons Row: Navigation on left, play center, actions on right */}
