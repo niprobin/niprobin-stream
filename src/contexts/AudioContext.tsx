@@ -10,6 +10,7 @@ type Track = {
   title: string
   artist: string
   album?: string
+  albumId?: number
   coverArt?: string
   streamUrl: string
   spotifyId?: string
@@ -89,6 +90,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   const startPlayback = useCallback(
     (track: Track) => {
+
       if (typeof Audio === 'undefined') {
         return
       }
@@ -151,7 +153,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   // Function: Update dynamic queue if provider is available
   const updateDynamicQueue = useCallback(() => {
-    if (!queueProvider || !albumInfo || albumInfo.artist !== "Auto-play") {
+    if (!queueProvider || typeof queueProvider !== 'function' || !albumInfo || albumInfo.artist !== "Auto-play") {
       return
     }
 
@@ -184,7 +186,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // Function: Play next track in album or auto-play context
   const playNextTrack = useCallback(async () => {
     // For dynamic contexts, refresh queue before proceeding
-    if (queueProvider && albumInfo?.artist === "Auto-play") {
+    if (queueProvider && typeof queueProvider === 'function' && albumInfo?.artist === "Auto-play") {
       updateDynamicQueue()
     }
 
@@ -221,12 +223,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           nextTrack.track,
           nextTrack.artist
         )
+
+
         startPlayback({
           id: streamResponse.trackId,
           hashUrl: streamResponse.hashUrl,
           title: streamResponse.track,
           artist: streamResponse.artist,
           album: streamResponse.album || albumInfo.name,
+          albumId: streamResponse['album-id'],
           streamUrl: streamResponse.streamUrl,
           coverArt: streamResponse.cover || albumInfo.cover,
         })
@@ -276,6 +281,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           title: streamResponse.track,
           artist: streamResponse.artist,
           album: streamResponse.album || albumInfo.name,
+          albumId: streamResponse['album-id'],
           streamUrl: streamResponse.streamUrl,
           coverArt: streamResponse.cover || albumInfo.cover,
         })
@@ -457,6 +463,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             title: streamResponse.track,
             artist: streamResponse.artist,
             album: streamResponse.album || info.name,
+            albumId: streamResponse['album-id'],
             streamUrl: streamResponse.streamUrl,
             coverArt: streamResponse.cover || info.cover,
           })

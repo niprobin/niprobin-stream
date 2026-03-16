@@ -119,6 +119,7 @@ export function Player() {
   // Calculate progress percentage
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
+
   // Download the current track
   const handleDownload = async () => {
     if (!currentTrack) return
@@ -143,6 +144,16 @@ export function Player() {
     } finally {
       decrement()
     }
+  }
+
+  // Navigate to album page
+  const handleAlbumClick = () => {
+    if (!currentTrack?.albumId) return
+
+    const albumUrl = `/album/${currentTrack.albumId}`
+    window.history.pushState({}, '', albumUrl)
+    // Trigger popstate to handle route change
+    window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
   // Share the current track
@@ -241,6 +252,24 @@ export function Player() {
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-white truncate">{currentTrack.title}</div>
                     <div className="text-sm text-slate-400 truncate">{currentTrack.artist}</div>
+                    {currentTrack.album && (
+                      currentTrack.albumId ? (
+                        <a
+                          href={`/album/${currentTrack.albumId}`}
+                          className="text-xs text-slate-500 truncate cursor-pointer hover:text-slate-300 transition-colors block"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            handleAlbumClick()
+                          }}
+                        >
+                          {currentTrack.album}
+                        </a>
+                      ) : (
+                        <div className="text-xs text-slate-500 truncate">
+                          {currentTrack.album}
+                        </div>
+                      )
+                    )}
                   </div>
                 </div>
 
@@ -374,9 +403,29 @@ export function Player() {
                 </div>
 
                 {/* Track Info */}
-                <div className="text-center text-sm text-white truncate max-w-full min-w-0 flex-1">
-                  <span className="font-semibold">{currentTrack.title}</span>
-                  <span className="text-slate-400"> – {currentTrack.artist}</span>
+                <div className="text-center text-sm max-w-full min-w-0 flex-1">
+                  <div className="text-white truncate">
+                    <span className="font-semibold">{currentTrack.title}</span>
+                    <span className="text-slate-400"> – {currentTrack.artist}</span>
+                  </div>
+                  {currentTrack.album && (
+                    currentTrack.albumId ? (
+                      <a
+                        href={`/album/${currentTrack.albumId}`}
+                        className="text-xs text-slate-500 truncate mt-0.5 cursor-pointer hover:text-slate-300 transition-colors block"
+                        onClick={(e) => {
+                          e.preventDefault()
+                          handleAlbumClick()
+                        }}
+                      >
+                        {currentTrack.album}
+                      </a>
+                    ) : (
+                      <div className="text-xs text-slate-500 truncate mt-0.5">
+                        {currentTrack.album}
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
 

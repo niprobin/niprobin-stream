@@ -69,9 +69,10 @@ export function TrackList(props: TrackListProps) {
     }
   }
 
+  const baseClasses = 'divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden'
   const containerClasses = isAlbumVariant
-    ? 'divide-y divide-slate-800 border border-slate-800 bg-slate-900/40'
-    : 'divide-y divide-slate-800 rounded-2xl border border-slate-800 bg-slate-900/70 overflow-hidden shadow-lg'
+    ? `${baseClasses} bg-slate-900/50 shadow-sm`
+    : `${baseClasses} bg-slate-900/60 shadow-lg`
 
   return (
     <>

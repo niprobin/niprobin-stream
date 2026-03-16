@@ -56,6 +56,7 @@ export function useTrackPlayer() {
         artistName
       )
 
+
       // Play the track with all metadata
       play({
         id: streamResponse.trackId,
@@ -63,6 +64,7 @@ export function useTrackPlayer() {
         title: streamResponse.track,
         artist: streamResponse.artist,
         album: albumName || streamResponse.album,
+        albumId: streamResponse['album-id'],
         streamUrl: streamResponse.streamUrl,
         coverArt: coverArt || streamResponse.cover,
         spotifyId,

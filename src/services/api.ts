@@ -46,6 +46,7 @@ export type StreamResponse = {
   track: string
   artist: string
   album?: string
+  'album-id'?: number
   cover?: string
 }
 
@@ -139,6 +140,7 @@ export async function getStreamUrl(
     track: data.track,
     artist: data.artist,
     album: data.album,
+    'album-id': data['album-id'],
     cover: data.cover,
   }
 }
