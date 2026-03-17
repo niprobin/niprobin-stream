@@ -36,7 +36,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const pageSize = 10
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { setAutoPlayContext } = useAudio()
+  const { setAutoPlayContext, currentTrack, isPlaying } = useAudio()
   const { increment, decrement } = useLoading()
   const { showNotification } = useNotification()
   const { isAuthenticated } = useAuth()
@@ -202,6 +202,8 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                     loadingTrackId={loadingTrackId}
                     enableLikeButtons={isAuthenticated}
                     onLikeTrack={handleLikeTrack}
+                    currentTrackId={currentTrack?.id}
+                    isPlaying={isPlaying}
                     isAuthenticated={isAuthenticated}
                     onSelect={(trackItem) => {
                       // Find original track using track name and artist matching
@@ -250,7 +252,6 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                           originalTrack.artist,
                           {
                             clearAlbum: false,  // Keep auto-play context
-                            albumName: `Discovery Tracks`,
                             source: TrackIdSource.Discovery
                           }
                         )

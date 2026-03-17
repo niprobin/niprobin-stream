@@ -579,7 +579,7 @@ export function Player() {
       {hasAlbumContext && isExpanded && (
         <div className="flex-1 overflow-y-auto w-full pt-8">
           {/* Queue Header */}
-          <div className="flex flex-col gap-1 px-4 py-3 bg-slate-800">
+          <div className="flex flex-col gap-1 px-4 py-5 border-t border-slate-800">
             <h3 className="text-base font-semibold text-white line-clamp-1">
               {albumInfo.artist === "Auto-play" ? "Queue" : albumInfo.name}
             </h3>

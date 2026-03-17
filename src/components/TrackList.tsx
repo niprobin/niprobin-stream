@@ -69,7 +69,7 @@ export function TrackList(props: TrackListProps) {
     }
   }
 
-  const baseClasses = 'divide-y divide-slate-800 border border-slate-800 rounded-xl overflow-hidden'
+  const baseClasses = 'divide-y divide-slate-800 border border-slate-800 overflow-hidden'
   const containerClasses = isAlbumVariant
     ? `${baseClasses} bg-slate-900/50 shadow-sm`
     : `${baseClasses} bg-slate-900/60 shadow-lg`
@@ -92,11 +92,9 @@ export function TrackList(props: TrackListProps) {
           return (
             <div
               key={key}
-              className={`flex items-center gap-2 p-2 hover:bg-slate-800 cursor-pointer transition-colors group ${
-                isCurrentTrack ? 'bg-slate-800' : ''
-              }`}
+              className={`hover:bg-black/40 flex items-center gap-2 p-2 cursor-pointer transition-colors group`}
             >
-              <div className={`text-xs font-medium w-6 text-center group-hover:text-white transition-colors ${
+              <div className={`text-xs font-medium w-6 text-center transition-colors ${
                 isCurrentTrack ? 'text-white' : 'text-slate-500'
               }`}>
                 {item['track-number']}
@@ -151,11 +149,11 @@ export function TrackList(props: TrackListProps) {
           <div
             key={key}
             onClick={() => props.onSelect(obj, index)}
-            className="flex flex-col p-3 hover:bg-slate-800/70 cursor-pointer transition-colors"
+            className="flex flex-col p-3 hover:bg-black/40 cursor-pointer transition-colors"
           >
             <div className="flex-1 min-w-0">
-              <div className="text-white font-semibold truncate">{obj.title}</div>
-              <div className="text-slate-400 text-sm truncate">{obj.artist}</div>
+              <div className="text-sm font-medium text-white font-semibold truncate">{obj.title}</div>
+              <div className="text-slate-400 text-xs truncate">{obj.artist}</div>
               <div className="text-slate-500 text-xs truncate">{obj.album}</div>
             </div>
             {loading && (

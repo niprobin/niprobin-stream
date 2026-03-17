@@ -63,7 +63,7 @@ export function useTrackPlayer() {
         hashUrl: streamResponse.hashUrl,
         title: streamResponse.track,
         artist: streamResponse.artist,
-        album: albumName || streamResponse.album,
+        album: streamResponse.album || albumName,
         albumId: streamResponse['album-id'],
         streamUrl: streamResponse.streamUrl,
         coverArt: coverArt || streamResponse.cover,
