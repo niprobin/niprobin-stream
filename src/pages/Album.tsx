@@ -5,11 +5,10 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { getAlbumById, rateAlbum, hideAlbum, type AlbumTrack } from '@/services/api'
-import { Button } from '@/components/ui/button'
 import { StarRating } from '@/components/ui/StarRating'
 import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
-import { Play, Share2, X } from 'lucide-react'
+import { Share2, X } from 'lucide-react'
 import { TrackIdSource } from '@/utils/trackUtils'
 
 type AlbumPageProps = {
