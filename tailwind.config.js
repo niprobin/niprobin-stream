@@ -9,6 +9,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
+        'bebas': ['Bebas Neue', 'sans-serif'],
       },
     },
   },

@@ -159,116 +159,78 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   }
 
   return (
-    <div className="w-full p-4 sm:p-6 lg:p-8 pb-32">
+    <div className="w-full pb-32">
       {/* Album Header */}
-      <div className="flex flex-col md:flex-row gap-6 mb-8">
-        {/* Album Cover */}
-        <div className="w-48 h-48 md:w-64 md:h-64 rounded-xl overflow-hidden bg-slate-800 flex-shrink-0 mx-auto md:mx-0 border border-slate-700">
-          {coverUrl && (
-            <img
-              src={coverUrl}
-              alt={`${albumName} cover`}
-              className="w-full h-full object-cover"
-            />
-          )}
-        </div>
-
-        {/* Album Info */}
-        <div className="flex flex-col justify-end text-center md:text-left">
-          <p className="text-sm text-slate-400 uppercase tracking-wide mb-1">
-            Album
-          </p>
-          <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">
-            {albumName}
-          </h1>
-          <p className="text-lg text-slate-300 mb-4">{artistName}</p>
-
-          {/* Desktop Layout */}
-          <div className="hidden md:flex items-center gap-4 justify-start">
-            {/* Play Button - standalone */}
-            <Button
-              onClick={handlePlayAlbum}
-              className="bg-white text-black hover:bg-white/90 rounded-full px-6"
-            >
-              <Play className="h-5 w-5 mr-2" fill="currentColor" />
-              Play
-            </Button>
-
-            {/* Secondary Actions - grouped */}
-            <div className="flex px-1 py-1 rounded-lg bg-slate-800/30">
-              <Button
-                onClick={handleShareAlbum}
-                className="text-white text-center hover:bg-slate-800"
-              >
-                <Share2 className="h-5 w-5" />
-              </Button>
-
-              {isAuthenticated && (
-                <Button
-                  onClick={handleHideAlbum}
-                  className="text-white text-center hover:bg-slate-800"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-              )}
-            </div>
-
-            {/* Rating - separate group */}
-            {isAuthenticated && (
-              <StarRating
-                rating={albumRating}
-                onRatingChange={handleRateAlbum}
-                disabled={false}
+      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-6 lg:gap-10 mb-4 px-6 lg:px-10 pt-6 lg:pt-10 pb-4">
+        {/* Left: Album Cover + Metadata */}
+        <div className="flex flex-col gap-0">
+          <div className="w-full lg:w-64 h-64 rounded-sm overflow-hidden bg-slate-800 flex-shrink-0 mx-auto lg:mx-0 border border-slate-700">
+            {coverUrl && (
+              <img
+                src={coverUrl}
+                alt={`${albumName} cover`}
+                className="w-full h-full object-cover"
               />
             )}
           </div>
+          <div className="mt-4 flex flex-col gap-1 text-center lg:text-left">
+            <h1 className="font-bebas text-4xl lg:text-5xl xl:text-6xl leading-none text-white mb-2">
+              {albumName}
+            </h1>
+            <p className="text-xs text-slate-400 uppercase tracking-widest font-light">{artistName}</p>
+          </div>
+        </div>
 
-          {/* Mobile Layout */}
-          <div className="md:hidden flex flex-col gap-3 items-center">
-            {/* Row 1: Play Button */}
-            <Button
-              onClick={handlePlayAlbum}
-              className="bg-white text-black hover:bg-white/90 rounded-full px-6"
-            >
-              <Play className="h-5 w-5 mr-2" fill="currentColor" />
-              Play
-            </Button>
+        {/* Center: Spacer (empty on desktop) */}
+        <div className="hidden lg:block"></div>
 
-            {/* Row 2: Secondary actions grouped */}
-            <div className="flex gap-3">
-              <div className="flex gap-2 px-2 py-1 rounded-lg bg-slate-800/30">
-                <Button
-                  onClick={handleShareAlbum}
-                  size="icon"
-                  variant="ghost"
-                  className="text-white hover:bg-slate-800"
-                  aria-label="Share album"
-                >
-                  <Share2 className="h-5 w-5" />
-                </Button>
+        {/* Right: Action buttons stack */}
+        <div className="ap-actions-mobile lg:flex lg:flex-col gap-3 min-w-[170px] lg:min-w-[180px]">
+          {/* Play Button - Primary CTA */}
+          <button
+            onClick={handlePlayAlbum}
+            className="ap-action-btn ap-action-btn-primary"
+          >
+            <span>Play</span>
+          </button>
 
-                {isAuthenticated && (
-                  <Button
-                    onClick={handleHideAlbum}
-                    size="icon"
-                    variant="ghost"
-                    className="text-white hover:bg-slate-800"
-                    aria-label="Hide album"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                )}
-              </div>
-
-              {/* Rating stars - separate group */}
-              {isAuthenticated && (
+          {/* Secondary Actions Container */}
+          <div className="ap-actions-secondary lg:contents">
+            {/* Rate Button - Stars Only */}
+            {isAuthenticated && (
+              <button
+                className="ap-action-btn"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <StarRating
+                  inline
+                  variant="compact"
                   rating={albumRating}
                   onRatingChange={handleRateAlbum}
                   disabled={false}
                 />
-              )}
-            </div>
+              </button>
+            )}
+
+            {/* Share Button */}
+            <button
+              onClick={handleShareAlbum}
+              className="ap-action-btn"
+            >
+              <span>Share</span>
+              <Share2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+            </button>
+
+            {/* Hide Button */}
+            {isAuthenticated && (
+              <button
+                onClick={handleHideAlbum}
+                className="ap-action-btn"
+              >
+                <span>Hide</span>
+                <X className="h-3.5 w-3.5" strokeWidth={1.5} />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -276,6 +238,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       {/* Tracklist */}
       <TrackList
         variant="album"
+        albumRedesign={true}
         tracks={tracks.map(track => ({
           track: track.track,
           'track-id': 0,

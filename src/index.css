@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,5 +7,37 @@
 @layer base {
   body {
     font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .ap-action-btn {
+    @apply flex items-center justify-center gap-3 px-4 py-3
+           border border-white/10 bg-white/5 hover:bg-white/10
+           text-white text-xs font-medium uppercase tracking-wider
+           rounded-sm transition-colors cursor-pointer w-full;
+  }
+
+  .ap-action-btn-primary {
+    @apply bg-white text-black border-transparent hover:opacity-90;
+  }
+
+  /* Mobile responsive layout for action buttons */
+  @media (max-width: 1023px) {
+    .ap-actions-mobile {
+      @apply flex flex-col gap-3;
+    }
+
+    .ap-action-btn-primary {
+      @apply w-full;
+    }
+
+    .ap-actions-secondary {
+      @apply flex flex-row flex-wrap gap-3;
+    }
+
+    .ap-actions-secondary .ap-action-btn {
+      @apply justify-center flex-1 min-w-[120px];
+    }
   }
 }

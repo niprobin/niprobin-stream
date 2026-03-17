@@ -1,5 +1,5 @@
 import type { AlbumTrackItem } from '@/contexts/AudioContext'
-import { Loader2, Heart, X } from 'lucide-react'
+import { Loader2, Heart, X, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLikeModal } from '@/hooks/useLikeModal'
 import type { FormEvent } from 'react'
@@ -27,6 +27,7 @@ type AlbumListProps = {
   autoPlayContext?: {
     contextName: string  // e.g., "Discovery Tracks - Page 1", "Search Results"
   }
+  albumRedesign?: boolean
 }
 
 type SearchListProps = {
@@ -43,6 +44,7 @@ type TrackListProps = (AlbumListProps | SearchListProps)
 
 export function TrackList(props: TrackListProps) {
   const isAlbumVariant = props.variant === 'album'
+  const useRedesignLayout = isAlbumVariant && props.albumRedesign
   const data = props.tracks
 
   const {
@@ -70,12 +72,21 @@ export function TrackList(props: TrackListProps) {
   }
 
   const baseClasses = 'divide-y divide-slate-800 border border-slate-800 overflow-hidden'
-  const containerClasses = isAlbumVariant
+  const containerClasses = useRedesignLayout
+    ? 'overflow-hidden'
+    : isAlbumVariant
     ? `${baseClasses} bg-slate-900/50 shadow-sm`
     : `${baseClasses} bg-slate-900/60 shadow-lg`
 
   return (
     <>
+    {useRedesignLayout && (
+      <div className="grid grid-cols-[44px_1fr_36px] px-6 lg:px-10 py-3 border-b border-white/5">
+        <span className="text-xs uppercase tracking-wider text-white/20">#</span>
+        <span className="text-xs uppercase tracking-wider text-white/20">Title</span>
+        <span></span>
+      </div>
+    )}
     <div className={containerClasses}>
       {data.map((track, index) => {
         const key = isAlbumVariant
@@ -88,6 +99,52 @@ export function TrackList(props: TrackListProps) {
           const loading = props.loadingTrackId === trackId
           const isCurrentTrack = props.currentTrackId === trackId
           const liked = isTrackLiked(item.track, item.artist)
+
+          if (useRedesignLayout) {
+            return (
+              <div
+                key={key}
+                className="grid grid-cols-[44px_1fr_36px] items-center px-6 lg:px-10 h-14 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group"
+                onClick={() => props.onSelect(item, index)}
+              >
+                <span className={`text-sm font-normal text-center transition-colors group-hover:hidden ${
+                  isCurrentTrack ? 'text-white' : 'text-white/20'
+                }`}>
+                  {item['track-number']}
+                </span>
+                <div className="hidden group-hover:flex items-center justify-center w-11">
+                  {loading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white/50" />
+                  ) : (
+                    <Play className="h-3.5 w-3.5 text-white/50 fill-current" />
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-1 min-w-0">
+                  <div className="text-sm font-normal text-white truncate">{item.track}</div>
+                  <div className="text-xs text-white/30 font-light truncate">{item.artist}</div>
+                </div>
+
+                <div className="flex items-center justify-center">
+                  {props.enableLikeButtons && props.isAuthenticated && (
+                    <button
+                      type="button"
+                      className={`transition-all opacity-0 group-hover:opacity-100 ${
+                        liked ? 'text-red-400 opacity-100' : 'text-white/25'
+                      } hover:text-red-400`}
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        openLikeModal(trackId, item.track, item.artist)
+                      }}
+                      aria-pressed={liked}
+                    >
+                      <Heart className="h-4 w-4" fill={liked ? 'currentColor' : 'none'} />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          }
 
           return (
             <div
