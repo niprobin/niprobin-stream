@@ -169,11 +169,6 @@ export function TrackList(props: TrackListProps) {
                 </div>
               ) : (
                 <>
-                  {isCurrentTrack && !loading && (
-                    <div className="text-white text-xs pr-2">
-                      {props.isPlaying ? '▶' : '❚❚'}
-                    </div>
-                  )}
                   {props.renderIndicator?.(item)}
                   {props.renderAction?.(item)}
                   {props.enableLikeButtons && props.isAuthenticated && (
