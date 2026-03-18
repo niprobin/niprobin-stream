@@ -13,13 +13,13 @@
 @layer components {
   .ap-action-btn {
     @apply flex items-center justify-center gap-3 px-4 py-3
-           border border-white/10 bg-white/5 hover:bg-white/10
+           border border-white/10 bg-white/5 hover:border-white
            text-white text-xs font-medium uppercase tracking-wider
            rounded-sm transition-colors cursor-pointer w-full;
   }
 
   .ap-action-btn-primary {
-    @apply bg-white text-black border-transparent hover:opacity-90;
+    @apply bg-white/90 text-black border-transparent hover:bg-green-300/80 hover:border-transparent hover:text-white;
   }
 
   /* Mobile responsive layout for action buttons */

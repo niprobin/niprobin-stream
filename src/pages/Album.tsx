@@ -4,11 +4,11 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { getAlbumById, rateAlbum, hideAlbum, type AlbumTrack } from '@/services/api'
+import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, type AlbumTrack } from '@/services/api'
 import { StarRating } from '@/components/ui/StarRating'
 import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
-import { Share2, X } from 'lucide-react'
+import { Share2, X, Loader2 } from 'lucide-react'
 import { TrackIdSource } from '@/utils/trackUtils'
 
 type AlbumPageProps = {
@@ -22,6 +22,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [coverUrl, setCoverUrl] = useState('')
   const [albumRating, setAlbumRating] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
   const { currentTrack, isPlaying, setAlbumContext, setAutoPlayContext } = useAudio()
   const { isAuthenticated } = useAuth()
@@ -118,6 +119,25 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     }
   }
 
+  // Handle add album (save for later)
+  const handleAddAlbum = async () => {
+    setIsSaving(true)
+
+    try {
+      const response = await saveAlbum({
+        album: albumName,
+        artist: artistName,
+        'album-id': albumId
+      })
+      showNotification(response.message, response.status)
+    } catch (err) {
+      showNotification('Failed to save album', 'error')
+      console.error('Failed to save album:', err)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   // Handle share
   const handleShareAlbum = () => {
     const albumUrl = `stream.niprobin.com/album/${albumId}`
@@ -211,6 +231,24 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
               </button>
             )}
 
+            {/* Add Button */}
+            {isAuthenticated && (
+              <button
+                onClick={handleAddAlbum}
+                disabled={isSaving}
+                className="ap-action-btn"
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" strokeWidth={1.5} />
+                    <span>Adding...</span>
+                  </>
+                ) : (
+                  <span>Add +</span>
+                )}
+              </button>
+            )}
+
             {/* Share Button */}
             <button
               onClick={handleShareAlbum}
@@ -237,7 +275,6 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       {/* Tracklist */}
       <TrackList
         variant="album"
-        albumRedesign={true}
         tracks={tracks.map(track => ({
           track: track.track,
           'track-id': 0,

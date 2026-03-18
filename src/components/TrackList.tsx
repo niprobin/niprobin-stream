@@ -27,7 +27,8 @@ type AlbumListProps = {
   autoPlayContext?: {
     contextName: string  // e.g., "Discovery Tracks - Page 1", "Search Results"
   }
-  albumRedesign?: boolean
+  compactSpacing?: boolean
+  showColumnHeaders?: boolean
 }
 
 type SearchListProps = {
@@ -38,14 +39,17 @@ type SearchListProps = {
   autoPlayContext?: {
     contextName: string  // e.g., "Discovery Tracks - Page 1", "Search Results"
   }
+  compactSpacing?: boolean
+  showColumnHeaders?: boolean
 }
 
 type TrackListProps = (AlbumListProps | SearchListProps)
 
 export function TrackList(props: TrackListProps) {
   const isAlbumVariant = props.variant === 'album'
-  const useRedesignLayout = isAlbumVariant && props.albumRedesign
   const data = props.tracks
+  const compactSpacing = props.compactSpacing || false
+  const showColumnHeaders = props.showColumnHeaders !== false // Default true unless explicitly false
 
   const {
     isLikeModalOpen,
@@ -71,23 +75,20 @@ export function TrackList(props: TrackListProps) {
     }
   }
 
-  const baseClasses = 'divide-y divide-slate-800 border border-slate-800 overflow-hidden'
-  const containerClasses = useRedesignLayout
-    ? 'overflow-hidden'
-    : isAlbumVariant
-    ? `${baseClasses} bg-slate-900/50 shadow-sm`
-    : `${baseClasses} bg-slate-900/60 shadow-lg`
+  // Grid column template: increased action column to 40px for multiple buttons
+  const gridCols = 'grid-cols-[44px_1fr_40px]'
+  const horizontalPadding = compactSpacing ? 'px-4' : 'px-6 lg:px-10'
 
   return (
     <>
-    {useRedesignLayout && (
-      <div className="grid grid-cols-[44px_1fr_36px] px-6 lg:px-10 py-3 border-b border-white/5">
+    {showColumnHeaders && (
+      <div className={`grid ${gridCols} ${horizontalPadding} py-3 border-b border-white/5`}>
         <span className="text-xs uppercase tracking-wider text-white/20">#</span>
         <span className="text-xs uppercase tracking-wider text-white/20">Title</span>
         <span></span>
       </div>
     )}
-    <div className={containerClasses}>
+    <div className="overflow-hidden">
       {data.map((track, index) => {
         const key = isAlbumVariant
           ? `${(track as AlbumTrackItem)['track-id']}-${index}`
@@ -100,119 +101,92 @@ export function TrackList(props: TrackListProps) {
           const isCurrentTrack = props.currentTrackId === trackId
           const liked = isTrackLiked(item.track, item.artist)
 
-          if (useRedesignLayout) {
-            return (
-              <div
-                key={key}
-                className="grid grid-cols-[44px_1fr_36px] items-center px-6 lg:px-10 h-14 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group"
-                onClick={() => props.onSelect(item, index)}
-              >
+          return (
+            <div
+              key={key}
+              className={`grid ${gridCols} items-center ${horizontalPadding} h-14 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group`}
+              onClick={() => props.onSelect(item, index)}
+            >
+              {/* Track Number / Play Button Column */}
+              <div className="relative">
                 <span className={`text-sm font-normal text-center transition-colors group-hover:hidden ${
                   isCurrentTrack ? 'text-white' : 'text-white/20'
                 }`}>
                   {item['track-number']}
                 </span>
-                <div className="hidden group-hover:flex items-center justify-center w-11">
+                <div className="absolute inset-0 hidden group-hover:flex items-center justify-center">
                   {loading ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin text-white/50" />
                   ) : (
                     <Play className="h-3.5 w-3.5 text-white/50 fill-current" />
                   )}
                 </div>
-
-                <div className="flex flex-col gap-1 min-w-0">
-                  <div className="text-sm font-normal text-white truncate">{item.track}</div>
-                  <div className="text-xs text-white/30 font-light truncate">{item.artist}</div>
-                </div>
-
-                <div className="flex items-center justify-center">
-                  {props.enableLikeButtons && props.isAuthenticated && (
-                    <button
-                      type="button"
-                      className={`transition-all opacity-0 group-hover:opacity-100 ${
-                        liked ? 'text-red-400 opacity-100' : 'text-white/25'
-                      } hover:text-red-400`}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        openLikeModal(trackId, item.track, item.artist)
-                      }}
-                      aria-pressed={liked}
-                    >
-                      <Heart className="h-4 w-4" fill={liked ? 'currentColor' : 'none'} />
-                    </button>
-                  )}
-                </div>
               </div>
-            )
-          }
 
-          return (
-            <div
-              key={key}
-              className={`hover:bg-black/40 flex items-center gap-2 p-2 cursor-pointer transition-colors group`}
-            >
-              <div className={`text-xs font-medium w-6 text-center transition-colors ${
-                isCurrentTrack ? 'text-white' : 'text-slate-500'
-              }`}>
-                {item['track-number']}
+              {/* Title / Artist Column */}
+              <div className="flex flex-col gap-1 min-w-0">
+                <div className="text-sm font-normal text-white truncate">{item.track}</div>
+                <div className="text-xs text-white/30 font-light truncate">{item.artist}</div>
               </div>
-              <div
-                className="flex-1 min-w-0"
-                onClick={() => props.onSelect(item, index)}
-              >
-                <div className="text-sm font-medium text-white truncate">{item.track}</div>
-                <div className="text-slate-400 text-xs truncate">{item.artist}</div>
+
+              {/* Action Buttons Column */}
+              <div className="flex items-center justify-end gap-1">
+                {props.renderAction?.(item)}
+                {props.enableLikeButtons && props.isAuthenticated && (
+                  <button
+                    type="button"
+                    className={`transition-all opacity-0 group-hover:opacity-100 ${
+                      liked ? 'text-red-400 opacity-100' : 'text-white/25'
+                    } hover:text-red-400`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      openLikeModal(trackId, item.track, item.artist)
+                    }}
+                    aria-pressed={liked}
+                  >
+                    <Heart className="h-4 w-4" fill={liked ? 'currentColor' : 'none'} />
+                  </button>
+                )}
               </div>
-              {loading ? (
-                <div className="flex items-center text-slate-400 text-xs pr-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </div>
-              ) : (
-                <>
-                  {props.renderIndicator?.(item)}
-                  {props.renderAction?.(item)}
-                  {props.enableLikeButtons && props.isAuthenticated && (
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      className={`h-8 w-8 text-slate-300 hover:text-red-400 ${
-                        liked ? 'text-red-400' : ''
-                      }`}
-                      onClick={(event) => {
-                        event.stopPropagation()
-                        openLikeModal(trackId, item.track, item.artist)
-                      }}
-                      aria-pressed={liked}
-                    >
-                      <Heart className="h-4 w-4" fill={liked ? 'currentColor' : 'none'} />
-                    </Button>
-                  )}
-                </>
-              )}
             </div>
           )
         }
 
+        // Search variant - now using grid layout with track numbers
         const obj = track as BaseTrack & { cover: string; album: string }
         const loading = props.loadingTrackId === obj.id
+        const trackNumber = index + 1
 
         return (
           <div
             key={key}
+            className={`grid ${gridCols} items-center ${horizontalPadding} h-14 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group`}
             onClick={() => props.onSelect(obj, index)}
-            className="flex flex-col p-3 hover:bg-black/40 cursor-pointer transition-colors"
           >
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-white font-semibold truncate">{obj.title}</div>
-              <div className="text-slate-400 text-xs truncate">{obj.artist}</div>
-              <div className="text-slate-500 text-xs truncate">{obj.album}</div>
-            </div>
-            {loading && (
-              <div className="flex items-center text-slate-400 text-xs mt-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
+            {/* Track Number / Play Button Column */}
+            <div className="relative">
+              <span className="text-sm font-normal text-center transition-colors group-hover:hidden text-white/20">
+                {trackNumber}
+              </span>
+              <div className="absolute inset-0 hidden group-hover:flex items-center justify-center">
+                {loading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-white/50" />
+                ) : (
+                  <Play className="h-3.5 w-3.5 text-white/50 fill-current" />
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Title / Artist / Album Column */}
+            <div className="flex flex-col gap-1 min-w-0">
+              <div className="text-sm font-normal text-white truncate">{obj.title}</div>
+              <div className="text-xs text-white/30 font-light truncate">
+                {obj.artist} • {obj.album}
+              </div>
+            </div>
+
+            {/* Action Column (empty for search - no actions needed) */}
+            <div></div>
           </div>
         )
       })}

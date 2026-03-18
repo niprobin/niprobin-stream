@@ -600,6 +600,8 @@ export function Player() {
               isPlaying={isPlaying}
               loadingTrackId={loadingTrackId}
               isAuthenticated={isAuthenticated}
+              compactSpacing={true}
+              showColumnHeaders={false}
             />
           </div>
         </div>
