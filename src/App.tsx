@@ -123,7 +123,7 @@ function AppContent() {
       if (trackHash) {
         try {
           // Fetch track data from the hash
-          const streamResponse = await getTrackByHash(trackHash, token)
+          const streamResponse = await getTrackByHash(trackHash)
 
           // Load the track from shared link (paused, not playing)
           loadTrack({
@@ -286,13 +286,10 @@ function AppContent() {
               onClick={() => navigate('home')}
             >
               <img
-                src="/favicon-32x32.png"
+                src="/android-chrome-192x192.png"
                 alt="nipstream logo"
                 className="w-8 h-8"
               />
-              <h1 className="text-white text-2xl font-semibold tracking-tight">
-                nipstream
-              </h1>
             </div>
             
             {isAuthenticated && (
