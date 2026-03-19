@@ -36,6 +36,7 @@ export function Player() {
   const [showMobileActions, setShowMobileActions] = useState(false)
   const playerRef = useRef<HTMLDivElement>(null)
   const mobileActionsRef = useRef<HTMLDivElement>(null)
+  const threeDotsRef = useRef<HTMLButtonElement>(null)
 
   // Determine if current track is loading
   const isCurrentTrackLoading = loadingState.status !== 'idle' &&
@@ -71,7 +72,11 @@ export function Player() {
   // Handle click outside to close mobile actions menu
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (showMobileActions && mobileActionsRef.current && !mobileActionsRef.current.contains(event.target as Node)) {
+      if (showMobileActions &&
+          mobileActionsRef.current &&
+          !mobileActionsRef.current.contains(event.target as Node) &&
+          threeDotsRef.current &&
+          !threeDotsRef.current.contains(event.target as Node)) {
         setShowMobileActions(false)
       }
     }
@@ -398,7 +403,7 @@ export function Player() {
               {showMobileActions && (
                 <div
                   ref={mobileActionsRef}
-                  className="fixed bottom-full left-0 right-0 flex justify-center gap-8 bg-slate-600 border-t border-slate-500 px-4 py-4 shadow-xl z-50 mb-0"
+                  className="absolute bottom-full left-0 right-0 flex justify-center gap-8 bg-slate-600 border-t border-slate-500 px-4 py-4 shadow-xl z-50 mb-2"
                 >
                   {/* Like Button */}
                   {isAuthenticated && currentTrack && (
@@ -524,6 +529,7 @@ export function Player() {
 
                     {/* Three Dots */}
                     <Button
+                      ref={threeDotsRef}
                       onClick={(e) => {
                         e.stopPropagation()
                         setShowMobileActions(!showMobileActions)
