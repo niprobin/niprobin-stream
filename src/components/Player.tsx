@@ -398,7 +398,7 @@ export function Player() {
               {showMobileActions && (
                 <div
                   ref={mobileActionsRef}
-                  className="fixed bottom-24 left-0 right-0 flex justify-center gap-8 bg-slate-900 border-t border-slate-800 px-4 py-4 shadow-xl z-50"
+                  className="fixed bottom-full left-0 right-0 flex justify-center gap-8 bg-slate-600 border-t border-slate-500 px-4 py-4 shadow-xl z-50 mb-0"
                 >
                   {/* Like Button */}
                   {isAuthenticated && currentTrack && (
