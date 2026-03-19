@@ -33,7 +33,9 @@ export function Player() {
     setSelectedPlaylist,
   } = useLikeModal(token)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [showMobileActions, setShowMobileActions] = useState(false)
   const playerRef = useRef<HTMLDivElement>(null)
+  const mobileActionsRef = useRef<HTMLDivElement>(null)
 
   // Determine if current track is loading
   const isCurrentTrackLoading = loadingState.status !== 'idle' &&
@@ -65,6 +67,23 @@ export function Player() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [isExpanded])
+
+  // Handle click outside to close mobile actions menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showMobileActions && mobileActionsRef.current && !mobileActionsRef.current.contains(event.target as Node)) {
+        setShowMobileActions(false)
+      }
+    }
+
+    if (showMobileActions) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showMobileActions])
 
   // Prevent scroll propagation when player is maximized (but allow tracklist scrolling)
   useEffect(() => {
@@ -372,18 +391,89 @@ export function Player() {
               </div>
             </div>
 
-            {/* Mobile-First Responsive Layout */}
-            <div className="md:hidden flex flex-col gap-2 mb-2">
+            {/* Mobile Wireframe Layout */}
+            <div className="md:hidden relative">
 
-              {/* Track Info with Cover - shared across all mobile sizes */}
-              <div className="flex items-center justify-center gap-3 px-4">
-                {/* Album Cover */}
+              {/* Floating Actions Menu - appears above main row */}
+              {showMobileActions && (
+                <div
+                  ref={mobileActionsRef}
+                  className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-4 flex gap-4 bg-slate-900 border border-slate-800 rounded-2xl px-6 py-4 shadow-xl z-10"
+                >
+                  {/* Like Button */}
+                  {isAuthenticated && currentTrack && (
+                    <Button
+                      onClick={() => {
+                        openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)
+                        setShowMobileActions(false)
+                      }}
+                      size="icon-lg"
+                      variant="ghost"
+                      className={`text-white hover:text-red-400 hover:bg-slate-800/50 ${
+                        isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
+                      }`}
+                    >
+                      <Heart
+                        className="h-6 w-6"
+                        fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
+                      />
+                    </Button>
+                  )}
+
+                  {/* Share Button */}
+                  <Button
+                    onClick={() => {
+                      handleShare()
+                      setShowMobileActions(false)
+                    }}
+                    size="icon-lg"
+                    variant="ghost"
+                    className="text-white hover:text-blue-400 hover:bg-slate-800/50"
+                  >
+                    <Share2 className="h-6 w-6" />
+                  </Button>
+
+                  {/* Download Button */}
+                  <Button
+                    onClick={() => {
+                      handleDownload()
+                      setShowMobileActions(false)
+                    }}
+                    size="icon-lg"
+                    variant="ghost"
+                    disabled={isGlobalLoading}
+                    className="text-white hover:text-green-400 hover:bg-slate-800/50"
+                  >
+                    <Download className={`h-6 w-6 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
+                  </Button>
+
+                  {/* Expand Button */}
+                  {hasAlbumContext && (
+                    <Button
+                      onClick={() => {
+                        toggleExpand()
+                        setShowMobileActions(false)
+                      }}
+                      size="icon-lg"
+                      variant="ghost"
+                      className="text-white hover:text-purple-400 hover:bg-slate-800/50"
+                    >
+                      <Maximize2 className="h-6 w-6" />
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {/* Main Row: Cover + Track Info + Controls */}
+              <div className="flex items-center gap-3 px-4 py-2">
+
+                {/* Left: Album Cover */}
                 <div className="flex-shrink-0">
                   {currentTrack.coverArt ? (
                     <img
                       src={currentTrack.coverArt}
                       alt={`${currentTrack.title} cover`}
-                      className="w-10 h-10 rounded-lg object-cover bg-slate-800"
+                      className="w-12 h-12 rounded-lg object-cover bg-slate-800"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
                         const nextElement = e.currentTarget.nextElementSibling as HTMLElement
@@ -393,261 +483,106 @@ export function Player() {
                       }}
                     />
                   ) : null}
-                  {/* Fallback when no cover or image fails to load */}
                   <div
-                    className={`w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center ${
+                    className={`w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center ${
                       currentTrack.coverArt ? 'hidden' : 'flex'
                     }`}
                   >
-                    <Music className="h-5 w-5 text-slate-400" />
+                    <Music className="h-6 w-6 text-slate-400" />
                   </div>
                 </div>
 
-                {/* Track Info */}
-                <div className="text-center text-sm max-w-full min-w-0 flex-1">
-                  <div className="text-white truncate">
-                    <span className="font-semibold">{currentTrack.title}</span>
-                    <span className="text-slate-400"> – {currentTrack.artist}</span>
-                  </div>
-                  {currentTrack.album && (
-                    currentTrack.albumId ? (
-                      <a
-                        href={`/album/${currentTrack.albumId}`}
-                        className="text-xs text-slate-500 truncate mt-0.5 cursor-pointer hover:text-slate-300 transition-colors block"
-                        onClick={(e) => {
-                          e.preventDefault()
-                          handleAlbumClick()
-                        }}
-                      >
-                        {currentTrack.album}
-                      </a>
-                    ) : (
-                      <div className="text-xs text-slate-500 truncate mt-0.5">
-                        {currentTrack.album}
+                {/* Middle: Track Info with Three Dots */}
+                <div className="flex-1 min-w-0 text-left">
+                  <div className="flex items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold text-white truncate text-sm">
+                        {currentTrack.title}
                       </div>
-                    )
-                  )}
-                </div>
-              </div>
+                      <div className="text-sm text-slate-400 truncate">
+                        {currentTrack.artist}
+                      </div>
+                      {currentTrack.album && (
+                        currentTrack.albumId ? (
+                          <a
+                            href={`/album/${currentTrack.albumId}`}
+                            className="text-xs text-slate-500 truncate cursor-pointer hover:text-slate-300 transition-colors block"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              handleAlbumClick()
+                            }}
+                          >
+                            {currentTrack.album}
+                          </a>
+                        ) : (
+                          <div className="text-xs text-slate-500 truncate">
+                            {currentTrack.album}
+                          </div>
+                        )
+                      )}
+                    </div>
 
-              {/* Mobile Three-Row Layout (default: 320px-639px) */}
-
-              {/* Row 1: Primary Control - Large Play/Pause Button */}
-              <div className="sm:hidden flex justify-center">
-                <Button
-                  onClick={handlePlayPause}
-                  size="icon-lg"
-                  variant="ghost"
-                  className="bg-white rounded-full text-black h-12 w-12 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isCurrentTrackLoading}
-                >
-                  {isCurrentTrackLoading ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                  ) : isPlaying ? (
-                    <Pause className="h-6 w-6" />
-                  ) : (
-                    <Play className="h-6 w-6" />
-                  )}
-                </Button>
-              </div>
-
-              {/* Row 2: Secondary Controls - Navigation & Actions */}
-              <div className="sm:hidden flex justify-between items-center px-2">
-                {/* Left: Navigation Controls */}
-                <div className="flex gap-1">
-                  {hasAlbumContext && (
-                    <>
-                      <Button
-                        onClick={handlePreviousTrack}
-                        size="icon-sm"
-                        variant="ghost"
-                        className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                        disabled={!canGoToPrevious}
-                      >
-                        <SkipBack className="h-5 w-5" />
-                      </Button>
-                      <Button
-                        onClick={handleNextTrack}
-                        size="icon-sm"
-                        variant="ghost"
-                        className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                        disabled={!canGoToNext}
-                      >
-                        <SkipForward className="h-5 w-5" />
-                      </Button>
-                    </>
-                  )}
-                </div>
-
-                {/* Center: Essential Actions */}
-                <div className="flex gap-1">
-                  {isAuthenticated && currentTrack && (
+                    {/* Three Dots */}
                     <Button
-                      onClick={() => openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowMobileActions(!showMobileActions)
+                      }}
                       size="icon-sm"
                       variant="ghost"
-                      className={`text-white hover:text-red-400 hover:bg-slate-800 ${
-                        isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
-                      }`}
-                      aria-pressed={isTrackLiked(currentTrack.title, currentTrack.artist)}
+                      className="text-slate-400 hover:text-white hover:bg-slate-800/50 flex-shrink-0"
                     >
-                      <Heart
-                        className="h-5 w-5"
-                        fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
-                      />
+                      <MoreHorizontal className="h-4 w-4" />
                     </Button>
-                  )}
-                  <Button
-                    onClick={handleShare}
-                    size="icon-sm"
-                    variant="ghost"
-                    className="text-white hover:text-blue-400 hover:bg-slate-800"
-                  >
-                    <Share2 className="h-5 w-5" />
-                  </Button>
-                </div>
-
-                {/* Right: More Menu for Overflow Actions */}
-                <div className="relative">
-                  <Button
-                    size="icon-sm"
-                    variant="ghost"
-                    className="text-white/70 hover:text-white hover:bg-slate-800"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      const menu = e.currentTarget.nextElementSibling as HTMLElement
-                      if (menu) {
-                        menu.classList.toggle('hidden')
-                      }
-                    }}
-                  >
-                    <MoreHorizontal className="h-5 w-5" />
-                  </Button>
-
-                  {/* Dropdown Menu */}
-                  <div className="absolute bottom-full right-0 mb-2 bg-slate-900 border border-slate-800 rounded-lg shadow-xl hidden z-10 min-w-[140px]">
-                    <Button
-                      onClick={() => {
-                        handleDownload()
-                        // Close menu
-                        const menu = document.querySelector('.absolute.bottom-full') as HTMLElement
-                        if (menu) menu.classList.add('hidden')
-                      }}
-                      variant="ghost"
-                      disabled={isGlobalLoading}
-                      className="w-full justify-start text-white hover:text-white hover:bg-slate-800 rounded-none rounded-t-lg text-sm h-10"
-                    >
-                      <Download className={`h-4 w-4 mr-2 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
-                      Download
-                    </Button>
-                    {hasAlbumContext && (
-                      <Button
-                        onClick={() => {
-                          toggleExpand()
-                          // Close menu
-                          const menu = document.querySelector('.absolute.bottom-full') as HTMLElement
-                          if (menu) menu.classList.add('hidden')
-                        }}
-                        variant="ghost"
-                        className="w-full justify-start text-white/70 hover:text-white hover:bg-slate-800 rounded-none rounded-b-lg text-sm h-10"
-                      >
-                        <Maximize2 className="h-4 w-4 mr-2" />
-                        Expand Queue
-                      </Button>
-                    )}
                   </div>
                 </div>
-              </div>
 
-              {/* Small Screen Hybrid Layout (sm: 640px-767px) */}
-              <div className="hidden sm:flex md:hidden justify-between items-center">
-                {/* Left: Navigation + Play */}
-                <div className="flex items-center gap-2">
+                {/* Right: Navigation Controls */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Previous Button */}
                   {hasAlbumContext && (
-                    <>
-                      <Button
-                        onClick={handlePreviousTrack}
-                        size="icon"
-                        variant="ghost"
-                        className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                        disabled={!canGoToPrevious}
-                      >
-                        <SkipBack className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        onClick={handleNextTrack}
-                        size="icon"
-                        variant="ghost"
-                        className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                        disabled={!canGoToNext}
-                      >
-                        <SkipForward className="h-4 w-4" />
-                      </Button>
-                    </>
+                    <Button
+                      onClick={handlePreviousTrack}
+                      size="icon"
+                      variant="ghost"
+                      className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
+                      disabled={!canGoToPrevious}
+                    >
+                      <SkipBack className="h-5 w-5" />
+                    </Button>
                   )}
+
+                  {/* Play/Pause Button */}
                   <Button
                     onClick={handlePlayPause}
-                    size="icon"
+                    size="icon-lg"
                     variant="ghost"
                     className="bg-white rounded-full text-black disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={isCurrentTrackLoading}
                   >
                     {isCurrentTrackLoading ? (
-                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <Loader2 className="h-6 w-6 animate-spin" />
                     ) : isPlaying ? (
-                      <Pause className="h-5 w-5" />
+                      <Pause className="h-6 w-6" />
                     ) : (
-                      <Play className="h-5 w-5" />
+                      <Play className="h-6 w-6" />
                     )}
                   </Button>
-                </div>
 
-                {/* Right: All Actions */}
-                <div className="flex items-center gap-2">
-                  {isAuthenticated && currentTrack && (
-                    <Button
-                      onClick={() => openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)}
-                      size="icon"
-                      variant="ghost"
-                      className={`text-white hover:text-red-400 hover:bg-slate-800 ${
-                        isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
-                      }`}
-                      aria-pressed={isTrackLiked(currentTrack.title, currentTrack.artist)}
-                    >
-                      <Heart
-                        className="h-4 w-4"
-                        fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
-                      />
-                    </Button>
-                  )}
-                  <Button
-                    onClick={handleShare}
-                    size="icon"
-                    variant="ghost"
-                    className="text-white hover:text-blue-400 hover:bg-slate-800"
-                  >
-                    <Share2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    onClick={handleDownload}
-                    size="icon"
-                    variant="ghost"
-                    disabled={isGlobalLoading}
-                    className="text-white hover:text-white hover:bg-slate-800"
-                  >
-                    <Download className={`h-4 w-4 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
-                  </Button>
+                  {/* Next Button */}
                   {hasAlbumContext && (
                     <Button
-                      onClick={toggleExpand}
+                      onClick={handleNextTrack}
                       size="icon"
                       variant="ghost"
-                      className="text-white/70 hover:text-white hover:bg-slate-800"
+                      className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
+                      disabled={!canGoToNext}
                     >
-                      <Maximize2 className="h-4 w-4" />
+                      <SkipForward className="h-5 w-5" />
                     </Button>
                   )}
                 </div>
+
               </div>
             </div>
 
