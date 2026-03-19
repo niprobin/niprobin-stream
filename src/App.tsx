@@ -94,7 +94,7 @@ function AuthControls() {
 }
 
 function AppContent() {
-  const { isAuthenticated, token } = useAuth()
+  const { isAuthenticated } = useAuth()
   const { loadTrack } = useAudio()
   const [activePage, setActivePage] = useState<'home' | 'library' | 'digging' | 'album'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
