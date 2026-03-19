@@ -94,7 +94,7 @@ function AuthControls() {
 }
 
 function AppContent() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, token } = useAuth()
   const { loadTrack } = useAudio()
   const [activePage, setActivePage] = useState<'home' | 'library' | 'digging' | 'album'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
@@ -123,7 +123,7 @@ function AppContent() {
       if (trackHash) {
         try {
           // Fetch track data from the hash
-          const streamResponse = await getTrackByHash(trackHash)
+          const streamResponse = await getTrackByHash(trackHash, token)
 
           // Load the track from shared link (paused, not playing)
           loadTrack({
