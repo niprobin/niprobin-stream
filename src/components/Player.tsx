@@ -238,6 +238,76 @@ export function Player() {
 
   return (
     <>
+      {/* Mobile Actions Menu - positioned outside player container */}
+      {showMobileActions && (
+        <div
+          ref={mobileActionsRef}
+          className="md:hidden fixed bottom-32 left-0 right-0 flex justify-center gap-8 bg-slate-600 border-t border-slate-500 px-4 py-4 shadow-xl z-[9999]"
+        >
+          {/* Like Button */}
+          {isAuthenticated && currentTrack && (
+            <Button
+              onClick={() => {
+                openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)
+                setShowMobileActions(false)
+              }}
+              size="icon-lg"
+              variant="ghost"
+              className={`text-white hover:text-red-400 hover:bg-slate-800/50 ${
+                isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
+              }`}
+            >
+              <Heart
+                className="h-6 w-6"
+                fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
+              />
+            </Button>
+          )}
+
+          {/* Share Button */}
+          <Button
+            onClick={() => {
+              handleShare()
+              setShowMobileActions(false)
+            }}
+            size="icon-lg"
+            variant="ghost"
+            className="text-white hover:text-blue-400 hover:bg-slate-800/50"
+          >
+            <Share2 className="h-6 w-6" />
+          </Button>
+
+          {/* Download Button */}
+          <Button
+            onClick={() => {
+              handleDownload()
+              setShowMobileActions(false)
+            }}
+            size="icon-lg"
+            variant="ghost"
+            disabled={isGlobalLoading}
+            className="text-white hover:text-green-400 hover:bg-slate-800/50"
+          >
+            <Download className={`h-6 w-6 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
+          </Button>
+
+          {/* Expand Button */}
+          {hasAlbumContext && (
+            <Button
+              onClick={() => {
+                toggleExpand()
+                setShowMobileActions(false)
+              }}
+              size="icon-lg"
+              variant="ghost"
+              className="text-white hover:text-purple-400 hover:bg-slate-800/50"
+            >
+              <Maximize2 className="h-6 w-6" />
+            </Button>
+          )}
+        </div>
+      )}
+
       <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 md:p-6 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
       <div className="flex-shrink-0 w-full">
         {currentTrack ? (
@@ -399,75 +469,6 @@ export function Player() {
             {/* Mobile Wireframe Layout */}
             <div className="md:hidden relative">
 
-              {/* Floating Actions Menu - appears above main row */}
-              {showMobileActions && (
-                <div
-                  ref={mobileActionsRef}
-                  className="absolute bottom-full left-0 right-0 flex justify-center gap-8 bg-slate-600 border-t border-slate-500 px-4 py-4 shadow-xl z-[9999] mb-2"
-                >
-                  {/* Like Button */}
-                  {isAuthenticated && currentTrack && (
-                    <Button
-                      onClick={() => {
-                        openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)
-                        setShowMobileActions(false)
-                      }}
-                      size="icon-lg"
-                      variant="ghost"
-                      className={`text-white hover:text-red-400 hover:bg-slate-800/50 ${
-                        isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
-                      }`}
-                    >
-                      <Heart
-                        className="h-6 w-6"
-                        fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
-                      />
-                    </Button>
-                  )}
-
-                  {/* Share Button */}
-                  <Button
-                    onClick={() => {
-                      handleShare()
-                      setShowMobileActions(false)
-                    }}
-                    size="icon-lg"
-                    variant="ghost"
-                    className="text-white hover:text-blue-400 hover:bg-slate-800/50"
-                  >
-                    <Share2 className="h-6 w-6" />
-                  </Button>
-
-                  {/* Download Button */}
-                  <Button
-                    onClick={() => {
-                      handleDownload()
-                      setShowMobileActions(false)
-                    }}
-                    size="icon-lg"
-                    variant="ghost"
-                    disabled={isGlobalLoading}
-                    className="text-white hover:text-green-400 hover:bg-slate-800/50"
-                  >
-                    <Download className={`h-6 w-6 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
-                  </Button>
-
-                  {/* Expand Button */}
-                  {hasAlbumContext && (
-                    <Button
-                      onClick={() => {
-                        toggleExpand()
-                        setShowMobileActions(false)
-                      }}
-                      size="icon-lg"
-                      variant="ghost"
-                      className="text-white hover:text-purple-400 hover:bg-slate-800/50"
-                    >
-                      <Maximize2 className="h-6 w-6" />
-                    </Button>
-                  )}
-                </div>
-              )}
 
               {/* Main Row: Cover + Track Info + Controls */}
               <div className="flex items-center gap-3 px-4 py-2">
