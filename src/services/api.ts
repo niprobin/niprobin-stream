@@ -1,5 +1,12 @@
 import { parseApiResponse } from '@/utils/apiHelpers'
 
+// Auth headers helper
+export function authHeaders(token: string | null): HeadersInit {
+  return token
+    ? { 'Content-Type': 'application/json', 'X-Auth-Token': token }
+    : { 'Content-Type': 'application/json' }
+}
+
 // Type for search results
 export type SearchResult = {
   track: string
@@ -96,6 +103,14 @@ export type DiscoverTrack = {
   'spotify-id'?: string
 }
 
+export type LibraryTrack = {
+  track: string
+  artist: string
+  folder: string
+  uploaded_at: string
+  stream_url: string
+}
+
 // Search for tracks
 export async function searchTracks(query: string): Promise<SearchResult[]> {
   const response = await fetch('https://n8n.niprobin.com/webhook/search', {
@@ -118,14 +133,14 @@ export async function searchTracks(query: string): Promise<SearchResult[]> {
 export async function getStreamUrl(
   trackId: number,
   track: string,
-  artist: string
+  artist: string,
+  token: string | null,
+  context?: string
 ): Promise<StreamResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/stream', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ trackId, track, artist }),
+    headers: authHeaders(token),
+    body: JSON.stringify({ trackId, track, artist, context }),
   })
 
   if (!response.ok) {
@@ -257,12 +272,10 @@ export async function getAlbumById(albumId: number): Promise<AlbumResponse> {
   }
 }
 
-export async function likeTrack(payload: LikeTrackPayload): Promise<LikeTrackResponse> {
+export async function likeTrack(payload: LikeTrackPayload, token: string | null): Promise<LikeTrackResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/like-track', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: authHeaders(token),
     body: JSON.stringify(payload),
   })
 
@@ -273,12 +286,10 @@ export async function likeTrack(payload: LikeTrackPayload): Promise<LikeTrackRes
   })
 }
 
-export async function rateAlbum(payload: RateAlbumPayload): Promise<LikeTrackResponse> {
+export async function rateAlbum(payload: RateAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/rate-album', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: authHeaders(token),
     body: JSON.stringify(payload),
   })
 
@@ -289,12 +300,10 @@ export async function rateAlbum(payload: RateAlbumPayload): Promise<LikeTrackRes
   })
 }
 
-export async function rateDiscoveryAlbum(payload: RateDiscoveryAlbumPayload): Promise<LikeTrackResponse> {
+export async function rateDiscoveryAlbum(payload: RateDiscoveryAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/rate-album', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: authHeaders(token),
     body: JSON.stringify(payload),
   })
 
@@ -311,12 +320,10 @@ type SaveAlbumPayload = {
   'album-id': number
 }
 
-export async function saveAlbum(payload: SaveAlbumPayload): Promise<LikeTrackResponse> {
+export async function saveAlbum(payload: SaveAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/save-album', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: authHeaders(token),
     body: JSON.stringify(payload),
   })
 
@@ -327,9 +334,10 @@ export async function saveAlbum(payload: SaveAlbumPayload): Promise<LikeTrackRes
   })
 }
 
-export async function getAlbumsToDiscover(): Promise<DiscoverAlbum[]> {
+export async function getAlbumsToDiscover(token: string | null): Promise<DiscoverAlbum[]> {
   const response = await fetch('https://n8n.niprobin.com/webhook/albums-to-discover', {
     method: 'GET',
+    headers: authHeaders(token),
   })
 
   if (!response.ok) {
@@ -348,13 +356,36 @@ export async function getAlbumsToDiscover(): Promise<DiscoverAlbum[]> {
   return []
 }
 
-export async function getTracksToDiscover(): Promise<DiscoverTrack[]> {
+export async function getTracksToDiscover(token: string | null): Promise<DiscoverTrack[]> {
   const response = await fetch('https://n8n.niprobin.com/webhook/tracks-to-discover', {
     method: 'GET',
+    headers: authHeaders(token),
   })
 
   if (!response.ok) {
     throw new Error('Failed to load tracks to discover')
+  }
+
+  const data = await response.json()
+  if (Array.isArray(data)) {
+    return data
+  }
+
+  if (data?.results && Array.isArray(data.results)) {
+    return data.results
+  }
+
+  return []
+}
+
+export async function getLibraryTracks(token: string | null): Promise<LibraryTrack[]> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/library', {
+    method: 'GET',
+    headers: authHeaders(token),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to load library tracks')
   }
 
   const data = await response.json()
@@ -401,12 +432,10 @@ type HideDiscoveryAlbumPayload = {
   artist: string
 }
 
-export async function hideAlbum(payload: HideAlbumPayload): Promise<void> {
+export async function hideAlbum(payload: HideAlbumPayload, token: string | null): Promise<void> {
   const response = await fetch('https://n8n.niprobin.com/webhook/hide-album', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: authHeaders(token),
     body: JSON.stringify(payload),
   })
 
@@ -415,12 +444,10 @@ export async function hideAlbum(payload: HideAlbumPayload): Promise<void> {
   }
 }
 
-export async function hideDiscoveryAlbum(payload: HideDiscoveryAlbumPayload): Promise<void> {
+export async function hideDiscoveryAlbum(payload: HideDiscoveryAlbumPayload, token: string | null): Promise<void> {
   const response = await fetch('https://n8n.niprobin.com/webhook/hide-album', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: authHeaders(token),
     body: JSON.stringify(payload),
   })
 
@@ -435,12 +462,10 @@ type HideTrackPayload = {
   'spotify-id'?: string
 }
 
-export async function hideTrack(payload: HideTrackPayload): Promise<void> {
+export async function hideTrack(payload: HideTrackPayload, token: string | null): Promise<void> {
   const response = await fetch('https://n8n.niprobin.com/webhook/hide-track', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: authHeaders(token),
     body: JSON.stringify(payload),
   })
 
@@ -450,13 +475,11 @@ export async function hideTrack(payload: HideTrackPayload): Promise<void> {
 }
 
 // Get track info and stream URL from hash
-export async function getTrackByHash(hash: string): Promise<StreamResponse> {
+export async function getTrackByHash(hash: string, token: string | null): Promise<StreamResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/stream', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ hash }),
+    headers: authHeaders(token),
+    body: JSON.stringify({ hash, context: 'share' }),
   })
 
   if (!response.ok) {

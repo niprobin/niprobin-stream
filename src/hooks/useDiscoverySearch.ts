@@ -94,3 +94,16 @@ export const albumFilterFunction = (albums: any[], query: string) => {
       album.artist.toLowerCase().includes(searchTerm)
   )
 }
+
+// Predefined filter function for library tracks
+export const libraryFilterFunction = (tracks: any[], query: string) => {
+  const searchTerm = query.toLowerCase().trim()
+  if (!searchTerm) return tracks
+
+  return tracks.filter(
+    (track) =>
+      track.track.toLowerCase().includes(searchTerm) ||
+      track.artist.toLowerCase().includes(searchTerm) ||
+      track.folder.toLowerCase().includes(searchTerm)
+  )
+}

@@ -31,7 +31,7 @@ type LikeModalTrack = {
   spotifyId?: string
 }
 
-export function useLikeModal() {
+export function useLikeModal(token: string | null) {
   const { showNotification } = useNotification()
 
   const [isLikeModalOpen, setIsLikeModalOpen] = useState(false)
@@ -73,7 +73,7 @@ export function useLikeModal() {
         artist: likeModalTrack.artist,
         playlist: selectedPlaylist,
         'spotify-id': likeModalTrack.spotifyId || ''
-      })
+      }, token)
 
       if (result.status === 'success') {
         // Update localStorage

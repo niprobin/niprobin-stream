@@ -2,6 +2,7 @@ import type { AlbumTrackItem } from '@/contexts/AudioContext'
 import { Loader2, Heart, X, Play } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useLikeModal } from '@/hooks/useLikeModal'
+import { useAuth } from '@/contexts/AuthContext'
 import type { FormEvent } from 'react'
 
 type BaseTrack = {
@@ -50,6 +51,7 @@ export function TrackList(props: TrackListProps) {
   const data = props.tracks
   const compactSpacing = props.compactSpacing || false
   const showColumnHeaders = props.showColumnHeaders !== false // Default true unless explicitly false
+  const { token } = useAuth()
 
   const {
     isLikeModalOpen,
@@ -62,7 +64,7 @@ export function TrackList(props: TrackListProps) {
     closeLikeModal,
     handleSubmitLike: handleModalSubmit,
     setSelectedPlaylist,
-  } = useLikeModal()
+  } = useLikeModal(token)
 
   // Wrapper to handle parent callback after successful like
   const handleSubmitLike = async (event: FormEvent) => {

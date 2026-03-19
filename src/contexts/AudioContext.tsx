@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useRef, useCallback, useEffect } f
 import type { ReactNode } from 'react'
 import { getStreamUrl } from '@/services/api'
 import { normalizeTrackId, TrackIdSource } from '@/utils/trackUtils'
+import { getStreamContext } from '@/utils/urlBuilder'
+import { useAuth } from '@/contexts/AuthContext'
 
 // TypeScript: Define what a Track looks like
 type Track = {
@@ -84,6 +86,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [loadingState, setLoadingState] = useState<AudioLoadingState>({ status: 'idle' })
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
   const [queueProvider, setQueueProvider] = useState<QueueProvider | null>(null)
+
+  // Auth token for API requests
+  const { token } = useAuth()
 
   // Ref: Holds the actual Audio object (doesn't trigger re-renders when changed)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -221,7 +226,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         const streamResponse = await getStreamUrl(
           normalizedTrackId,
           nextTrack.track,
-          nextTrack.artist
+          nextTrack.artist,
+          token,
+          getStreamContext()
         )
 
 
@@ -273,7 +280,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         const streamResponse = await getStreamUrl(
           normalizedTrackId,
           prevTrack.track,
-          prevTrack.artist
+          prevTrack.artist,
+          token,
+          getStreamContext()
         )
         startPlayback({
           id: streamResponse.trackId,
@@ -456,7 +465,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             first.artist,
             TrackIdSource.Album
           )
-          const streamResponse = await getStreamUrl(normalizedTrackId, first.track, first.artist)
+          const streamResponse = await getStreamUrl(normalizedTrackId, first.track, first.artist, token, getStreamContext())
           loadTrack({
             id: streamResponse.trackId,
             hashUrl: streamResponse.hashUrl,

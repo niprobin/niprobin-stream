@@ -56,6 +56,19 @@ export function buildDiggingUrl(tab: 'tracks' | 'albums', page?: number): string
 }
 
 /**
+ * Build a library URL with optional page parameter
+ * @param page - Optional page number (defaults to 1, omitted from URL if 1)
+ * @returns The path to the library page (e.g., "/library" or "/library?page=3")
+ */
+export function buildLibraryUrl(page?: number): string {
+  const basePath = '/library'
+  if (!page || page <= 1) {
+    return basePath
+  }
+  return `${basePath}?page=${page}`
+}
+
+/**
  * Parse page number from URL query parameters
  * @param url - The full URL or search params string (e.g., "?page=3" or "https://example.com/path?page=3")
  * @returns The page number or 1 if not found or invalid
@@ -77,6 +90,22 @@ export function parsePageFromUrl(url?: string): number {
   } catch {
     return 1
   }
+}
+
+/**
+ * Get the current page context for stream endpoint calls
+ * @returns The context string based on current URL path
+ */
+export function getStreamContext(): string {
+  if (typeof window === 'undefined') return 'search'
+
+  const path = window.location.pathname
+
+  if (path === '/library') return 'library'
+  if (path === '/digging' || path.startsWith('/digging/')) return 'digging'
+  if (path.startsWith('/album/')) return 'album'
+
+  return 'search'
 }
 
 /**

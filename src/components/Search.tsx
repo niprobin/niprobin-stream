@@ -6,6 +6,7 @@ import type { SearchResult, AlbumResult } from '@/services/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
+import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { TrackIdSource } from '@/utils/trackUtils'
 import { Search as SearchIcon, ChevronDown, BookmarkPlus, Loader2 } from 'lucide-react'
@@ -23,6 +24,7 @@ export function Search() {
   const { showNotification } = useNotification()
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setAutoPlayContext, updateDynamicQueue } = useAudio()
+  const { token } = useAuth()
 
   // Handle search submission
   const handleSearch = async (e: React.FormEvent) => {
@@ -83,7 +85,7 @@ export function Search() {
         album: album.album,
         artist: album.artist,
         'album-id': album['album-id']
-      })
+      }, token)
 
       showNotification(response.message, response.status)
     } catch (err) {

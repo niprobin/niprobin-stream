@@ -2,7 +2,9 @@ import { useState } from 'react'
 import { getStreamUrl } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { normalizeTrackId, TrackIdSource } from '@/utils/trackUtils'
+import { getStreamContext } from '@/utils/urlBuilder'
 
 export type TrackPlayerOptions = {
   clearAlbum?: boolean
@@ -20,6 +22,7 @@ export function useTrackPlayer() {
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
   const { play, clearAlbumContext, loadingState, setLoadingState } = useAudio()
   const { showNotification } = useNotification()
+  const { token } = useAuth()
 
   const playTrack = async (
     trackId: number | string,
@@ -53,7 +56,9 @@ export function useTrackPlayer() {
       const streamResponse = await getStreamUrl(
         normalizedTrackId,
         trackName,
-        artistName
+        artistName,
+        token,
+        getStreamContext()
       )
 
 

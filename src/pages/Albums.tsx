@@ -39,17 +39,17 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const { setAutoPlayContext, currentTrack, isPlaying } = useAudio()
   const { increment, decrement } = useLoading()
   const { showNotification } = useNotification()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, token } = useAuth()
 
   // Use hide item hooks for albums and tracks
   const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem<DiscoverAlbum>(
-    (album) => hideAlbum({ album: album.album, artist: album.artist }),
+    (album) => hideAlbum({ album: album.album, artist: album.artist }, token),
     (album) => `${album.album}-${album.artist}`,
     { persistentCacheKey: 'niprobin-hidden-albums' }
   )
 
   const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem<DiscoverTrack>(
-    (track) => hideTrack({ track: track.track, artist: track.artist }),
+    (track) => hideTrack({ track: track.track, artist: track.artist }, token),
     (track) => `${track.track}-${track.artist}`,
     { persistentCacheKey: 'niprobin-hidden-tracks' }
   )
@@ -57,7 +57,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   // Use cached data hooks for albums and tracks
   const { data: albums, refresh: refreshAlbums } = useCachedData<DiscoverAlbum[]>(
     ALBUMS_CACHE_KEY,
-    getAlbumsToDiscover,
+    () => getAlbumsToDiscover(token),
     {
       cacheDuration: CACHE_DURATION_MS,
       refreshTrigger,
@@ -68,7 +68,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
   const { data: tracks, refresh: refreshTracks } = useCachedData<DiscoverTrack[]>(
     TRACKS_CACHE_KEY,
-    getTracksToDiscover,
+    () => getTracksToDiscover(token),
     {
       cacheDuration: CACHE_DURATION_MS,
       refreshTrigger,

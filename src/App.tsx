@@ -9,9 +9,10 @@ import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { Button } from './components/ui/button'
 import { LogIn } from 'lucide-react'
 import { AlbumsPage } from './pages/Albums'
+import { LibraryPage } from './pages/Library'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
-import { extractTrackHashFromPath, extractAlbumIdFromPath, parsePageFromUrl, buildDiggingUrl } from './utils/urlBuilder'
+import { extractTrackHashFromPath, extractAlbumIdFromPath, parsePageFromUrl, buildDiggingUrl, buildLibraryUrl } from './utils/urlBuilder'
 import { getTrackByHash } from './services/api'
 import { AlbumPage } from './pages/Album'
 
@@ -20,15 +21,23 @@ function AuthControls() {
   const { showNotification } = useNotification()
   const [code, setCode] = useState('')
   const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
 
-  const handleSubmit = (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
-    const success = login(code)
-    if (!success) {
-      showNotification('Invalid access code', 'error')
-    } else {
-      setCode('')
-      setIsPanelOpen(false)
+    setIsLoggingIn(true)
+    try {
+      const result = await login(code)
+      if (!result.success) {
+        showNotification(result.error ?? 'Invalid code', 'error')
+      } else {
+        setCode('')
+        setIsPanelOpen(false)
+      }
+    } catch (error) {
+      showNotification('Login failed - please try again', 'error')
+    } finally {
+      setIsLoggingIn(false)
     }
   }
 
@@ -72,7 +81,8 @@ function AuthControls() {
           <Button
             type="submit"
             size="icon"
-            className="h-8 w-8 bg-white text-black hover:bg-white/90"
+            disabled={isLoggingIn}
+            className="h-8 w-8 bg-white text-black hover:bg-white/90 disabled:opacity-50"
             aria-label="Submit access code"
           >
             <LogIn className="h-4 w-4" />
@@ -84,12 +94,13 @@ function AuthControls() {
 }
 
 function AppContent() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, token } = useAuth()
   const { loadTrack } = useAudio()
-  const [activePage, setActivePage] = useState<'home' | 'digging' | 'album'>('home')
+  const [activePage, setActivePage] = useState<'home' | 'library' | 'digging' | 'album'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
   const [diggingPage, setDiggingPage] = useState<number>(1)
+  const [libraryPage, setLibraryPage] = useState<number>(1)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -112,7 +123,7 @@ function AppContent() {
       if (trackHash) {
         try {
           // Fetch track data from the hash
-          const streamResponse = await getTrackByHash(trackHash)
+          const streamResponse = await getTrackByHash(trackHash, token)
 
           // Load the track from shared link (paused, not playing)
           loadTrack({
@@ -131,6 +142,24 @@ function AppContent() {
         } catch (err) {
           console.error('Failed to load track from URL:', err)
           // If track loading fails, just go to home
+          window.history.replaceState({}, '', '/')
+          setActivePage('home')
+        }
+        return
+      }
+
+      // Check if this is a library URL (/library)
+      const isLibraryRoute = path === '/library'
+      console.log(`syncFromLocation: isLibraryRoute=${isLibraryRoute}`)
+      if (isLibraryRoute) {
+        if (isAuthenticated) {
+          setActivePage('library')
+
+          // Parse page from URL query parameters
+          const currentPage = parsePageFromUrl(window.location.search)
+          console.log(`syncFromLocation: parsed library page=${currentPage}`)
+          setLibraryPage(currentPage)
+        } else {
           window.history.replaceState({}, '', '/')
           setActivePage('home')
         }
@@ -175,13 +204,17 @@ function AppContent() {
     }
   }, [isAuthenticated, loadTrack])
 
-  const navigate = (page: 'home' | 'digging' | 'album', albumId?: number, diggingTabOverride?: 'tracks' | 'albums', pageNumber?: number) => {
-    if (page === 'digging' && !isAuthenticated) {
+  const navigate = (page: 'home' | 'library' | 'digging' | 'album', albumId?: number, diggingTabOverride?: 'tracks' | 'albums', pageNumber?: number) => {
+    if ((page === 'digging' || page === 'library') && !isAuthenticated) {
       return
     }
 
     let path = '/'
-    if (page === 'digging') {
+    if (page === 'library') {
+      const targetPage = pageNumber !== undefined ? pageNumber : libraryPage
+      path = buildLibraryUrl(targetPage)
+      console.log(`navigate: building library URL - page=${targetPage}, result=${path}`)
+    } else if (page === 'digging') {
       const targetTab = diggingTabOverride || diggingTab
       const targetPage = pageNumber !== undefined ? pageNumber : diggingPage
       path = buildDiggingUrl(targetTab, targetPage)
@@ -204,7 +237,11 @@ function AppContent() {
       setCurrentAlbumId(null)
     }
 
-    if (page === 'digging') {
+    if (page === 'library') {
+      if (pageNumber !== undefined) {
+        setLibraryPage(pageNumber)
+      }
+    } else if (page === 'digging') {
       if (diggingTabOverride) {
         setDiggingTab(diggingTabOverride)
       }
@@ -225,6 +262,13 @@ function AppContent() {
     const validPage = Math.max(1, Math.floor(page))
     console.log(`navigateToDiggingPage: page=${page}, validPage=${validPage}, diggingTab=${diggingTab}`)
     navigate('digging', undefined, diggingTab, validPage)
+  }
+
+  const navigateToLibraryPage = (page: number) => {
+    // Validate page number - ensure it's at least 1
+    const validPage = Math.max(1, Math.floor(page))
+    console.log(`navigateToLibraryPage: page=${page}, validPage=${validPage}`)
+    navigate('library', undefined, undefined, validPage)
   }
 
   return (
@@ -276,6 +320,19 @@ function AppContent() {
                     }`}
                   >
                     Digging
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activePage === 'library'}
+                    onClick={() => navigate('library')}
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition ${
+                      activePage === 'library'
+                        ? 'bg-slate-800 text-white'
+                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
+                    }`}
+                  >
+                    Library
                   </button>
                 </nav>
 
@@ -353,6 +410,19 @@ function AppContent() {
               >
                 Digging
               </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activePage === 'library'}
+                onClick={() => navigate('library')}
+                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition ${
+                  activePage === 'library'
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
+                }`}
+              >
+                Library
+              </button>
             </nav>
 
             {/* Sub-tabs for Digging page on mobile */}
@@ -402,6 +472,11 @@ function AppContent() {
           <div className="w-full">
             {activePage === 'album' && currentAlbumId ? (
               <AlbumPage key={currentAlbumId} albumId={currentAlbumId} />
+            ) : activePage === 'library' ? (
+              <LibraryPage
+                currentPage={libraryPage}
+                onPageChange={navigateToLibraryPage}
+              />
             ) : activePage === 'digging' ? (
               <AlbumsPage
                 activeTab={diggingTab}

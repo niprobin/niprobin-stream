@@ -16,7 +16,7 @@ import { TrackList } from '@/components/TrackList'
 
 export function Player() {
   const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, albumAutoExpand, setAutoPlayContext, playNextTrack, playPreviousTrack, currentTrackIndex } = useAudio()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
   const { playTrack, loadingTrackId, loadingState } = useTrackPlayer()
@@ -31,7 +31,7 @@ export function Player() {
     closeLikeModal,
     handleSubmitLike,
     setSelectedPlaylist,
-  } = useLikeModal()
+  } = useLikeModal(token)
   const [isExpanded, setIsExpanded] = useState(false)
   const playerRef = useRef<HTMLDivElement>(null)
 

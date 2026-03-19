@@ -25,14 +25,14 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [isSaving, setIsSaving] = useState(false)
 
   const { currentTrack, isPlaying, setAlbumContext, setAutoPlayContext } = useAudio()
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
   const { playTrack, loadingTrackId } = useTrackPlayer()
 
   // Hide functionality
   const { hideItem: hideAlbumItem } = useHideItem(
-    (album: { album: string; artist: string }) => hideAlbum({ album: album.album, artist: album.artist }),
+    (album: { album: string; artist: string }) => hideAlbum({ album: album.album, artist: album.artist }, token),
     (album) => `${album.album}-${album.artist}`,
     { persistentCacheKey: 'niprobin-hidden-albums' }
   )
@@ -111,7 +111,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         album: albumName,
         artist: artistName,
         rating: value,
-      })
+      }, token)
       showNotification(response.message, response.status)
     } catch (err) {
       console.error('Failed to rate album:', err)
@@ -128,7 +128,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         album: albumName,
         artist: artistName,
         'album-id': albumId
-      })
+      }, token)
       showNotification(response.message, response.status)
     } catch (err) {
       showNotification('Failed to save album', 'error')
