@@ -11,7 +11,7 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 const TOKEN_STORAGE_KEY = 'niprobin-auth-token'
-const AUTH_WEBHOOK_URL = import.meta.env.VITE_AUTH_WEBHOOK_URL
+const AUTH_WEBHOOK_URL = import.meta.env.VITE_AUTH_WEBHOOK_URL || '/auth'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
