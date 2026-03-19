@@ -242,7 +242,7 @@ export function Player() {
       {showMobileActions && (
         <div
           ref={mobileActionsRef}
-          className="md:hidden fixed bottom-32 left-0 right-0 flex justify-center gap-8 bg-slate-600 border-t border-slate-500 px-4 py-4 shadow-xl z-[9999]"
+          className="md:hidden fixed bottom-28 left-0 right-0 flex justify-center gap-8 bg-slate-800 border-y border-slate-600 px-2 py-2 shadow-xl z-[9999]"
         >
           {/* Like Button */}
           {isAuthenticated && currentTrack && (
@@ -258,7 +258,7 @@ export function Player() {
               }`}
             >
               <Heart
-                className="h-6 w-6"
+                className="h-4 w-4"
                 fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
               />
             </Button>
@@ -274,7 +274,7 @@ export function Player() {
             variant="ghost"
             className="text-white hover:text-blue-400 hover:bg-slate-800/50"
           >
-            <Share2 className="h-6 w-6" />
+            <Share2 className="h-4 w-4" />
           </Button>
 
           {/* Download Button */}
@@ -288,7 +288,7 @@ export function Player() {
             disabled={isGlobalLoading}
             className="text-white hover:text-green-400 hover:bg-slate-800/50"
           >
-            <Download className={`h-6 w-6 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
+            <Download className={`h-4 w-4 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
           </Button>
 
           {/* Expand Button */}
@@ -302,7 +302,7 @@ export function Player() {
               variant="ghost"
               className="text-white hover:text-purple-400 hover:bg-slate-800/50"
             >
-              <Maximize2 className="h-6 w-6" />
+              <Maximize2 className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -338,7 +338,7 @@ export function Player() {
                         currentTrack.coverArt ? 'hidden' : 'flex'
                       }`}
                     >
-                      <Music className="h-6 w-6 text-slate-400" />
+                      <Music className="h-4 w-4 text-slate-400" />
                     </div>
                   </div>
 
@@ -391,11 +391,11 @@ export function Player() {
                   disabled={isCurrentTrackLoading}
                 >
                   {isCurrentTrackLoading ? (
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : isPlaying ? (
-                    <Pause className="h-6 w-6" />
+                    <Pause className="h-4 w-4" />
                   ) : (
-                    <Play className="h-6 w-6" />
+                    <Play className="h-4 w-4" />
                   )}
                 </Button>
 
@@ -494,7 +494,7 @@ export function Player() {
                       currentTrack.coverArt ? 'hidden' : 'flex'
                     }`}
                   >
-                    <Music className="h-6 w-6 text-slate-400" />
+                    <Music className="h-4 w-4 text-slate-400" />
                   </div>
                 </div>
 
@@ -568,11 +568,11 @@ export function Player() {
                     disabled={isCurrentTrackLoading}
                   >
                     {isCurrentTrackLoading ? (
-                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     ) : isPlaying ? (
-                      <Pause className="h-6 w-6" />
+                      <Pause className="h-4 w-4" />
                     ) : (
-                      <Play className="h-6 w-6" />
+                      <Play className="h-4 w-4" />
                     )}
                   </Button>
 
