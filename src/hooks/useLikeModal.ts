@@ -3,20 +3,18 @@ import { likeTrack } from '@/services/api'
 import { useNotification } from '@/contexts/NotificationContext'
 
 const PLAYLISTS = [
-  'Afrobeat & Highlife',
   'Beats',
   'Bossa Nova',
-  'Brazilian Music',
   'Disco Dancefloor',
   'DNB',
   'Downtempo Trip-hop',
   'Funk & Rock',
+  'Global Grooves',
   'Hip-hop',
   'House Chill',
   'House Dancefloor',
   'Jazz Classic',
   'Jazz Funk',
-  'Latin Music',
   'Morning Chill',
   'Neo Soul',
   'Reggae',
