@@ -52,6 +52,9 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   }, [increment, decrement, showNotification, setAlbumContext])
 
   useEffect(() => {
+    // Reset scroll position when entering album page
+    window.scrollTo(0, 0)
+
     const loadAlbum = async () => {
       contextRef.current.increment()
       setError(null)
@@ -63,17 +66,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         setArtistName(data.artist)
         setCoverUrl(data.cover)
 
-        // Set album context for player integration
-        contextRef.current.setAlbumContext(
-          data.tracks.map((t) => ({
-            track: t.track,
-            'track-id': 0,
-            artist: t.artist,
-            'track-number': t['track-number'],
-          })),
-          { name: data.album, artist: data.artist, cover: data.cover, id: data.id },
-          { expand: false, loadFirst: false }
-        )
+        // Album data loaded, context will be set when user plays the album
       } catch (err) {
         console.error('Failed to load album:', err)
         setError('Failed to load album. Please try again.')
@@ -99,6 +92,19 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   // Handle "Play Album" button - plays first track
   const handlePlayAlbum = () => {
     if (tracks.length === 0) return
+
+    // Set album context for player integration when user actually plays
+    setAlbumContext(
+      tracks.map((t) => ({
+        track: t.track,
+        'track-id': 0,
+        artist: t.artist,
+        'track-number': t['track-number'],
+      })),
+      { name: albumName, artist: artistName, cover: coverUrl, id: albumId },
+      { expand: false, loadFirst: false }
+    )
+
     handlePlayTrack(tracks[0])
   }
 
@@ -180,7 +186,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   return (
     <div className="w-full pb-32">
       {/* Album Header */}
-      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-6 lg:gap-10 mb-4 px-6 lg:px-10 pt-6 lg:pt-10 pb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-6 lg:gap-10 mb-4 px-6 lg:px-10 pt-28 lg:pt-10 pb-4">
         {/* Left: Album Cover + Metadata */}
         <div className="flex flex-col gap-0">
           <div className="w-full lg:w-64 h-64 rounded-sm overflow-hidden bg-slate-800 flex-shrink-0 mx-auto lg:mx-0 border border-slate-700">

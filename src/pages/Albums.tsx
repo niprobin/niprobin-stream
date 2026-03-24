@@ -30,6 +30,8 @@ interface AlbumsPageProps {
 
 export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageProps) {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [prevActiveTab, setPrevActiveTab] = useState<DiggingTab>(activeTab)
+  const [prevSelectedCurator, setPrevSelectedCurator] = useState<string>('all')
 
   console.log(`AlbumsPage: activeTab=${activeTab}, currentPage=${currentPage}`)
   const [selectedCurator, setSelectedCurator] = useState<string>('all')
@@ -125,16 +127,24 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   }
 
   useEffect(() => {
-    onPageChange(1)
-    // Clear search when switching tabs
-    if (activeTab === 'albums') {
-      albumsSearch.clearSearch()
+    // Only reset page when actively switching tabs, not during navigation sync
+    if (prevActiveTab !== activeTab) {
+      onPageChange(1)
+      // Clear search when switching tabs
+      if (activeTab === 'albums') {
+        albumsSearch.clearSearch()
+      }
+      setPrevActiveTab(activeTab)
     }
-  }, [activeTab])
+  }, [activeTab, prevActiveTab, onPageChange, albumsSearch])
 
   useEffect(() => {
-    onPageChange(1)
-  }, [selectedCurator])
+    // Only reset page when actually changing curator, not during component re-renders
+    if (prevSelectedCurator !== selectedCurator) {
+      onPageChange(1)
+      setPrevSelectedCurator(selectedCurator)
+    }
+  }, [selectedCurator, prevSelectedCurator, onPageChange])
 
   return (
     <div className="w-full space-y-0">

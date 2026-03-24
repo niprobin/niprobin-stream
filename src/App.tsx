@@ -197,6 +197,7 @@ function AppContent() {
     }
 
     syncFromLocation()
+
     window.addEventListener('popstate', syncFromLocation)
 
     return () => {
