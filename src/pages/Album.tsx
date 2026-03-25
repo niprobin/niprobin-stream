@@ -20,6 +20,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [albumName, setAlbumName] = useState('')
   const [artistName, setArtistName] = useState('')
   const [coverUrl, setCoverUrl] = useState('')
+  const [albumDataId, setAlbumDataId] = useState<string | number | undefined>(undefined)
   const [albumRating, setAlbumRating] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -65,6 +66,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         setAlbumName(data.album)
         setArtistName(data.artist)
         setCoverUrl(data.cover)
+        setAlbumDataId(data.id)
 
         // Album data loaded, context will be set when user plays the album
       } catch (err) {
@@ -101,7 +103,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         artist: t.artist,
         'track-number': t['track-number'],
       })),
-      { name: albumName, artist: artistName, cover: coverUrl, id: albumId },
+      { name: albumName, artist: artistName, cover: coverUrl, id: albumDataId?.toString() },
       { expand: false, loadFirst: false }
     )
 
