@@ -10,6 +10,8 @@ import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
 import { Share2, X, Loader2 } from 'lucide-react'
 import { TrackIdSource } from '@/utils/trackUtils'
+import { useMetaTags } from '@/hooks/useMetaTags'
+import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
 
 type AlbumPageProps = {
   albumId: number
@@ -30,6 +32,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
   const { playTrack, loadingTrackId } = useTrackPlayer()
+  const { setMetaTags, resetToDefault } = useMetaTags()
 
   // Hide functionality
   const { hideItem: hideAlbumItem } = useHideItem(
@@ -68,10 +71,21 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         setCoverUrl(data.cover)
         setAlbumDataId(data.id)
 
+        // Update meta tags for the album
+        const albumMetaTags = generateAlbumMetaTags({
+          title: data.album,
+          artist: data.artist,
+          coverArt: data.cover,
+          albumId: albumId,
+          trackCount: data.tracks.length
+        })
+        setMetaTags(albumMetaTags)
+
         // Album data loaded, context will be set when user plays the album
       } catch (err) {
         console.error('Failed to load album:', err)
         setError('Failed to load album. Please try again.')
+        resetToDefault()  // Reset to default meta tags on error
         contextRef.current.showNotification('Failed to load album', 'error')
       } finally {
         contextRef.current.decrement()
@@ -80,6 +94,13 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
 
     loadAlbum()
   }, [albumId])
+
+  // Cleanup meta tags when component unmounts
+  useEffect(() => {
+    return () => {
+      resetToDefault()
+    }
+  }, [resetToDefault])
 
   // Handle playing a track from the list
   const handlePlayTrack = (track: AlbumTrack) => {

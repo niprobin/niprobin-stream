@@ -15,6 +15,8 @@ import { useAudio } from './contexts/AudioContext'
 import { extractTrackHashFromPath, extractAlbumIdFromPath, parsePageFromUrl, buildDiggingUrl, buildLibraryUrl } from './utils/urlBuilder'
 import { getTrackByHash } from './services/api'
 import { AlbumPage } from './pages/Album'
+import { useMetaTags } from './hooks/useMetaTags'
+import { generateTrackMetaTags } from './utils/metaTagHelpers'
 
 function AuthControls() {
   const { isAuthenticated, login, logout } = useAuth()
@@ -96,6 +98,7 @@ function AuthControls() {
 function AppContent() {
   const { isAuthenticated, token } = useAuth()
   const { loadTrack } = useAudio()
+  const { setMetaTags, resetToDefault } = useMetaTags()
   const [activePage, setActivePage] = useState<'home' | 'library' | 'digging' | 'album'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
@@ -125,6 +128,16 @@ function AppContent() {
           // Fetch track data from the hash
           const streamResponse = await getTrackByHash(trackHash, token)
 
+          // Update meta tags for the track BEFORE redirect
+          const trackMetaTags = generateTrackMetaTags({
+            title: streamResponse.track,
+            artist: streamResponse.artist,
+            album: streamResponse.album,
+            coverArt: streamResponse.cover,
+            hash: trackHash
+          })
+          setMetaTags(trackMetaTags)
+
           // Load the track from shared link (paused, not playing)
           loadTrack({
             id: streamResponse.trackId,
@@ -141,6 +154,8 @@ function AppContent() {
           setActivePage('home')
         } catch (err) {
           console.error('Failed to load track from URL:', err)
+          // Reset to default meta tags on error
+          resetToDefault()
           // If track loading fails, just go to home
           window.history.replaceState({}, '', '/')
           setActivePage('home')
@@ -153,6 +168,7 @@ function AppContent() {
       console.log(`syncFromLocation: isLibraryRoute=${isLibraryRoute}`)
       if (isLibraryRoute) {
         if (isAuthenticated) {
+          resetToDefault()  // Reset to default meta tags for library page
           setActivePage('library')
 
           // Parse page from URL query parameters
@@ -171,6 +187,7 @@ function AppContent() {
       console.log(`syncFromLocation: isDiggingRoute=${isDiggingRoute}`)
       if (isDiggingRoute) {
         if (isAuthenticated) {
+          resetToDefault()  // Reset to default meta tags for digging page
           setActivePage('digging')
 
           // Parse page from URL query parameters
@@ -192,6 +209,7 @@ function AppContent() {
           setActivePage('home')
         }
       } else {
+        resetToDefault()  // Reset to default meta tags for home page
         setActivePage('home')
       }
     }

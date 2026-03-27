@@ -129,3 +129,21 @@ export function shareTrack(hash: string, showNotification: (message: string, typ
     showNotification('Failed to copy link', 'error')
   }
 }
+
+/**
+ * Build a canonical track URL with full domain for meta tags
+ * @param hash - The track hash from the backend
+ * @returns Full canonical URL (e.g., "https://stream.niprobin.com/play/abc123")
+ */
+export function buildCanonicalTrackUrl(hash: string): string {
+  return `${window.location.origin}/play/${hash}`
+}
+
+/**
+ * Build a canonical album URL with full domain for meta tags
+ * @param albumId - The album ID from the backend
+ * @returns Full canonical URL (e.g., "https://stream.niprobin.com/album/123")
+ */
+export function buildCanonicalAlbumUrl(albumId: number): string {
+  return `${window.location.origin}/album/${albumId}`
+}
