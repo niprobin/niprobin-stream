@@ -10,7 +10,6 @@ import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
 import { Share2, X, Loader2, Music4 } from 'lucide-react'
 import { TrackIdSource } from '@/utils/trackUtils'
-import { shareTrack } from '@/utils/urlBuilder'
 import { useMetaTags } from '@/hooks/useMetaTags'
 import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
 
