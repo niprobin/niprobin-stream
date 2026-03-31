@@ -8,8 +8,9 @@ import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, type AlbumTrack } from '
 import { StarRating } from '@/components/ui/StarRating'
 import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
-import { Share2, X, Loader2 } from 'lucide-react'
+import { Share2, X, Loader2, Music4 } from 'lucide-react'
 import { TrackIdSource } from '@/utils/trackUtils'
+import { shareTrack } from '@/utils/urlBuilder'
 import { useMetaTags } from '@/hooks/useMetaTags'
 import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
 
@@ -23,9 +24,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [artistName, setArtistName] = useState('')
   const [coverUrl, setCoverUrl] = useState('')
   const [albumDataId, setAlbumDataId] = useState<string | number | undefined>(undefined)
+  const [streamingLink, setStreamingLink] = useState<string | undefined>(undefined)
   const [albumRating, setAlbumRating] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [showShareTooltip, setShowShareTooltip] = useState(false)
 
   const { currentTrack, isPlaying, setAlbumContext, setAutoPlayContext } = useAudio()
   const { isAuthenticated, token } = useAuth()
@@ -50,6 +53,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
 
   // Load album data on mount or when albumId changes
   const contextRef = useRef({ increment, decrement, showNotification, setAlbumContext })
+  const shareTooltipRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     contextRef.current = { increment, decrement, showNotification, setAlbumContext }
@@ -70,6 +74,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         setArtistName(data.artist)
         setCoverUrl(data.cover)
         setAlbumDataId(data.id)
+        setStreamingLink(data.streamingLink)
 
         // Update meta tags for the album
         const albumMetaTags = generateAlbumMetaTags({
@@ -102,6 +107,25 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     }
   }, [resetToDefault])
 
+  // Handle click outside to close share tooltip
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showShareTooltip &&
+          shareTooltipRef.current &&
+          !shareTooltipRef.current.contains(event.target as Node)) {
+        setShowShareTooltip(false)
+      }
+    }
+
+    if (showShareTooltip) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showShareTooltip])
+
   // Handle playing a track from the list
   const handlePlayTrack = (track: AlbumTrack) => {
     playTrack(track['track-id'], track.track, track.artist, {
@@ -120,11 +144,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     setAlbumContext(
       tracks.map((t) => ({
         track: t.track,
-        'track-id': 0,
+        'track-id': t['track-id'],
         artist: t.artist,
         'track-number': t['track-number'],
       })),
-      { name: albumName, artist: artistName, cover: coverUrl, id: albumDataId?.toString() },
+      { name: albumName, artist: artistName, cover: coverUrl, id: albumDataId?.toString(), streamingLink },
       { expand: false, loadFirst: false }
     )
 
@@ -167,11 +191,34 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     }
   }
 
-  // Handle share
+  // Toggle share tooltip
+  const toggleShareTooltip = () => {
+    setShowShareTooltip(!showShareTooltip)
+  }
+
+  // Handle share album URL
   const handleShareAlbum = () => {
     const albumUrl = `stream.niprobin.com/album/${albumId}`
     navigator.clipboard.writeText(albumUrl)
     showNotification('Album link copied to clipboard', 'success')
+    setShowShareTooltip(false)
+  }
+
+  // Handle share deezer link
+  const handleShareDeezer = () => {
+    if (!streamingLink) {
+      showNotification('Streaming link not available', 'error')
+      return
+    }
+
+    navigator.clipboard.writeText(streamingLink)
+      .then(() => {
+        showNotification('Deezer link copied to clipboard', 'success')
+        setShowShareTooltip(false)
+      })
+      .catch(() => {
+        showNotification('Failed to copy link', 'error')
+      })
   }
 
   // Handle hide album
@@ -279,13 +326,38 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             )}
 
             {/* Share Button */}
-            <button
-              onClick={handleShareAlbum}
-              className="ap-action-btn"
-            >
-              <span>Share</span>
-              <Share2 className="h-3.5 w-3.5" strokeWidth={1.5} />
-            </button>
+            <div className="relative">
+              <button
+                onClick={toggleShareTooltip}
+                className="ap-action-btn"
+              >
+                <span>Share</span>
+                <Share2 className="h-3.5 w-3.5" strokeWidth={1.5} />
+              </button>
+
+              {/* Share Tooltip */}
+              {showShareTooltip && (
+                <div
+                  ref={shareTooltipRef}
+                  className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 z-50 w-48"
+                >
+                  <button
+                    onClick={handleShareAlbum}
+                    className="w-full px-3 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2 text-sm"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    Copy stream link
+                  </button>
+                  <button
+                    onClick={handleShareDeezer}
+                    className="w-full px-3 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2 text-sm"
+                  >
+                    <Music4 className="h-4 w-4" />
+                    Copy deezer link
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Hide Button */}
             {isAuthenticated && (
@@ -306,7 +378,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         variant="album"
         tracks={tracks.map(track => ({
           track: track.track,
-          'track-id': 0,
+          'track-id': track['track-id'],
           artist: track.artist,
           'track-number': track['track-number'],
         }))}
@@ -317,7 +389,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             // Update the current track index for proper auto-play sequencing
             const albumTracksForContext = tracks.map((t) => ({
               track: t.track,
-              'track-id': 0,
+              'track-id': t['track-id'],
               artist: t.artist,
               'track-number': t['track-number'],
             }))

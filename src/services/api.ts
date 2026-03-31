@@ -43,6 +43,7 @@ export type AlbumResponse = {
   artist: string
   cover: string
   id?: string // MD5 hash ID when available
+  streamingLink?: string // Streaming service link (e.g., Deezer)
 }
 
 // Type for stream response
@@ -223,7 +224,22 @@ export async function getAlbumTracks(
 
   const data = await response.json()
 
-  // Ensure we always return an array
+  // The endpoint now returns an array with album objects containing tracks
+  if (Array.isArray(data) && data.length > 0 && data[0].tracks && Array.isArray(data[0].tracks)) {
+    const albumData = data[0]
+    const albumId = parseInt(albumData['album-id']) || 0
+
+    // Add album metadata to each track
+    return albumData.tracks.map((track: any) => ({
+      ...track,
+      'track-id': track['track-id'], // Ensure track-id is preserved
+      'album-id': albumId,
+      album: albumData.album,
+      cover: albumData.cover
+    }))
+  }
+
+  // Fallback to previous formats for backward compatibility
   if (Array.isArray(data)) {
     return data
   }
@@ -232,7 +248,7 @@ export async function getAlbumTracks(
     return data.results
   }
 
-  // If data is not an array, wrap it or return empty array
+  // If data is not an array, return empty array
   return []
 }
 
@@ -252,23 +268,45 @@ export async function getAlbumById(albumId: number): Promise<AlbumResponse> {
 
   const data = await response.json()
 
-  // Extract tracks array
+  // Handle new array format with album object containing tracks
   let tracks: AlbumTrack[] = []
-  if (Array.isArray(data)) {
+  let albumData: any = {}
+
+  if (Array.isArray(data) && data.length > 0) {
+    albumData = data[0]
+    if (albumData.tracks && Array.isArray(albumData.tracks)) {
+      const parsedAlbumId = parseInt(albumData['album-id']) || albumId
+
+      // Add album metadata to each track
+      tracks = albumData.tracks.map((track: any) => ({
+        ...track,
+        'track-id': track['track-id'], // Ensure track-id is preserved
+        'album-id': parsedAlbumId,
+        album: albumData.album,
+        cover: albumData.cover
+      }))
+    }
+  } else if (Array.isArray(data)) {
+    // Fallback: if data is just an array of tracks
     tracks = data
   } else if (data.tracks && Array.isArray(data.tracks)) {
+    // Fallback: if data object has tracks property
     tracks = data.tracks
+    albumData = data
   } else if (data.results && Array.isArray(data.results)) {
+    // Fallback: legacy results format
     tracks = data.results
+    albumData = data
   }
 
   return {
     tracks,
-    albumId: data.album_id || data.albumId || albumId,
-    album: data.album || (tracks.length > 0 ? tracks[0].album || '' : ''),
-    artist: data.artist || (tracks.length > 0 ? tracks[0].artist : ''),
-    cover: data.cover || (tracks.length > 0 ? tracks[0].cover || '' : ''),
-    id: data.id, // Include MD5 hash ID if present
+    albumId: albumData['album-id'] ? parseInt(albumData['album-id']) : (albumData.album_id || albumData.albumId || albumId),
+    album: albumData.album || (tracks.length > 0 ? tracks[0].album || '' : ''),
+    artist: albumData.artist || (tracks.length > 0 ? tracks[0].artist : ''),
+    cover: albumData.cover || (tracks.length > 0 ? tracks[0].cover || '' : ''),
+    id: albumData.id, // Include MD5 hash ID if present
+    streamingLink: albumData.streaming_link, // Include streaming service link if present
   }
 }
 

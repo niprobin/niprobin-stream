@@ -46,7 +46,7 @@ type AudioContextType = {
   duration: number
   volume: number
   albumTracks: AlbumTrackItem[]
-  albumInfo: { name: string; artist: string; cover: string; id?: string } | null
+  albumInfo: { name: string; artist: string; cover: string; id?: string; streamingLink?: string } | null
   loadingState: AudioLoadingState
   play: (track: Track) => void
   pause: () => void
@@ -55,7 +55,7 @@ type AudioContextType = {
   setVolume: (volume: number) => void
   setAlbumContext: (
     tracks: AlbumTrackItem[],
-    albumInfo: { name: string; artist: string; cover: string; id?: string },
+    albumInfo: { name: string; artist: string; cover: string; id?: string; streamingLink?: string },
     options?: { expand?: boolean; loadFirst?: boolean },
   ) => void
   setAutoPlayContext: (tracks: AlbumTrackItem[], startIndex: number, contextName: string, queueProvider?: QueueProvider) => void
@@ -81,7 +81,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0)
   const [volume, setVolumeState] = useState(1) // 0 to 1
   const [albumTracks, setAlbumTracks] = useState<AlbumTrackItem[]>([])
-  const [albumInfo, setAlbumInfo] = useState<{ name: string; artist: string; cover: string; id?: string } | null>(null)
+  const [albumInfo, setAlbumInfo] = useState<{ name: string; artist: string; cover: string; id?: string; streamingLink?: string } | null>(null)
   const [albumAutoExpand, setAlbumAutoExpand] = useState(true)
   const [loadingState, setLoadingState] = useState<AudioLoadingState>({ status: 'idle' })
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
@@ -447,7 +447,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // Function: Set album context with tracklist
   const setAlbumContext = (
     tracks: AlbumTrackItem[],
-    info: { name: string; artist: string; cover: string; id?: string },
+    info: { name: string; artist: string; cover: string; id?: string; streamingLink?: string },
     options?: { expand?: boolean; loadFirst?: boolean },
   ) => {
     setAlbumTracks(tracks)

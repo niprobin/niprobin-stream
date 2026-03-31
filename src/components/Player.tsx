@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Play, Pause, Download, Maximize2, Heart, Loader2, Share2, X, SkipBack, SkipForward, Music, MoreHorizontal } from 'lucide-react'
+import { Play, Pause, Download, Maximize2, Heart, Loader2, Share2, X, SkipBack, SkipForward, Music, MoreHorizontal, Music4 } from 'lucide-react'
 import { downloadTrack } from '@/services/api'
 import { shareTrack } from '@/utils/urlBuilder'
 import { useState, useEffect, useRef } from 'react'
@@ -34,9 +34,12 @@ export function Player() {
   } = useLikeModal(token)
   const [isExpanded, setIsExpanded] = useState(false)
   const [showMobileActions, setShowMobileActions] = useState(false)
+  const [showShareTooltip, setShowShareTooltip] = useState(false)
   const playerRef = useRef<HTMLDivElement>(null)
   const mobileActionsRef = useRef<HTMLDivElement>(null)
   const threeDotsRef = useRef<HTMLButtonElement>(null)
+  const shareTooltipRef = useRef<HTMLDivElement>(null)
+  const shareTooltipDesktopRef = useRef<HTMLDivElement>(null)
 
   // Determine if current track is loading
   const isCurrentTrackLoading = loadingState.status !== 'idle' &&
@@ -89,6 +92,27 @@ export function Player() {
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showMobileActions])
+
+  // Handle click outside to close share tooltip
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (showShareTooltip &&
+          shareTooltipRef.current &&
+          !shareTooltipRef.current.contains(event.target as Node) &&
+          shareTooltipDesktopRef.current &&
+          !shareTooltipDesktopRef.current.contains(event.target as Node)) {
+        setShowShareTooltip(false)
+      }
+    }
+
+    if (showShareTooltip) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showShareTooltip])
 
   // Prevent scroll propagation when player is maximized (but allow tracklist scrolling)
   useEffect(() => {
@@ -180,13 +204,36 @@ export function Player() {
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
-  // Share the current track
-  const handleShare = () => {
+  // Toggle share tooltip
+  const toggleShareTooltip = () => {
+    setShowShareTooltip(!showShareTooltip)
+  }
+
+  // Share the current track (stream link)
+  const handleShareStream = () => {
     if (!currentTrack?.hashUrl) {
       showNotification('Cannot share this track', 'error')
       return
     }
     shareTrack(currentTrack.hashUrl, showNotification)
+    setShowShareTooltip(false)
+  }
+
+  // Share the deezer link
+  const handleShareDeezer = () => {
+    if (!albumInfo?.streamingLink) {
+      showNotification('Streaming link not available', 'error')
+      return
+    }
+
+    navigator.clipboard.writeText(albumInfo.streamingLink)
+      .then(() => {
+        showNotification('Deezer link copied to clipboard', 'success')
+        setShowShareTooltip(false)
+      })
+      .catch(() => {
+        showNotification('Failed to copy link', 'error')
+      })
   }
 
   // Handle clicking a track from the album tracklist
@@ -265,17 +312,39 @@ export function Player() {
           )}
 
           {/* Share Button */}
-          <Button
-            onClick={() => {
-              handleShare()
-              setShowMobileActions(false)
-            }}
-            size="icon-lg"
-            variant="ghost"
-            className="text-white hover:text-blue-400 hover:bg-slate-800/50"
-          >
-            <Share2 className="h-4 w-4" />
-          </Button>
+          <div className="relative">
+            <Button
+              onClick={toggleShareTooltip}
+              size="icon-lg"
+              variant="ghost"
+              className="text-white hover:text-blue-400 hover:bg-slate-800/50"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
+
+            {/* Share Tooltip */}
+            {showShareTooltip && (
+              <div
+                ref={shareTooltipRef}
+                className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 z-50 w-48"
+              >
+                <button
+                  onClick={handleShareStream}
+                  className="w-full px-3 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2 text-sm"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Copy stream link
+                </button>
+                <button
+                  onClick={handleShareDeezer}
+                  className="w-full px-3 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2 text-sm"
+                >
+                  <Music4 className="h-4 w-4" />
+                  Copy deezer link
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Download Button */}
           <Button
@@ -433,14 +502,39 @@ export function Player() {
                       />
                     </Button>
                   )}
-                  <Button
-                    onClick={handleShare}
-                    size="icon"
-                    variant="ghost"
-                    className="text-white hover:text-blue-400 hover:bg-slate-800"
-                  >
-                    <Share2 className="h-5 w-5" />
-                  </Button>
+                  <div className="relative">
+                    <Button
+                      onClick={toggleShareTooltip}
+                      size="icon"
+                      variant="ghost"
+                      className="text-white hover:text-blue-400 hover:bg-slate-800"
+                    >
+                      <Share2 className="h-5 w-5" />
+                    </Button>
+
+                    {/* Share Tooltip */}
+                    {showShareTooltip && (
+                      <div
+                        ref={shareTooltipDesktopRef}
+                        className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 z-50 w-48"
+                      >
+                        <button
+                          onClick={handleShareStream}
+                          className="w-full px-3 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2 text-sm"
+                        >
+                          <Share2 className="h-4 w-4" />
+                          Copy stream link
+                        </button>
+                        <button
+                          onClick={handleShareDeezer}
+                          className="w-full px-3 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2 text-sm"
+                        >
+                          <Music4 className="h-4 w-4" />
+                          Copy deezer link
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <Button
                     onClick={handleDownload}
                     size="icon"
