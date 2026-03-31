@@ -377,21 +377,21 @@ export function Player() {
         </div>
       )}
 
-      <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 md:p-6 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
+      <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 md:p-4 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
       <div className="flex-shrink-0 w-full">
         {currentTrack ? (
           <>
             {/* Desktop Layout: 3 columns */}
             <div className="hidden md:grid md:grid-cols-3 items-center gap-4 mb-4">
                 {/* Left: Album Cover and Track Info */}
-                <div className="flex items-center gap-3 text-left">
+                <div className="flex items-start gap-4 text-left">
                   {/* Album Cover */}
                   <div className="flex-shrink-0">
                     {currentTrack.coverArt ? (
                       <img
                         src={currentTrack.coverArt}
                         alt={`${currentTrack.title} cover`}
-                        className="w-12 h-12 rounded-lg object-cover bg-slate-800"
+                        className="w-20 h-20 rounded-sm object-cover bg-slate-800"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none'
                           const nextElement = e.currentTarget.nextElementSibling as HTMLElement
@@ -403,7 +403,7 @@ export function Player() {
                     ) : null}
                     {/* Fallback when no cover or image fails to load */}
                     <div
-                      className={`w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center ${
+                      className={`w-20 h-20 rounded-sm bg-slate-800 flex items-center justify-center ${
                         currentTrack.coverArt ? 'hidden' : 'flex'
                       }`}
                     >
@@ -573,7 +573,7 @@ export function Player() {
                     <img
                       src={currentTrack.coverArt}
                       alt={`${currentTrack.title} cover`}
-                      className="w-12 h-12 rounded-lg object-cover bg-slate-800"
+                      className="w-20 h-20 rounded-sm object-cover bg-slate-800"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
                         const nextElement = e.currentTarget.nextElementSibling as HTMLElement
@@ -584,7 +584,7 @@ export function Player() {
                     />
                   ) : null}
                   <div
-                    className={`w-12 h-12 rounded-lg bg-slate-800 flex items-center justify-center ${
+                    className={`w-20 h-20 rounded-sm bg-slate-800 flex items-center justify-center ${
                       currentTrack.coverArt ? 'hidden' : 'flex'
                     }`}
                   >
