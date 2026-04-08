@@ -181,7 +181,7 @@ export function Search() {
 
       {/* Search Results - Album Results */}
       {searchType === 'albums' && (
-        <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))' }}>
+        <div className="grid gap-4 [&>*]:max-w-[320px] [&>*]:mx-auto" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))' }}>
           {albumResults.map((album, index) => (
             <AlbumCard
               key={`${album['album-id']}-${index}`}
