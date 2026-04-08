@@ -11,9 +11,10 @@ import { TrackList } from '@/components/TrackList'
 import { useCachedData } from '@/hooks/useCachedData'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
-import { useDiscoverySearch, albumFilterFunction } from '@/hooks/useDiscoverySearch'
+import { albumFilterFunction } from '@/hooks/useDiscoverySearch'
 import { TrackIdSource } from '@/utils/trackUtils'
 import { useAudio } from '@/contexts/AudioContext'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 
 type DiggingTab = 'tracks' | 'albums'
 
@@ -31,10 +32,11 @@ interface AlbumsPageProps {
 export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageProps) {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [prevActiveTab, setPrevActiveTab] = useState<DiggingTab>(activeTab)
-  const [prevSelectedCurator, setPrevSelectedCurator] = useState<string>('all')
 
   console.log(`AlbumsPage: activeTab=${activeTab}, currentPage=${currentPage}`)
-  const [selectedCurator, setSelectedCurator] = useState<string>('all')
+
+  // Use URL-based filters for state management
+  const { curator, search, updateFilter } = useUrlFilters('digging')
   const pageSize = 10
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
@@ -79,12 +81,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     }
   )
 
-  // Search hook for albums only
-  const albumsSearch = useDiscoverySearch({
-    data: albums || [],
-    filterFunction: albumFilterFunction,
-    setCurrentPage: onPageChange,
-  })
+  // Albums search is now handled by URL filters
 
   // Handle clicking an album to navigate to album page
   const handleAlbumClick = async (album: DiscoverAlbum) => {
@@ -131,20 +128,12 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     if (prevActiveTab !== activeTab) {
       onPageChange(1)
       // Clear search when switching tabs
-      if (activeTab === 'albums') {
-        albumsSearch.clearSearch()
-      }
+      updateFilter('search', '')
       setPrevActiveTab(activeTab)
     }
-  }, [activeTab, prevActiveTab, onPageChange, albumsSearch])
+  }, [activeTab, prevActiveTab, onPageChange, updateFilter])
 
-  useEffect(() => {
-    // Only reset page when actually changing curator, not during component re-renders
-    if (prevSelectedCurator !== selectedCurator) {
-      onPageChange(1)
-      setPrevSelectedCurator(selectedCurator)
-    }
-  }, [selectedCurator, prevSelectedCurator, onPageChange])
+  // Page reset logic is now handled automatically by useUrlFilters hook
 
   return (
     <div className="w-full space-y-0">
@@ -157,8 +146,8 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
               {/* Curator Filter - 80% width */}
               <div className="flex-1 min-w-0" style={{ flexBasis: '80%' }}>
                 <select
-                  value={selectedCurator}
-                  onChange={(e) => setSelectedCurator(e.target.value)}
+                  value={curator}
+                  onChange={(e) => updateFilter('curator', e.target.value)}
                   className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600"
                 >
                   <option value="all">All Curators</option>
@@ -195,7 +184,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
           ) : (() => {
               const filteredTracks = tracks
                 .filter((track) => !hiddenTracks.has(`${track.track}-${track.artist}`))
-                .filter((track) => selectedCurator === 'all' || track.curator === selectedCurator)
+                .filter((track) => curator === 'all' || track.curator === curator)
 
               return (
                 <>
@@ -238,7 +227,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         const queueProvider = () => {
                           const currentFilteredTracks = tracks
                             ?.filter((track) => !hiddenTracks.has(`${track.track}-${track.artist}`))
-                            .filter((track) => selectedCurator === 'all' || track.curator === selectedCurator)
+                            .filter((track) => curator === 'all' || track.curator === curator)
                             || []
 
                           return currentFilteredTracks.map((track, index) => ({
@@ -310,13 +299,13 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                 <input
                   type="text"
                   placeholder="Search albums..."
-                  value={albumsSearch.searchQuery}
-                  onChange={(e) => albumsSearch.setSearchQuery(e.target.value)}
+                  value={search}
+                  onChange={(e) => updateFilter('search', e.target.value)}
                   className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
                 />
-                {albumsSearch.isSearchActive && (
+                {search && (
                   <button
-                    onClick={albumsSearch.clearSearch}
+                    onClick={() => updateFilter('search', '')}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 hover:text-white"
                     aria-label="Clear search"
                   >
@@ -341,9 +330,9 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
             </div>
 
             {/* Results count */}
-            {albumsSearch.isSearchActive && (
+            {search && (
               <div className="text-xs text-slate-400 mt-2 px-1">
-                Showing {albumsSearch.resultsCount} results for "{albumsSearch.searchQuery}"
+                Searching for "{search}"
               </div>
             )}
           </div>
@@ -352,13 +341,20 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
             <div className="text-center text-slate-400 py-12">
               No albums available yet. Check back soon.
             </div>
-          ) : albumsSearch.isSearchActive && albumsSearch.resultsCount === 0 ? (
-            <div className="text-center text-slate-400 py-12">
-              No albums found matching "{albumsSearch.searchQuery}". Try a different search term.
-            </div>
           ) : (() => {
-              const filteredAlbums = albumsSearch.filteredData
+              // Apply search filter using the URL search parameter
+              const searchFiltered = albumFilterFunction(albums, search)
+              const filteredAlbums = searchFiltered
                 .filter((album) => !hiddenAlbums.has(`${album.album}-${album.artist}`))
+
+              // Show no results message if search is active but no results
+              if (search && filteredAlbums.length === 0) {
+                return (
+                  <div className="text-center text-slate-400 py-12">
+                    No albums found matching "{search}". Try a different search term.
+                  </div>
+                )
+              }
 
               return (
                 <>

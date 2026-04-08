@@ -12,7 +12,16 @@ import { AlbumsPage } from './pages/Albums'
 import { LibraryPage } from './pages/Library'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
-import { extractTrackHashFromPath, extractAlbumIdFromPath, parsePageFromUrl, buildDiggingUrl, buildLibraryUrl } from './utils/urlBuilder'
+import {
+  extractTrackHashFromPath,
+  extractAlbumIdFromPath,
+  parsePageFromUrl,
+  buildDiggingUrl,
+  buildLibraryUrl,
+  buildDiggingUrlWithFilters,
+  buildLibraryUrlWithFilters,
+  parseFiltersFromUrl
+} from './utils/urlBuilder'
 import { getTrackByHash } from './services/api'
 import { AlbumPage } from './pages/Album'
 import { useMetaTags } from './hooks/useMetaTags'
@@ -223,7 +232,13 @@ function AppContent() {
     }
   }, [isAuthenticated, loadTrack])
 
-  const navigate = (page: 'home' | 'library' | 'digging' | 'album', albumId?: number, diggingTabOverride?: 'tracks' | 'albums', pageNumber?: number) => {
+  const navigate = (
+    page: 'home' | 'library' | 'digging' | 'album',
+    albumId?: number,
+    diggingTabOverride?: 'tracks' | 'albums',
+    pageNumber?: number,
+    preserveFilters?: boolean
+  ) => {
     if ((page === 'digging' || page === 'library') && !isAuthenticated) {
       return
     }
@@ -231,13 +246,27 @@ function AppContent() {
     let path = '/'
     if (page === 'library') {
       const targetPage = pageNumber !== undefined ? pageNumber : libraryPage
-      path = buildLibraryUrl(targetPage)
-      console.log(`navigate: building library URL - page=${targetPage}, result=${path}`)
+
+      if (preserveFilters) {
+        // Parse current filters from URL and preserve them
+        const currentFilters = parseFiltersFromUrl(window.location.search)
+        path = buildLibraryUrlWithFilters({ ...currentFilters, page: targetPage })
+      } else {
+        path = buildLibraryUrl(targetPage)
+      }
+      console.log(`navigate: building library URL - page=${targetPage}, preserveFilters=${preserveFilters}, result=${path}`)
     } else if (page === 'digging') {
       const targetTab = diggingTabOverride || diggingTab
       const targetPage = pageNumber !== undefined ? pageNumber : diggingPage
-      path = buildDiggingUrl(targetTab, targetPage)
-      console.log(`navigate: building digging URL - tab=${targetTab}, page=${targetPage}, result=${path}`)
+
+      if (preserveFilters) {
+        // Parse current filters from URL and preserve them
+        const currentFilters = parseFiltersFromUrl(window.location.search)
+        path = buildDiggingUrlWithFilters(targetTab, { ...currentFilters, page: targetPage })
+      } else {
+        path = buildDiggingUrl(targetTab, targetPage)
+      }
+      console.log(`navigate: building digging URL - tab=${targetTab}, page=${targetPage}, preserveFilters=${preserveFilters}, result=${path}`)
     } else if (page === 'album' && albumId) {
       path = `/album/${albumId}`
     }
@@ -272,22 +301,35 @@ function AppContent() {
     setActivePage(page)
   }
 
+  // Navigation function that preserves filters (for use within the same page type)
+  // Currently not used directly but kept for future extensibility
+  // const navigatePreservingFilters = (
+  //   page: 'library' | 'digging',
+  //   diggingTabOverride?: 'tracks' | 'albums',
+  //   pageNumber?: number
+  // ) => {
+  //   navigate(page, undefined, diggingTabOverride, pageNumber, true)
+  // }
+
   const navigateToDiggingTab = (tab: 'tracks' | 'albums', page?: number) => {
-    navigate('digging', undefined, tab, page !== undefined ? page : 1)
+    // When switching tabs, preserve filters
+    navigate('digging', undefined, tab, page !== undefined ? page : 1, true)
   }
 
   const navigateToDiggingPage = (page: number) => {
     // Validate page number - ensure it's at least 1
     const validPage = Math.max(1, Math.floor(page))
     console.log(`navigateToDiggingPage: page=${page}, validPage=${validPage}, diggingTab=${diggingTab}`)
-    navigate('digging', undefined, diggingTab, validPage)
+    // Preserve filters when changing pages within the same context
+    navigate('digging', undefined, diggingTab, validPage, true)
   }
 
   const navigateToLibraryPage = (page: number) => {
     // Validate page number - ensure it's at least 1
     const validPage = Math.max(1, Math.floor(page))
     console.log(`navigateToLibraryPage: page=${page}, validPage=${validPage}`)
-    navigate('library', undefined, undefined, validPage)
+    // Preserve filters when changing pages within the same context
+    navigate('library', undefined, undefined, validPage, true)
   }
 
   return (

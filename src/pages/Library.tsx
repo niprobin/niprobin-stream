@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Pagination } from '@/components/ui/Pagination'
 import { RefreshCw, Search, X } from 'lucide-react'
@@ -7,9 +7,10 @@ import { useAuth } from '@/contexts/AuthContext'
 import { TrackList } from '@/components/TrackList'
 import { useCachedData } from '@/hooks/useCachedData'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { useDiscoverySearch, libraryFilterFunction } from '@/hooks/useDiscoverySearch'
+import { libraryFilterFunction } from '@/hooks/useDiscoverySearch'
 import { TrackIdSource } from '@/utils/trackUtils'
 import { useAudio } from '@/contexts/AudioContext'
+import { useUrlFilters } from '@/hooks/useUrlFilters'
 
 const LIBRARY_CACHE_KEY = 'niprobin-library-cache'
 const CACHE_DURATION_MS = 60 * 60 * 1000 // 1 hour
@@ -21,8 +22,10 @@ interface LibraryPageProps {
 
 export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
-  const [selectedFolder, setSelectedFolder] = useState<string>('all')
   const pageSize = 10
+
+  // Use URL-based filters for state management
+  const { folder, search, updateFilter } = useUrlFilters('library')
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setAutoPlayContext, currentTrack, isPlaying } = useAudio()
@@ -40,12 +43,7 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
     }
   )
 
-  // Search hook for library tracks
-  const tracksSearch = useDiscoverySearch({
-    data: tracks || [],
-    filterFunction: libraryFilterFunction,
-    setCurrentPage: onPageChange,
-  })
+  // Library search and folder filtering is now handled by URL filters
 
   // Handle track like operations
   const handleLikeTrack = (track: any) => {
@@ -60,16 +58,7 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
     setRefreshTrigger((prev) => prev + 1)
   }
 
-  // Reset to page 1 when folder changes
-  useEffect(() => {
-    onPageChange(1)
-  }, [selectedFolder, onPageChange])
-
-  // Clear search when component mounts
-  useEffect(() => {
-    tracksSearch.clearSearch()
-    onPageChange(1)
-  }, [onPageChange])
+  // Page reset and filter management is now handled automatically by useUrlFilters hook
 
   return (
     <div className="w-full space-y-0">
@@ -82,13 +71,13 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
             <input
               type="text"
               placeholder="Search tracks, artists, or folders..."
-              value={tracksSearch.searchQuery}
-              onChange={(e) => tracksSearch.setSearchQuery(e.target.value)}
+              value={search}
+              onChange={(e) => updateFilter('search', e.target.value)}
               className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
             />
-            {tracksSearch.isSearchActive && (
+            {search && (
               <button
-                onClick={tracksSearch.clearSearch}
+                onClick={() => updateFilter('search', '')}
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 hover:text-white"
                 aria-label="Clear search"
               >
@@ -116,9 +105,9 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
         {tracks && tracks.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => setSelectedFolder('all')}
+              onClick={() => updateFilter('folder', 'all')}
               className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${
-                selectedFolder === 'all'
+                folder === 'all'
                   ? 'bg-white text-black'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
               }`}
@@ -127,26 +116,26 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
             </button>
             {Array.from(
               new Set(tracks.map(track => track.folder).filter(Boolean))
-            ).sort().map((folder) => (
+            ).sort().map((trackFolder) => (
               <button
-                key={folder}
-                onClick={() => setSelectedFolder(folder)}
+                key={trackFolder}
+                onClick={() => updateFilter('folder', trackFolder)}
                 className={`px-3 py-1.5 text-xs font-medium rounded-full transition ${
-                  selectedFolder === folder
+                  folder === trackFolder
                     ? 'bg-white text-black'
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700'
                 }`}
               >
-                {folder}
+                {trackFolder}
               </button>
             ))}
           </div>
         )}
 
         {/* Search results count */}
-        {tracksSearch.isSearchActive && (
+        {search && (
           <div className="text-xs text-slate-400 mt-2 px-1">
-            Showing {tracksSearch.resultsCount} results for "{tracksSearch.searchQuery}"
+            Searching for "{search}"
           </div>
         )}
       </div>
@@ -155,15 +144,20 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
         <div className="text-center text-slate-400 py-12">
           No tracks in your library yet. Upload some music to get started.
         </div>
-      ) : tracksSearch.isSearchActive && tracksSearch.resultsCount === 0 ? (
-        <div className="text-center text-slate-400 py-12">
-          No tracks found matching "{tracksSearch.searchQuery}". Try a different search term.
-        </div>
       ) : (() => {
           // Apply search filtering first, then folder filtering
-          const searchFiltered = tracksSearch.filteredData
+          const searchFiltered = libraryFilterFunction(tracks, search)
           const filteredTracks = searchFiltered
-            .filter((track) => selectedFolder === 'all' || track.folder === selectedFolder)
+            .filter((track) => folder === 'all' || track.folder === folder)
+
+          // Show no results message if search is active but no results
+          if (search && filteredTracks.length === 0) {
+            return (
+              <div className="text-center text-slate-400 py-12">
+                No tracks found matching "{search}". Try a different search term.
+              </div>
+            )
+          }
 
           return (
             <>
@@ -204,9 +198,9 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
 
                     // Create dynamic queue provider that always returns current filtered tracks
                     const queueProvider = () => {
-                      const currentSearchFiltered = tracksSearch.filteredData
+                      const currentSearchFiltered = libraryFilterFunction(tracks || [], search)
                       const currentFilteredTracks = currentSearchFiltered
-                        .filter((track) => selectedFolder === 'all' || track.folder === selectedFolder)
+                        .filter((track) => folder === 'all' || track.folder === folder)
 
                       return currentFilteredTracks.map((track, index) => ({
                         track: track.track,

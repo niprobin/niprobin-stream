@@ -1,7 +1,18 @@
 /**
  * URL Builder Utilities
- * Functions for building shareable track URLs
+ * Functions for building shareable track URLs and managing URL-based state
  */
+
+/**
+ * Filter parameters interface for URL state management
+ */
+export interface FilterParams {
+  page?: number
+  curator?: string
+  search?: string
+  folder?: string
+  type?: 'tracks' | 'albums'
+}
 
 /**
  * Build a track URL that can be shared
@@ -146,4 +157,129 @@ export function buildCanonicalTrackUrl(hash: string): string {
  */
 export function buildCanonicalAlbumUrl(albumId: number): string {
   return `${window.location.origin}/album/${albumId}`
+}
+
+/**
+ * Encode filter parameters as URL query string
+ * @param params - Filter parameters to encode
+ * @returns URL search string (e.g., "?curator=deadmau5&page=2")
+ */
+function encodeFilterParams(params: FilterParams): string {
+  const urlParams = new URLSearchParams()
+
+  // Only include non-default values to keep URLs clean
+  if (params.page && params.page > 1) {
+    urlParams.set('page', params.page.toString())
+  }
+  if (params.curator && params.curator !== 'all') {
+    urlParams.set('curator', params.curator)
+  }
+  if (params.search && params.search.trim()) {
+    urlParams.set('search', params.search.trim())
+  }
+  if (params.folder && params.folder !== 'all') {
+    urlParams.set('folder', params.folder)
+  }
+  if (params.type && params.type !== 'tracks') {
+    urlParams.set('type', params.type)
+  }
+
+  const searchString = urlParams.toString()
+  return searchString ? `?${searchString}` : ''
+}
+
+/**
+ * Parse filter parameters from URL search string
+ * @param search - URL search string (e.g., "?curator=deadmau5&page=2")
+ * @returns Parsed filter parameters with defaults
+ */
+export function parseFiltersFromUrl(search: string): FilterParams {
+  const params = new URLSearchParams(search)
+
+  return {
+    page: Math.max(1, parseInt(params.get('page') || '1', 10) || 1),
+    curator: params.get('curator') || 'all',
+    search: params.get('search') || '',
+    folder: params.get('folder') || 'all',
+    type: (params.get('type') as 'tracks' | 'albums') || 'tracks'
+  }
+}
+
+/**
+ * Build a digging URL with filter parameters
+ * @param tab - The digging tab ('tracks' or 'albums')
+ * @param params - Filter parameters to include
+ * @returns The path to the digging page with filters
+ */
+export function buildDiggingUrlWithFilters(
+  tab: 'tracks' | 'albums',
+  params: FilterParams = {}
+): string {
+  const basePath = `/digging/${tab}`
+  const searchString = encodeFilterParams(params)
+  return basePath + searchString
+}
+
+/**
+ * Build a library URL with filter parameters
+ * @param params - Filter parameters to include
+ * @returns The path to the library page with filters
+ */
+export function buildLibraryUrlWithFilters(params: FilterParams = {}): string {
+  const basePath = '/library'
+  const searchString = encodeFilterParams(params)
+  return basePath + searchString
+}
+
+/**
+ * Build a search URL with filter parameters
+ * @param params - Filter parameters to include
+ * @returns The path to the search page with filters
+ */
+export function buildSearchUrlWithFilters(params: FilterParams = {}): string {
+  const basePath = '/'
+  const searchString = encodeFilterParams(params)
+  return basePath + searchString
+}
+
+/**
+ * Update the current URL with new filter parameters
+ * @param newParams - Partial filter parameters to update
+ * @param pageType - The current page type to determine URL structure
+ * @param replaceHistory - Whether to replace current history entry (default true)
+ */
+export function updateUrlFilters(
+  newParams: Partial<FilterParams>,
+  pageType: 'digging' | 'library' | 'search',
+  replaceHistory: boolean = true
+): void {
+  // Get current filters from URL
+  const currentFilters = parseFiltersFromUrl(window.location.search)
+
+  // Merge with new parameters
+  const updatedFilters = { ...currentFilters, ...newParams }
+
+  // Reset page to 1 when non-page filters change
+  if (Object.keys(newParams).some(key => key !== 'page')) {
+    updatedFilters.page = 1
+  }
+
+  // Build new URL based on page type
+  let newUrl: string
+  if (pageType === 'library') {
+    newUrl = buildLibraryUrlWithFilters(updatedFilters)
+  } else if (pageType === 'search') {
+    newUrl = buildSearchUrlWithFilters(updatedFilters)
+  } else {
+    // For digging page, determine tab from current URL
+    const currentTab = window.location.pathname.includes('/albums') ? 'albums' : 'tracks'
+    newUrl = buildDiggingUrlWithFilters(currentTab, updatedFilters)
+  }
+
+  // Update browser history
+  if (replaceHistory) {
+    window.history.replaceState({}, '', newUrl)
+  } else {
+    window.history.pushState({}, '', newUrl)
+  }
 }
