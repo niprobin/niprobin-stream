@@ -384,7 +384,7 @@ export function Player() {
             {/* Desktop Layout: 3 columns */}
             <div className="hidden md:grid md:grid-cols-3 items-center gap-4 mb-4">
                 {/* Left: Album Cover and Track Info */}
-                <div className="flex items-start gap-4 text-left">
+                <div className="flex items-center gap-4 text-left">
                   {/* Album Cover */}
                   <div className="flex-shrink-0">
                     {currentTrack.coverArt ? (
@@ -565,7 +565,7 @@ export function Player() {
 
 
               {/* Main Row: Cover + Track Info + Controls */}
-              <div className="flex items-center gap-3 px-4 py-2">
+              <div className="flex items-center gap-3 py-2">
 
                 {/* Left: Album Cover */}
                 <div className="flex-shrink-0">
@@ -573,7 +573,7 @@ export function Player() {
                     <img
                       src={currentTrack.coverArt}
                       alt={`${currentTrack.title} cover`}
-                      className="w-20 h-20 rounded-sm object-cover bg-slate-800"
+                      className="w-8 h-8 rounded-sm object-cover bg-slate-800"
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
                         const nextElement = e.currentTarget.nextElementSibling as HTMLElement
@@ -584,7 +584,7 @@ export function Player() {
                     />
                   ) : null}
                   <div
-                    className={`w-20 h-20 rounded-sm bg-slate-800 flex items-center justify-center ${
+                    className={`w-8 h-8 rounded-sm bg-slate-800 flex items-center justify-center ${
                       currentTrack.coverArt ? 'hidden' : 'flex'
                     }`}
                   >
@@ -771,7 +771,7 @@ export function Player() {
           onSubmit={handleSubmitLike}
           className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl"
         >
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs uppercase text-slate-400 tracking-wide">Add to playlist</p>
               <p className="text-white text-lg font-semibold truncate">{likeModalTrack.title}</p>
