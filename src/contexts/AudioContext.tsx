@@ -25,6 +25,7 @@ export type AlbumTrackItem = {
   'track-id': number
   artist: string
   'track-number': number
+  date?: string
 }
 
 // TypeScript: Define loading states for audio player

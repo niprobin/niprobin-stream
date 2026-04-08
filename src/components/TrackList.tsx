@@ -11,6 +11,7 @@ type BaseTrack = {
   artist: string
   album?: string
   cover?: string
+  date?: string
 }
 
 type AlbumListProps = {
@@ -46,6 +47,7 @@ type SearchListProps = {
 
 type TrackListProps = (AlbumListProps | SearchListProps)
 
+
 export function TrackList(props: TrackListProps) {
   const isAlbumVariant = props.variant === 'album'
   const data = props.tracks
@@ -77,8 +79,8 @@ export function TrackList(props: TrackListProps) {
     }
   }
 
-  // Grid column template: increased action column to 40px for multiple buttons
-  const gridCols = 'grid-cols-[44px_1fr_40px]'
+  // Grid column template: improved spacing for date and action columns
+  const gridCols = 'grid-cols-[44px_1fr_120px_72px]'
   const horizontalPadding = compactSpacing ? 'px-4' : 'px-6 lg:px-10'
 
   return (
@@ -87,6 +89,7 @@ export function TrackList(props: TrackListProps) {
       <div className={`grid ${gridCols} ${horizontalPadding} py-3 border-b border-white/5`}>
         <span className="text-xs uppercase tracking-wider text-white/20">#</span>
         <span className="text-xs uppercase tracking-wider text-white/20">Title</span>
+        <span className="text-xs uppercase tracking-wider text-white/20 text-center px-2">Date</span>
         <span></span>
       </div>
     )}
@@ -131,8 +134,13 @@ export function TrackList(props: TrackListProps) {
                 <div className="text-xs text-white/30 font-light truncate">{item.artist}</div>
               </div>
 
+              {/* Date Column */}
+              <div className="text-xs text-white/40 text-center px-2">
+                {item.date || ''}
+              </div>
+
               {/* Action Buttons Column */}
-              <div className="flex items-center justify-end gap-1">
+              <div className="flex items-center justify-end gap-2">
                 {props.renderAction?.(item)}
                 {props.enableLikeButtons && props.isAuthenticated && (
                   <button
@@ -185,6 +193,11 @@ export function TrackList(props: TrackListProps) {
               <div className="text-xs text-white/30 font-light truncate">
                 {obj.artist} • {obj.album}
               </div>
+            </div>
+
+            {/* Date Column */}
+            <div className="text-xs text-white/40 text-center px-2">
+              {obj.date || ''}
             </div>
 
             {/* Action Column (empty for search - no actions needed) */}

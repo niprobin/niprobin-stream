@@ -101,6 +101,7 @@ export type DiscoverTrack = {
   track: string
   artist: string
   curator: string
+  date: string
   'spotify-id'?: string
 }
 

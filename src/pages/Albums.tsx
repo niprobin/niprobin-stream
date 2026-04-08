@@ -197,6 +197,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         'track-id': 0,
                         artist: track.artist,
                         'track-number': (currentPage - 1) * pageSize + index + 1,
+                        date: track.date,
                       }))}
                     loadingTrackId={loadingTrackId}
                     enableLikeButtons={isAuthenticated}
@@ -216,6 +217,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                           'track-id': 0,
                           artist: track.artist,
                           'track-number': index + 1,
+                          date: track.date,
                         }))
 
                         // Find the index of the selected track in the full filtered list
@@ -235,6 +237,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                             'track-id': 0,
                             artist: track.artist,
                             'track-number': index + 1,
+                            date: track.date,
                           }))
                         }
 
