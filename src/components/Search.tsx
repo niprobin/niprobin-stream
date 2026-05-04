@@ -8,7 +8,6 @@ import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
-import { TrackIdSource } from '@/utils/trackUtils'
 import { Search as SearchIcon, ChevronDown, BookmarkPlus, Loader2 } from 'lucide-react'
 import { TrackList } from '@/components/TrackList'
 
@@ -59,32 +58,33 @@ export function Search() {
   // Handle clicking a track to play it
   const handlePlayTrack = async (result: SearchResult) => {
     playTrack(
-      result['track-id'],
       result.track,
       result.artist,
       {
         clearAlbum: false,  // Keep auto-play context
         albumName: result.album,
         coverArt: result.cover,
-        source: TrackIdSource.Search,
+        deezer_id: result.deezer_id, // Use actual deezer_id from search results
       }
     )
   }
 
   // Handle clicking an album to navigate to album page
   const handleAlbumClick = (album: AlbumResult) => {
-    window.history.pushState({}, '', `/album/${album['album-id']}`)
+    const albumId = album['album-id'] || parseInt(album.deezer_id) || 0
+    window.history.pushState({}, '', `/album/${albumId}`)
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
   const handleSaveAlbum = async (album: AlbumResult) => {
-    setSavingAlbumId(album['album-id'])
+    setSavingAlbumId(album['album-id'] || parseInt(album.deezer_id) || 0)
 
     try {
       const response = await saveAlbum({
         album: album.album,
         artist: album.artist,
-        'album-id': album['album-id']
+        'album-id': album['album-id'],
+        deezer_id: album.deezer_id
       }, token)
 
       showNotification(response.message, response.status)
@@ -145,13 +145,14 @@ export function Search() {
             artist: result.artist,
             album: result.album,
             cover: result.cover,
+            deezer_id: result.deezer_id,
           }))}
           loadingTrackId={loadingTrackId}
-          onSelect={(track, trackIndex) => {
+          onSelect={(_track, trackIndex) => {
             // Convert search results to auto-play format
             const searchTracks = results.map((result, index) => ({
               track: result.track,
-              'track-id': 0,
+              deezer_id: result.deezer_id,
               artist: result.artist,
               'track-number': index + 1,
             }))
@@ -160,7 +161,7 @@ export function Search() {
             const queueProvider = () => {
               return results.map((result, index) => ({
                 track: result.track,
-                'track-id': 0,
+                deezer_id: result.deezer_id,
                 artist: result.artist,
                 'track-number': index + 1,
               }))
@@ -168,13 +169,9 @@ export function Search() {
 
             setAutoPlayContext(searchTracks, trackIndex, "Search Results", queueProvider)
 
-            handlePlayTrack({
-              track: track.title,
-              artist: track.artist,
-              album: track.album ?? '',
-              'track-id': "0",
-              cover: track.cover ?? '',
-            })
+            // Find the original search result to get the deezer_id
+            const originalResult = results[trackIndex]
+            handlePlayTrack(originalResult)
           }}
         />
       )}
@@ -184,7 +181,7 @@ export function Search() {
         <div className="grid gap-4 [&>*]:max-w-[320px] [&>*]:mx-auto" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))' }}>
           {albumResults.map((album, index) => (
             <AlbumCard
-              key={`${album['album-id']}-${index}`}
+              key={`${album['album-id'] || album.deezer_id}-${index}`}
               album={album}
               onClick={() => handleAlbumClick(album)}
               bottomButton={
@@ -193,12 +190,12 @@ export function Search() {
                     e.stopPropagation()
                     handleSaveAlbum(album)
                   }}
-                  disabled={savingAlbumId === album['album-id']}
+                  disabled={savingAlbumId === (album['album-id'] || parseInt(album.deezer_id) || 0)}
                   size="sm"
                   variant="outline"
                   className="w-full h-8 text-xs bg-transparent border-slate-600 text-slate-300 hover:bg-slate-800 hover:border-slate-500"
                 >
-                  {savingAlbumId === album['album-id'] ? (
+                  {savingAlbumId === (album['album-id'] || parseInt(album.deezer_id) || 0) ? (
                     <>
                       <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                       Saving...

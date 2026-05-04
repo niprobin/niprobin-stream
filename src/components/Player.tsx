@@ -244,13 +244,13 @@ export function Player() {
     setAutoPlayContext(albumTracks, trackIndex, albumInfo.name)
 
     playTrack(
-      track['track-id'],
       track.track,
       track.artist,
       {
         clearAlbum: false,
         albumName: albumInfo.name,
         coverArt: albumInfo.cover,
+        deezer_id: track.deezer_id || '0', // Use track metadata or fallback
       }
     )
   }
@@ -295,7 +295,7 @@ export function Player() {
           {isAuthenticated && currentTrack && (
             <Button
               onClick={() => {
-                openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)
+                openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)
                 setShowMobileActions(false)
               }}
               size="icon-lg"
@@ -488,7 +488,7 @@ export function Player() {
                 <div className="flex gap-2 px-2 py-1 rounded-lg bg-slate-800/30">
                   {isAuthenticated && currentTrack && (
                     <Button
-                      onClick={() => openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId)}
+                      onClick={() => openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)}
                       size="icon"
                       variant="ghost"
                       className={`text-slate-300 hover:text-red-400 hover:bg-slate-800 ${

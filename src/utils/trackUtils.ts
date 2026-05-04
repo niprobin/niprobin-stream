@@ -57,3 +57,36 @@ export function generateStableTrackId(track: string, artist: string): number {
     }, 0)
   )
 }
+
+/**
+ * Extract metadata from a track for use in external API calls
+ * Returns available metadata including deezer_id, curator, etc.
+ */
+export function extractTrackMetadata(track: { deezer_id?: string; curator?: string; [key: string]: any }) {
+  return {
+    deezer_id: track.deezer_id,
+    curator: track.curator,
+    // Add other metadata fields here as needed
+  }
+}
+
+/**
+ * Format track data with metadata for API calls
+ * Useful for sending complete track information to endpoints
+ */
+export function formatTrackForAPI(track: {
+  track?: string;
+  title?: string;
+  artist: string;
+  deezer_id?: string;
+  curator?: string;
+  date?: string;
+}) {
+  return {
+    track: track.track || track.title,
+    artist: track.artist,
+    deezer_id: track.deezer_id,
+    curator: track.curator,
+    date: track.date,
+  }
+}

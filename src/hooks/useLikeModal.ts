@@ -27,6 +27,7 @@ type LikeModalTrack = {
   title: string
   artist: string
   spotifyId?: string
+  deezer_id?: string
 }
 
 export function useLikeModal(token: string | null) {
@@ -45,8 +46,8 @@ export function useLikeModal(token: string | null) {
   }
 
   // Open modal with track information
-  const openLikeModal = (id: string, title: string, artist: string, spotifyId?: string) => {
-    setLikeModalTrack({ id, title, artist, spotifyId })
+  const openLikeModal = (id: string, title: string, artist: string, spotifyId?: string, deezer_id?: string) => {
+    setLikeModalTrack({ id, title, artist, spotifyId, deezer_id })
     setSelectedPlaylist(PLAYLISTS[0])
     setIsLikeModalOpen(true)
   }
@@ -70,7 +71,8 @@ export function useLikeModal(token: string | null) {
         track: likeModalTrack.title,
         artist: likeModalTrack.artist,
         playlist: selectedPlaylist,
-        'spotify-id': likeModalTrack.spotifyId || ''
+        'spotify-id': likeModalTrack.spotifyId || '',
+        deezer_id: likeModalTrack.deezer_id
       }, token)
 
       if (result.status === 'success') {

@@ -14,20 +14,22 @@ export type SearchResult = {
   album: string
   'track-id': string
   cover: string
+  deezer_id: string
 }
 
 // Type for album search results
 export type AlbumResult = {
   album: string
   artist: string
-  'album-id': number
+  'album-id'?: number
   cover: string
+  deezer_id: string
 }
 
 // Type for album track listing
 export type AlbumTrack = {
   track: string
-  'track-id': number
+  deezer_id: string
   artist: string
   'track-number': number
   'album-id'?: number
@@ -63,6 +65,7 @@ type LikeTrackPayload = {
   artist: string
   playlist: string
   'spotify-id'?: string
+  deezer_id?: string
 }
 
 export type LikeTrackResponse = {
@@ -74,6 +77,7 @@ type RateAlbumPayload = {
   album: string
   artist: string
   rating: number
+  deezer_id?: string
 }
 
 type RateDiscoveryAlbumPayload = {
@@ -95,6 +99,7 @@ export type DiscoverAlbum = {
   album: string
   artist: string
   cover_url: string
+  deezer_id: string
 }
 
 export type DiscoverTrack = {
@@ -102,7 +107,8 @@ export type DiscoverTrack = {
   artist: string
   curator: string
   date: string
-  'spotify-id'?: string
+  deezer_id: string
+  'spotify-id'?: string // Keep for backwards compatibility if needed
 }
 
 export type LibraryTrack = {
@@ -133,7 +139,7 @@ export async function searchTracks(query: string): Promise<SearchResult[]> {
 
 // Get stream URL for a track
 export async function getStreamUrl(
-  trackId: number,
+  deezer_id: string,
   track: string,
   artist: string,
   token: string | null,
@@ -142,7 +148,7 @@ export async function getStreamUrl(
   const response = await fetch('https://n8n.niprobin.com/webhook/stream', {
     method: 'POST',
     headers: authHeaders(token),
-    body: JSON.stringify({ trackId, track, artist, context }),
+    body: JSON.stringify({ deezer_id, track, artist, context }),
   })
 
   if (!response.ok) {
@@ -152,7 +158,7 @@ export async function getStreamUrl(
   const data = await response.json()
   return {
     streamUrl: data.stream_url,
-    trackId: String(data.track_id || trackId),
+    trackId: String(data.track_id || deezer_id),
     hashUrl: data.hash_url,
     track: data.track,
     artist: data.artist,
@@ -207,7 +213,7 @@ export async function searchAlbums(query: string): Promise<AlbumResult[]> {
 
 // Get tracks for a specific album
 export async function getAlbumTracks(
-  albumId: number,
+  deezer_id: string,
   album: string,
   artist: string
 ): Promise<AlbumTrack[]> {
@@ -216,7 +222,7 @@ export async function getAlbumTracks(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ albumId, album, artist }),
+    body: JSON.stringify({ deezer_id, album, artist }),
   })
 
   if (!response.ok) {
@@ -233,7 +239,7 @@ export async function getAlbumTracks(
     // Add album metadata to each track
     return albumData.tracks.map((track: any) => ({
       ...track,
-      'track-id': track['track-id'], // Ensure track-id is preserved
+      deezer_id: track.deezer_id, // Ensure deezer_id is preserved
       'album-id': albumId,
       album: albumData.album,
       cover: albumData.cover
@@ -254,13 +260,13 @@ export async function getAlbumTracks(
 }
 
 // Get album by ID (for album page)
-export async function getAlbumById(albumId: number): Promise<AlbumResponse> {
+export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/stream-album', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ albumId }),
+    body: JSON.stringify({ deezer_id }),
   })
 
   if (!response.ok) {
@@ -276,12 +282,12 @@ export async function getAlbumById(albumId: number): Promise<AlbumResponse> {
   if (Array.isArray(data) && data.length > 0) {
     albumData = data[0]
     if (albumData.tracks && Array.isArray(albumData.tracks)) {
-      const parsedAlbumId = parseInt(albumData['album-id']) || albumId
+      const parsedAlbumId = parseInt(albumData['album-id']) || parseInt(deezer_id) || 0
 
       // Add album metadata to each track
       tracks = albumData.tracks.map((track: any) => ({
         ...track,
-        'track-id': track['track-id'], // Ensure track-id is preserved
+        deezer_id: track.deezer_id, // Ensure deezer_id is preserved
         'album-id': parsedAlbumId,
         album: albumData.album,
         cover: albumData.cover
@@ -302,7 +308,7 @@ export async function getAlbumById(albumId: number): Promise<AlbumResponse> {
 
   return {
     tracks,
-    albumId: albumData['album-id'] ? parseInt(albumData['album-id']) : (albumData.album_id || albumData.albumId || albumId),
+    albumId: albumData['album-id'] ? parseInt(albumData['album-id']) : (albumData.album_id || albumData.albumId || parseInt(deezer_id) || 0),
     album: albumData.album || (tracks.length > 0 ? tracks[0].album || '' : ''),
     artist: albumData.artist || (tracks.length > 0 ? tracks[0].artist : ''),
     cover: albumData.cover || (tracks.length > 0 ? tracks[0].cover || '' : ''),
@@ -356,7 +362,8 @@ export async function rateDiscoveryAlbum(payload: RateDiscoveryAlbumPayload, tok
 type SaveAlbumPayload = {
   album: string
   artist: string
-  'album-id': number
+  'album-id'?: number
+  deezer_id?: string
 }
 
 export async function saveAlbum(payload: SaveAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
@@ -463,6 +470,7 @@ export async function getLibraryAlbums(): Promise<LibraryAlbum[]> {
 type HideAlbumPayload = {
   album: string
   artist: string
+  deezer_id?: string
 }
 
 type HideDiscoveryAlbumPayload = {
@@ -499,6 +507,7 @@ type HideTrackPayload = {
   track: string
   artist: string
   'spotify-id'?: string
+  deezer_id?: string
 }
 
 export async function hideTrack(payload: HideTrackPayload, token: string | null): Promise<void> {

@@ -3,7 +3,7 @@ import { getStreamUrl } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { normalizeTrackId, TrackIdSource } from '@/utils/trackUtils'
+import { TrackIdSource } from '@/utils/trackUtils'
 import { getStreamContext } from '@/utils/urlBuilder'
 
 export type TrackPlayerOptions = {
@@ -12,6 +12,9 @@ export type TrackPlayerOptions = {
   coverArt?: string
   spotifyId?: string
   source?: TrackIdSource
+  // Optional metadata for discovery tracks and external integrations
+  deezer_id?: string
+  curator?: string
 }
 
 /**
@@ -25,7 +28,6 @@ export function useTrackPlayer() {
   const { token } = useAuth()
 
   const playTrack = async (
-    trackId: number | string,
     trackName: string,
     artistName: string,
     options: TrackPlayerOptions = {}
@@ -35,12 +37,12 @@ export function useTrackPlayer() {
       albumName,
       coverArt,
       spotifyId,
-      source = TrackIdSource.Album, // Default to album for backward compatibility
+      deezer_id,
+      curator,
     } = options
 
-    // Normalize track ID for consistent webhook calls
-    const normalizedTrackId = normalizeTrackId(trackId, trackName, artistName, source)
-    const loadingKey = String(normalizedTrackId)
+    // Use deezer_id or fallback for loading state
+    const loadingKey = deezer_id || '0'
     setLoadingTrackId(loadingKey)
 
     // Set loading state for API fetch
@@ -54,7 +56,7 @@ export function useTrackPlayer() {
 
       // Fetch stream URL and track metadata from backend
       const streamResponse = await getStreamUrl(
-        normalizedTrackId,
+        deezer_id || '0',
         trackName,
         artistName,
         token,
@@ -73,6 +75,8 @@ export function useTrackPlayer() {
         streamUrl: streamResponse.streamUrl,
         coverArt: coverArt || streamResponse.cover,
         spotifyId,
+        deezer_id,
+        curator,
       })
 
       // API fetch completed - loading state will be managed by AudioContext

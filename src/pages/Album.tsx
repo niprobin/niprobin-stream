@@ -9,7 +9,6 @@ import { StarRating } from '@/components/ui/StarRating'
 import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
 import { Share2, X, Loader2, Music4 } from 'lucide-react'
-import { TrackIdSource } from '@/utils/trackUtils'
 import { useMetaTags } from '@/hooks/useMetaTags'
 import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
 
@@ -67,7 +66,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       setError(null)
 
       try {
-        const data = await getAlbumById(albumId)
+        const data = await getAlbumById(albumId.toString())
         setTracks(data.tracks)
         setAlbumName(data.album)
         setArtistName(data.artist)
@@ -127,11 +126,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
 
   // Handle playing a track from the list
   const handlePlayTrack = (track: AlbumTrack) => {
-    playTrack(track['track-id'], track.track, track.artist, {
+    playTrack(track.track, track.artist, {
       clearAlbum: false,
       albumName: albumName,
       coverArt: coverUrl,
-      source: TrackIdSource.Album,
+      deezer_id: '0', // Album tracks fallback
     })
   }
 
@@ -143,7 +142,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     setAlbumContext(
       tracks.map((t) => ({
         track: t.track,
-        'track-id': t['track-id'],
+        deezer_id: t.deezer_id,
         artist: t.artist,
         'track-number': t['track-number'],
       })),
@@ -377,7 +376,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         variant="album"
         tracks={tracks.map(track => ({
           track: track.track,
-          'track-id': track['track-id'],
+          deezer_id: track.deezer_id,
           artist: track.artist,
           'track-number': track['track-number'],
         }))}
@@ -388,7 +387,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             // Update the current track index for proper auto-play sequencing
             const albumTracksForContext = tracks.map((t) => ({
               track: t.track,
-              'track-id': t['track-id'],
+              deezer_id: t.deezer_id,
               artist: t.artist,
               'track-number': t['track-number'],
             }))

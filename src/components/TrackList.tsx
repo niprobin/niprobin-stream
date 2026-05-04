@@ -12,6 +12,7 @@ type BaseTrack = {
   album?: string
   cover?: string
   date?: string
+  deezer_id?: string
 }
 
 type AlbumListProps = {
@@ -74,7 +75,7 @@ export function TrackList(props: TrackListProps) {
 
     // Call the parent's like handler if provided and like was successful
     if (result?.success && isAlbumVariant && props.onLikeTrack && likeModalTrack) {
-      const track = data.find(t => (t as AlbumTrackItem)['track-id'].toString() === likeModalTrack.id)
+      const track = data.find(t => (t as AlbumTrackItem).deezer_id === likeModalTrack.id)
       if (track) props.onLikeTrack(track as AlbumTrackItem)
     }
   }
@@ -96,12 +97,12 @@ export function TrackList(props: TrackListProps) {
     <div className="overflow-hidden">
       {data.map((track, index) => {
         const key = isAlbumVariant
-          ? `${(track as AlbumTrackItem)['track-id']}-${index}`
+          ? `${(track as AlbumTrackItem).deezer_id}-${index}`
           : `${(track as BaseTrack).id}-${index}`
 
         if (isAlbumVariant) {
           const item = track as AlbumTrackItem
-          const trackId = item['track-id'].toString()
+          const trackId = item.deezer_id
           const loading = props.loadingTrackId === trackId
           const isCurrentTrack = props.currentTrackId === trackId
           const liked = isTrackLiked(item.track, item.artist)
@@ -150,7 +151,7 @@ export function TrackList(props: TrackListProps) {
                     } hover:text-red-400`}
                     onClick={(event) => {
                       event.stopPropagation()
-                      openLikeModal(trackId, item.track, item.artist)
+                      openLikeModal(trackId, item.track, item.artist, undefined, 'deezer_id' in item ? item.deezer_id : undefined)
                     }}
                     aria-pressed={liked}
                   >

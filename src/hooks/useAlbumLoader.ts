@@ -26,7 +26,7 @@ export function useAlbumLoader() {
 
     try {
       // Fetch album data including tracks and metadata (with potential ID)
-      const albumData = await getAlbumById(albumId)
+      const albumData = await getAlbumById(albumId.toString())
 
       // Populate the player with album context (doesn't auto-play unless configured)
       setAlbumContext(

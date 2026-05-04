@@ -8,7 +8,6 @@ import { TrackList } from '@/components/TrackList'
 import { useCachedData } from '@/hooks/useCachedData'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { libraryFilterFunction } from '@/hooks/useDiscoverySearch'
-import { TrackIdSource } from '@/utils/trackUtils'
 import { useAudio } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 
@@ -167,7 +166,7 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
                   .slice((currentPage - 1) * pageSize, currentPage * pageSize)
                   .map((track, index) => ({
                     track: track.track,
-                    'track-id': 0,
+                    deezer_id: '0',
                     artist: track.artist,
                     'track-number': (currentPage - 1) * pageSize + index + 1,
                   }))}
@@ -186,7 +185,7 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
                     // Create queue from all filtered tracks for seamless library playback
                     const allFilteredTracksQueue = filteredTracks.map((track, index) => ({
                       track: track.track,
-                      'track-id': 0,
+                      deezer_id: '0',
                       artist: track.artist,
                       'track-number': index + 1,
                     }))
@@ -204,7 +203,7 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
 
                       return currentFilteredTracks.map((track, index) => ({
                         track: track.track,
-                        'track-id': 0,
+                        deezer_id: '0',
                         artist: track.artist,
                         'track-number': index + 1,
                       }))
@@ -218,12 +217,11 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
                     )
 
                     playTrack(
-                      0, // Library tracks use consistent fallback (handled by normalization)
                       originalTrack.track,
                       originalTrack.artist,
                       {
                         clearAlbum: false,  // Keep auto-play context
-                        source: TrackIdSource.Discovery
+                        deezer_id: '0', // Library tracks fallback
                       }
                     )
                   }

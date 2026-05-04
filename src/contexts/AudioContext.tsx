@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { getStreamUrl } from '@/services/api'
-import { normalizeTrackId, TrackIdSource } from '@/utils/trackUtils'
 import { getStreamContext } from '@/utils/urlBuilder'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -17,15 +16,20 @@ type Track = {
   streamUrl: string
   spotifyId?: string
   playSource?: 'search' | 'digging' | 'album'
+  // Optional metadata for discovery tracks and external integrations
+  deezer_id?: string
+  curator?: string
 }
 
 // TypeScript: Define album track for tracklist
 export type AlbumTrackItem = {
   track: string
-  'track-id': number
+  deezer_id: string
   artist: string
   'track-number': number
   date?: string
+  // Optional metadata for discovery tracks and external integrations
+  curator?: string
 }
 
 // TypeScript: Define loading states for audio player
@@ -214,18 +218,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       try {
         setCurrentTrackIndex(nextIndex)
 
-        // Determine track source and normalize track ID
-        const isAutoPlayContext = albumInfo.artist === "Auto-play"
-        const source = isAutoPlayContext ? TrackIdSource.Discovery : TrackIdSource.Album
-        const normalizedTrackId = normalizeTrackId(
-          nextTrack['track-id'],
-          nextTrack.track,
-          nextTrack.artist,
-          source
-        )
-
         const streamResponse = await getStreamUrl(
-          normalizedTrackId,
+          nextTrack.deezer_id || '0',
           nextTrack.track,
           nextTrack.artist,
           token,
@@ -242,6 +236,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           albumId: streamResponse['album-id'],
           streamUrl: streamResponse.streamUrl,
           coverArt: streamResponse.cover || albumInfo.cover,
+          deezer_id: nextTrack.deezer_id,
+          curator: nextTrack.curator,
         })
       } catch (err) {
         console.error('Failed to load next track:', err)
@@ -268,18 +264,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       try {
         setCurrentTrackIndex(prevIndex)
 
-        // Determine track source and normalize track ID (same as playNextTrack)
-        const isAutoPlayContext = albumInfo.artist === "Auto-play"
-        const source = isAutoPlayContext ? TrackIdSource.Discovery : TrackIdSource.Album
-        const normalizedTrackId = normalizeTrackId(
-          prevTrack['track-id'],
-          prevTrack.track,
-          prevTrack.artist,
-          source
-        )
-
         const streamResponse = await getStreamUrl(
-          normalizedTrackId,
+          prevTrack.deezer_id || '0',
           prevTrack.track,
           prevTrack.artist,
           token,
@@ -294,6 +280,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           albumId: streamResponse['album-id'],
           streamUrl: streamResponse.streamUrl,
           coverArt: streamResponse.cover || albumInfo.cover,
+          deezer_id: prevTrack.deezer_id,
+          curator: prevTrack.curator,
         })
       } catch (err) {
         console.error('Failed to load previous track:', err)
@@ -460,13 +448,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       ;(async () => {
         try {
           const first = tracks[0]
-          const normalizedTrackId = normalizeTrackId(
-            first['track-id'],
-            first.track,
-            first.artist,
-            TrackIdSource.Album
-          )
-          const streamResponse = await getStreamUrl(normalizedTrackId, first.track, first.artist, token, getStreamContext())
+          const streamResponse = await getStreamUrl(first.deezer_id || '0', first.track, first.artist, token, getStreamContext())
           loadTrack({
             id: streamResponse.trackId,
             hashUrl: streamResponse.hashUrl,
@@ -476,6 +458,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
             albumId: streamResponse['album-id'],
             streamUrl: streamResponse.streamUrl,
             coverArt: streamResponse.cover || info.cover,
+            deezer_id: first.deezer_id,
+            curator: first.curator,
           })
         } catch (err) {
           console.error('Failed to preload first album track', err)

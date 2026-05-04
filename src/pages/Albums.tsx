@@ -4,15 +4,12 @@ import { Pagination } from '@/components/ui/Pagination'
 import { AlbumCard } from '@/components/ui/AlbumCard'
 import { RefreshCw, X, Search } from 'lucide-react'
 import { getAlbumsToDiscover, getTracksToDiscover, hideTrack, getAlbumTracks, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
-import { useLoading } from '@/contexts/LoadingContext'
-import { useNotification } from '@/contexts/NotificationContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { TrackList } from '@/components/TrackList'
 import { useCachedData } from '@/hooks/useCachedData'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
 import { albumFilterFunction } from '@/hooks/useDiscoverySearch'
-import { TrackIdSource } from '@/utils/trackUtils'
 import { useAudio } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 
@@ -41,8 +38,6 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setAutoPlayContext, currentTrack, isPlaying } = useAudio()
-  const { increment, decrement } = useLoading()
-  const { showNotification } = useNotification()
   const { isAuthenticated, token } = useAuth()
 
   // Use hide item hooks for albums and tracks
@@ -53,7 +48,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   )
 
   const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem<DiscoverTrack>(
-    (track) => hideTrack({ track: track.track, artist: track.artist }, token),
+    (track) => hideTrack({ track: track.track, artist: track.artist, deezer_id: track.deezer_id }, token),
     (track) => `${track.track}-${track.artist}`,
     { persistentCacheKey: 'niprobin-hidden-tracks' }
   )
@@ -85,23 +80,17 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
   // Handle clicking an album to navigate to album page
   const handleAlbumClick = async (album: DiscoverAlbum) => {
-    increment()
     try {
-      // Fetch album tracks to get the album ID
-      const tracks = await getAlbumTracks(0, album.album, album.artist)
-      // Get album ID from first track
+      // Use deezer_id when calling stream-album endpoint
+      const tracks = await getAlbumTracks(album.deezer_id, album.album, album.artist)
+      // Get album ID from first track for URL navigation
       const albumId = tracks[0]?.['album-id']
       if (albumId) {
         window.history.pushState({}, '', `/album/${albumId}`)
         window.dispatchEvent(new PopStateEvent('popstate'))
-      } else {
-        showNotification('Could not find album', 'error')
       }
     } catch (err) {
       console.error('Failed to load album:', err)
-      showNotification('Failed to load album', 'error')
-    } finally {
-      decrement()
     }
   }
 
@@ -194,10 +183,11 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                       .slice((currentPage - 1) * pageSize, currentPage * pageSize)
                       .map((track, index) => ({
                         track: track.track,
-                        'track-id': 0,
+                        deezer_id: track.deezer_id,
                         artist: track.artist,
                         'track-number': (currentPage - 1) * pageSize + index + 1,
                         date: track.date,
+                        curator: track.curator,
                       }))}
                     loadingTrackId={loadingTrackId}
                     enableLikeButtons={isAuthenticated}
@@ -214,10 +204,11 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         // Create queue from all filtered tracks for seamless discovery
                         const allFilteredTracksQueue = filteredTracks.map((track, index) => ({
                           track: track.track,
-                          'track-id': 0,
+                          deezer_id: track.deezer_id,
                           artist: track.artist,
                           'track-number': index + 1,
                           date: track.date,
+                          curator: track.curator,
                         }))
 
                         // Find the index of the selected track in the full filtered list
@@ -234,10 +225,11 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
                           return currentFilteredTracks.map((track, index) => ({
                             track: track.track,
-                            'track-id': 0,
+                            deezer_id: track.deezer_id,
                             artist: track.artist,
                             'track-number': index + 1,
                             date: track.date,
+                            curator: track.curator,
                           }))
                         }
 
@@ -249,12 +241,12 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         )
 
                         playTrack(
-                          0, // Discovery tracks use consistent fallback (handled by normalization)
                           originalTrack.track,
                           originalTrack.artist,
                           {
                             clearAlbum: false,  // Keep auto-play context
-                            source: TrackIdSource.Discovery
+                            deezer_id: originalTrack.deezer_id,
+                            curator: originalTrack.curator,
                           }
                         )
                       }
