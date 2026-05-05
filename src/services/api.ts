@@ -83,8 +83,8 @@ export async function getStreamUrl(
     hashUrl: data.hash_url,
     track: data.track,
     artist: data.artist,
-    album: data.album,
-    'album-id': data['album-id'],
+    album: data['album-name'] || data.album,
+    'album-id': data['album-id'] ? parseInt(String(data['album-id']), 10) : undefined,
     cover: data.cover,
   }
 }

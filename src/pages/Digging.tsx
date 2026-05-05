@@ -33,7 +33,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const [prevActiveTab, setPrevActiveTab] = useState<DiggingTab>(activeTab)
 
   // Use URL-based filters for state management
-  const { curator, search, updateFilter } = useUrlFilters('digging')
+  const { curator, search, updateFilter, updateFilters } = useUrlFilters('digging')
   const pageSize = 10
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
@@ -116,11 +116,10 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     // Only reset page when actively switching tabs, not during navigation sync
     if (prevActiveTab !== activeTab) {
       onPageChange(1)
-      // Clear search when switching tabs
-      updateFilter('search', '')
+      updateFilters({ search: '', curator: 'all' })
       setPrevActiveTab(activeTab)
     }
-  }, [activeTab, prevActiveTab, onPageChange, updateFilter])
+  }, [activeTab, prevActiveTab, onPageChange, updateFilters])
 
   // Page reset logic is now handled automatically by useUrlFilters hook
 
