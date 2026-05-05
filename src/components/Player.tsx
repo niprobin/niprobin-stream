@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress'
 import { Play, Pause, Download, Maximize2, Heart, Loader2, Share2, X, SkipBack, SkipForward, Music, MoreHorizontal } from 'lucide-react'
 import { downloadTrack } from '@/services/api'
 import { shareTrack } from '@/utils/urlBuilder'
+import { ROUTES } from '@/utils/routes'
 import { useState, useEffect, useRef } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
@@ -175,7 +176,7 @@ export function Player() {
   const handleAlbumClick = () => {
     if (!currentTrack?.albumId) return
 
-    const albumUrl = `/album/${currentTrack.albumId}`
+    const albumUrl = ROUTES.album(currentTrack.albumId)
     window.history.pushState({}, '', albumUrl)
     // Trigger popstate to handle route change
     window.dispatchEvent(new PopStateEvent('popstate'))
@@ -349,7 +350,7 @@ export function Player() {
                     {currentTrack.album && (
                       currentTrack.albumId ? (
                         <a
-                          href={`/album/${currentTrack.albumId}`}
+                          href={ROUTES.album(currentTrack.albumId!)}
                           className="text-xs text-slate-500 truncate cursor-pointer hover:text-slate-300 transition-colors block"
                           onClick={(e) => {
                             e.preventDefault()
@@ -512,7 +513,7 @@ export function Player() {
                       {currentTrack.album && (
                         currentTrack.albumId ? (
                           <a
-                            href={`/album/${currentTrack.albumId}`}
+                            href={ROUTES.album(currentTrack.albumId!)}
                             className="text-xs text-slate-500 truncate cursor-pointer hover:text-slate-300 transition-colors block"
                             onClick={(e) => {
                               e.preventDefault()
@@ -656,7 +657,6 @@ export function Player() {
               enableLikeButtons={isAuthenticated}
               onLikeTrack={handleLikeTrack}
               currentTrackId={currentTrack?.id}
-              isPlaying={isPlaying}
               loadingTrackId={loadingTrackId}
               isAuthenticated={isAuthenticated}
               compactSpacing={true}

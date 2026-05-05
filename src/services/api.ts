@@ -1,122 +1,43 @@
 import { parseApiResponse } from '@/utils/apiHelpers'
+import type {
+  SearchResult,
+  AlbumResult,
+  AlbumTrack,
+  AlbumResponse,
+  StreamResponse,
+  LikeTrackPayload,
+  LikeTrackResponse,
+  RateAlbumPayload,
+  RateDiscoveryAlbumPayload,
+  LibraryAlbum,
+  DiscoverAlbum,
+  DiscoverTrack,
+  LibraryTrack,
+  HideAlbumPayload,
+  HideDiscoveryAlbumPayload,
+  HideTrackPayload,
+  SaveAlbumPayload,
+} from '@/types/api'
+
+// Re-export all public types so existing imports from '@/services/api' keep working
+export type {
+  SearchResult,
+  AlbumResult,
+  AlbumTrack,
+  AlbumResponse,
+  StreamResponse,
+  LikeTrackResponse,
+  LibraryAlbum,
+  DiscoverAlbum,
+  DiscoverTrack,
+  LibraryTrack,
+}
 
 // Auth headers helper
 export function authHeaders(token: string | null): HeadersInit {
   return token
     ? { 'Content-Type': 'application/json', 'X-Auth-Token': token }
     : { 'Content-Type': 'application/json' }
-}
-
-// Type for search results
-export type SearchResult = {
-  track: string
-  artist: string
-  album: string
-  'track-id': string
-  cover: string
-  deezer_id: string
-}
-
-// Type for album search results
-export type AlbumResult = {
-  album: string
-  artist: string
-  'album-id'?: number
-  cover: string
-  deezer_id: string
-}
-
-// Type for album track listing
-export type AlbumTrack = {
-  track: string
-  deezer_id: string
-  artist: string
-  'track-number': number
-  'album-id'?: number
-  album?: string
-  cover?: string
-}
-
-// Type for album response with metadata
-export type AlbumResponse = {
-  tracks: AlbumTrack[]
-  albumId: number
-  album: string
-  artist: string
-  cover: string
-  id?: string // MD5 hash ID when available
-  streamingLink?: string // Streaming service link (e.g., Deezer)
-}
-
-// Type for stream response
-export type StreamResponse = {
-  streamUrl: string
-  trackId: string
-  hashUrl: string
-  track: string
-  artist: string
-  album?: string
-  'album-id'?: number
-  cover?: string
-}
-
-type LikeTrackPayload = {
-  track: string
-  artist: string
-  playlist: string
-  'spotify-id'?: string
-  deezer_id?: string
-}
-
-export type LikeTrackResponse = {
-  status: 'success' | 'error'
-  message: string
-}
-
-type RateAlbumPayload = {
-  album: string
-  artist: string
-  rating: number
-  deezer_id?: string
-}
-
-type RateDiscoveryAlbumPayload = {
-  id: string // MD5 hash ID required for discovery albums
-  album: string
-  artist: string
-  rating: number
-}
-
-export type LibraryAlbum = {
-  album: string
-  artist: string
-  'album-id': number
-  cover: string
-}
-
-export type DiscoverAlbum = {
-  id: string // MD5 hash ID for rate/hide operations
-  album: string
-  artist: string
-  cover_url: string
-  deezer_id: string
-}
-
-export type DiscoverTrack = {
-  track: string
-  artist: string
-  curator: string
-  date: string
-  deezer_id: string
-  'spotify-id'?: string // Keep for backwards compatibility if needed
-}
-
-export type LibraryTrack = {
-  track: string
-  artist: string
-  folder: string
-  uploaded_at: string
-  stream_url: string
 }
 
 // Search for tracks
@@ -359,13 +280,6 @@ export async function rateDiscoveryAlbum(payload: RateDiscoveryAlbumPayload, tok
   })
 }
 
-type SaveAlbumPayload = {
-  album: string
-  artist: string
-  'album-id'?: number
-  deezer_id?: string
-}
-
 export async function saveAlbum(payload: SaveAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/save-album', {
     method: 'POST',
@@ -467,18 +381,6 @@ export async function getLibraryAlbums(): Promise<LibraryAlbum[]> {
   return []
 }
 
-type HideAlbumPayload = {
-  album: string
-  artist: string
-  deezer_id?: string
-}
-
-type HideDiscoveryAlbumPayload = {
-  id: string // MD5 hash ID required for discovery albums
-  album: string
-  artist: string
-}
-
 export async function hideAlbum(payload: HideAlbumPayload, token: string | null): Promise<void> {
   const response = await fetch('https://n8n.niprobin.com/webhook/hide-album', {
     method: 'POST',
@@ -501,13 +403,6 @@ export async function hideDiscoveryAlbum(payload: HideDiscoveryAlbumPayload, tok
   if (!response.ok) {
     throw new Error('Failed to hide discovery album')
   }
-}
-
-type HideTrackPayload = {
-  track: string
-  artist: string
-  'spotify-id'?: string
-  deezer_id?: string
 }
 
 export async function hideTrack(payload: HideTrackPayload, token: string | null): Promise<void> {

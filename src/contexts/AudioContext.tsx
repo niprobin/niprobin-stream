@@ -1,24 +1,30 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { getStreamUrl } from '@/services/api'
-import { getStreamContext } from '@/utils/urlBuilder'
+import { getStreamContext } from '@/utils/urlParser'
 import { useAuth } from '@/contexts/AuthContext'
 
-// TypeScript: Define what a Track looks like
+type AlbumInfo = {
+  name: string
+  artist: string
+  cover: string
+  id?: string
+  streamingLink?: string
+}
+
 type Track = {
   id: string
-  hashUrl?: string
   title: string
   artist: string
-  album?: string
-  albumId?: number
-  coverArt?: string
   streamUrl: string
-  spotifyId?: string
+  hashUrl?: string       // set by stream endpoint; used for share links
+  album?: string         // populated in album and auto-play contexts
+  albumId?: number       // populated when playing from an album page
+  coverArt?: string      // absent on discovery tracks with no cover
+  spotifyId?: string     // legacy field; not actively populated
   playSource?: 'search' | 'digging' | 'album'
-  // Optional metadata for discovery tracks and external integrations
-  deezer_id?: string
-  curator?: string
+  deezer_id?: string     // preserved for like/hide payloads after stream fetch
+  curator?: string       // discovery tracks only
 }
 
 // TypeScript: Define album track for tracklist
@@ -51,7 +57,7 @@ type AudioContextType = {
   duration: number
   volume: number
   albumTracks: AlbumTrackItem[]
-  albumInfo: { name: string; artist: string; cover: string; id?: string; streamingLink?: string } | null
+  albumInfo: AlbumInfo | null
   loadingState: AudioLoadingState
   play: (track: Track) => void
   pause: () => void
@@ -60,7 +66,7 @@ type AudioContextType = {
   setVolume: (volume: number) => void
   setAlbumContext: (
     tracks: AlbumTrackItem[],
-    albumInfo: { name: string; artist: string; cover: string; id?: string; streamingLink?: string },
+    albumInfo: AlbumInfo,
     options?: { expand?: boolean; loadFirst?: boolean },
   ) => void
   setAutoPlayContext: (tracks: AlbumTrackItem[], startIndex: number, contextName: string, queueProvider?: QueueProvider) => void
@@ -86,7 +92,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [duration, setDuration] = useState(0)
   const [volume, setVolumeState] = useState(1) // 0 to 1
   const [albumTracks, setAlbumTracks] = useState<AlbumTrackItem[]>([])
-  const [albumInfo, setAlbumInfo] = useState<{ name: string; artist: string; cover: string; id?: string; streamingLink?: string } | null>(null)
+  const [albumInfo, setAlbumInfo] = useState<AlbumInfo | null>(null)
   const [albumAutoExpand, setAlbumAutoExpand] = useState(true)
   const [loadingState, setLoadingState] = useState<AudioLoadingState>({ status: 'idle' })
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
@@ -436,7 +442,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // Function: Set album context with tracklist
   const setAlbumContext = (
     tracks: AlbumTrackItem[],
-    info: { name: string; artist: string; cover: string; id?: string; streamingLink?: string },
+    info: AlbumInfo,
     options?: { expand?: boolean; loadFirst?: boolean },
   ) => {
     setAlbumTracks(tracks)

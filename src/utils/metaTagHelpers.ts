@@ -4,6 +4,7 @@
  */
 
 import type { MetaTagConfig, TrackMetaData, AlbumMetaData, DefaultMetaConfig } from '../types/metaTags'
+import { ROUTES } from '@/utils/routes'
 
 /**
  * Default configuration for the site
@@ -104,7 +105,7 @@ export function generateAlbumMetaTags(album: AlbumMetaData): MetaTagConfig {
   description = sanitizeForHtml(description)
 
   const image = getFallbackImage(album.coverArt)
-  const url = getCanonicalUrl(`/album/${album.albumId}`)
+  const url = getCanonicalUrl(ROUTES.album(album.albumId))
 
   return {
     title,
@@ -166,5 +167,5 @@ export function buildCanonicalTrackUrl(deezer_id: string): string {
  * @returns Full canonical URL
  */
 export function buildCanonicalAlbumUrl(albumId: number): string {
-  return getCanonicalUrl(`/album/${albumId}`)
+  return getCanonicalUrl(ROUTES.album(albumId))
 }

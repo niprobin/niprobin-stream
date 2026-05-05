@@ -11,6 +11,7 @@ import { useHideItem } from '@/hooks/useHideItem'
 import { Share2, X, Loader2, Music4 } from 'lucide-react'
 import { useMetaTags } from '@/hooks/useMetaTags'
 import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
+import { STORAGE_KEYS } from '@/utils/storageKeys'
 
 type AlbumPageProps = {
   albumId: number
@@ -28,7 +29,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [isSaving, setIsSaving] = useState(false)
   const [showShareTooltip, setShowShareTooltip] = useState(false)
 
-  const { currentTrack, isPlaying, setAlbumContext, setAutoPlayContext } = useAudio()
+  const { currentTrack, setAlbumContext, setAutoPlayContext } = useAudio()
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
@@ -43,14 +44,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       deezer_id: albumId.toString()
     }, token),
     (album) => `${album.album}-${album.artist}`,
-    { persistentCacheKey: 'niprobin-hidden-albums' }
+    { persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS }
   )
 
-  // Like functionality handler
-  const handleLikeTrack = (track: AlbumTrackItem) => {
-    // The TrackList component handles the full like flow including localStorage and API calls
-    // This handler is called after successful like operations for any additional logic
-    console.log('Track liked:', track)
+  const handleLikeTrack = (_track: AlbumTrackItem) => {
+    // no-op: TrackList handles the full like flow; this callback exists for future use
   }
 
   // Load album data on mount or when albumId changes
@@ -404,7 +402,6 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         enableLikeButtons={isAuthenticated}
         onLikeTrack={handleLikeTrack}
         currentTrackId={currentTrack?.id}
-        isPlaying={isPlaying}
         isAuthenticated={isAuthenticated}
       />
     </div>

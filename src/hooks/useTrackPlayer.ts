@@ -3,16 +3,12 @@ import { getStreamUrl } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { TrackIdSource } from '@/utils/trackUtils'
-import { getStreamContext } from '@/utils/urlBuilder'
+import { getStreamContext } from '@/utils/urlParser'
 
 export type TrackPlayerOptions = {
   clearAlbum?: boolean
   albumName?: string
   coverArt?: string
-  spotifyId?: string
-  source?: TrackIdSource
-  // Optional metadata for discovery tracks and external integrations
   deezer_id?: string
   curator?: string
 }
@@ -36,7 +32,6 @@ export function useTrackPlayer() {
       clearAlbum = false,
       albumName,
       coverArt,
-      spotifyId,
       deezer_id,
       curator,
     } = options
@@ -74,7 +69,6 @@ export function useTrackPlayer() {
         albumId: streamResponse['album-id'],
         streamUrl: streamResponse.streamUrl,
         coverArt: coverArt || streamResponse.cover,
-        spotifyId,
         deezer_id,
         curator,
       })

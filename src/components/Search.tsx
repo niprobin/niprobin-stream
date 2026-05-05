@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { Search as SearchIcon, ChevronDown, BookmarkPlus, Loader2 } from 'lucide-react'
 import { TrackList } from '@/components/TrackList'
+import { ROUTES } from '@/utils/routes'
 
 export function Search() {
   const [query, setQuery] = useState('')
@@ -72,7 +73,7 @@ export function Search() {
   // Handle clicking an album to navigate to album page
   const handleAlbumClick = (album: AlbumResult) => {
     const albumId = album['album-id'] || parseInt(album.deezer_id) || 0
-    window.history.pushState({}, '', `/album/${albumId}`)
+    window.history.pushState({}, '', ROUTES.album(albumId))
     window.dispatchEvent(new PopStateEvent('popstate'))
   }
 

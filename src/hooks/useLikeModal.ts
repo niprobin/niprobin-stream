@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { likeTrack } from '@/services/api'
 import { useNotification } from '@/contexts/NotificationContext'
+import { STORAGE_KEYS } from '@/utils/storageKeys'
 
 const PLAYLISTS = [
   'Beats',
@@ -41,7 +42,7 @@ export function useLikeModal(token: string | null) {
   // Helper function to check if track is liked
   const isTrackLiked = (title?: string, artist?: string) => {
     if (!title || !artist) return false
-    const likedTracks = JSON.parse(localStorage.getItem('likedTracks') || '[]')
+    const likedTracks = JSON.parse(localStorage.getItem(STORAGE_KEYS.LIKED_TRACKS) || '[]')
     return likedTracks.some((track: any) => track.title === title && track.artist === artist)
   }
 
@@ -77,14 +78,14 @@ export function useLikeModal(token: string | null) {
 
       if (result.status === 'success') {
         // Update localStorage
-        const likedTracks = JSON.parse(localStorage.getItem('likedTracks') || '[]')
+        const likedTracks = JSON.parse(localStorage.getItem(STORAGE_KEYS.LIKED_TRACKS) || '[]')
         const newTrack = {
           title: likeModalTrack.title,
           artist: likeModalTrack.artist,
           playlist: selectedPlaylist
         }
         const updatedTracks = [...likedTracks, newTrack]
-        localStorage.setItem('likedTracks', JSON.stringify(updatedTracks))
+        localStorage.setItem(STORAGE_KEYS.LIKED_TRACKS, JSON.stringify(updatedTracks))
 
         showNotification(`Added "${likeModalTrack.title}" to ${selectedPlaylist}`, 'success')
 

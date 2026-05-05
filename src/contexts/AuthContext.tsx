@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { ReactNode } from 'react'
+import { STORAGE_KEYS } from '@/utils/storageKeys'
 
 type AuthContextType = {
   isAuthenticated: boolean
@@ -10,7 +11,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const TOKEN_STORAGE_KEY = 'niprobin-auth-token'
+const TOKEN_STORAGE_KEY = STORAGE_KEYS.AUTH_TOKEN
 const AUTH_WEBHOOK_URL = import.meta.env.VITE_AUTH_WEBHOOK_URL || 'https://n8n.niprobin.com/webhook/auth'
 
 export function AuthProvider({ children }: { children: ReactNode }) {

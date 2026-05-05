@@ -19,17 +19,12 @@ type AlbumListProps = {
   variant: 'album'
   tracks: AlbumTrackItem[]
   onSelect: (track: AlbumTrackItem, trackIndex: number) => void
-  renderIndicator?: (track: AlbumTrackItem) => React.ReactNode
   renderAction?: (track: AlbumTrackItem) => React.ReactNode
   loadingTrackId?: string | null
   enableLikeButtons?: boolean
   onLikeTrack?: (track: AlbumTrackItem) => void
   currentTrackId?: string | null
-  isPlaying?: boolean
   isAuthenticated?: boolean
-  autoPlayContext?: {
-    contextName: string  // e.g., "Discovery Tracks - Page 1", "Search Results"
-  }
   compactSpacing?: boolean
   showColumnHeaders?: boolean
 }
@@ -39,9 +34,6 @@ type SearchListProps = {
   tracks: (BaseTrack & { cover: string; album: string })[]
   loadingTrackId?: string | null
   onSelect: (track: BaseTrack & { cover: string; album: string }, trackIndex: number) => void
-  autoPlayContext?: {
-    contextName: string  // e.g., "Discovery Tracks - Page 1", "Search Results"
-  }
   compactSpacing?: boolean
   showColumnHeaders?: boolean
 }

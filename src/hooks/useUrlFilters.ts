@@ -4,8 +4,9 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { parseFiltersFromUrl, updateUrlFilters } from '@/utils/urlBuilder'
+import { updateUrlFilters } from '@/utils/urlBuilder'
 import type { FilterParams } from '@/utils/urlBuilder'
+import { parseFiltersFromUrl } from '@/utils/urlParser'
 
 export type PageType = 'digging' | 'library' | 'search'
 

@@ -10,8 +10,9 @@ import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { libraryFilterFunction } from '@/hooks/useDiscoverySearch'
 import { useAudio } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
+import { STORAGE_KEYS } from '@/utils/storageKeys'
 
-const LIBRARY_CACHE_KEY = 'niprobin-library-cache'
+const LIBRARY_CACHE_KEY = STORAGE_KEYS.LIBRARY_CACHE
 const CACHE_DURATION_MS = 60 * 60 * 1000 // 1 hour
 
 interface LibraryPageProps {
@@ -27,7 +28,7 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
   const { folder, search, updateFilter } = useUrlFilters('library')
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { setAutoPlayContext, currentTrack, isPlaying } = useAudio()
+  const { setAutoPlayContext, currentTrack } = useAudio()
   const { isAuthenticated, token } = useAuth()
 
   // Use cached data hook for library tracks
@@ -174,7 +175,6 @@ export function LibraryPage({ currentPage, onPageChange }: LibraryPageProps) {
                 enableLikeButtons={false}
                 onLikeTrack={handleLikeTrack}
                 currentTrackId={currentTrack?.id}
-                isPlaying={isPlaying}
                 isAuthenticated={isAuthenticated}
                 onSelect={(trackItem) => {
                   // Find original track using track name and artist matching

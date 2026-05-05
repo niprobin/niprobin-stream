@@ -12,6 +12,8 @@ import { useHideItem } from '@/hooks/useHideItem'
 import { albumFilterFunction } from '@/hooks/useDiscoverySearch'
 import { useAudio } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
+import { STORAGE_KEYS } from '@/utils/storageKeys'
+import { ROUTES } from '@/utils/routes'
 
 type DiggingTab = 'tracks' | 'albums'
 
@@ -30,27 +32,25 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [prevActiveTab, setPrevActiveTab] = useState<DiggingTab>(activeTab)
 
-  console.log(`AlbumsPage: activeTab=${activeTab}, currentPage=${currentPage}`)
-
   // Use URL-based filters for state management
   const { curator, search, updateFilter } = useUrlFilters('digging')
   const pageSize = 10
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { setAutoPlayContext, currentTrack, isPlaying } = useAudio()
+  const { setAutoPlayContext, currentTrack } = useAudio()
   const { isAuthenticated, token } = useAuth()
 
   // Use hide item hooks for albums and tracks
   const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem<DiscoverAlbum>(
     (album) => hideAlbum({ album: album.album, artist: album.artist, deezer_id: album.deezer_id }, token),
     (album) => `${album.album}-${album.artist}`,
-    { persistentCacheKey: 'niprobin-hidden-albums' }
+    { persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS }
   )
 
   const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem<DiscoverTrack>(
     (track) => hideTrack({ track: track.track, artist: track.artist, deezer_id: track.deezer_id }, token),
     (track) => `${track.track}-${track.artist}`,
-    { persistentCacheKey: 'niprobin-hidden-tracks' }
+    { persistentCacheKey: STORAGE_KEYS.HIDDEN_TRACKS }
   )
 
   // Use cached data hooks for albums and tracks
@@ -86,7 +86,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
       // Get album ID from first track for URL navigation
       const albumId = tracks[0]?.['album-id']
       if (albumId) {
-        window.history.pushState({}, '', `/album/${albumId}`)
+        window.history.pushState({}, '', ROUTES.album(albumId))
         window.dispatchEvent(new PopStateEvent('popstate'))
       }
     } catch (err) {
@@ -193,7 +193,6 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                     enableLikeButtons={isAuthenticated}
                     onLikeTrack={handleLikeTrack}
                     currentTrackId={currentTrack?.id}
-                    isPlaying={isPlaying}
                     isAuthenticated={isAuthenticated}
                     onSelect={(trackItem) => {
                       // Find original track using track name and artist matching

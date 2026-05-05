@@ -8,20 +8,23 @@ import { NotificationBanner } from './components/NotificationBanner'
 import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { Button } from './components/ui/button'
 import { LogIn } from 'lucide-react'
-import { AlbumsPage } from './pages/Albums'
+import { AlbumsPage } from './pages/Digging'
 import { LibraryPage } from './pages/Library'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
 import {
-  extractDeezerIdFromPath,
-  extractAlbumIdFromPath,
-  parsePageFromUrl,
   buildDiggingUrl,
   buildLibraryUrl,
   buildDiggingUrlWithFilters,
   buildLibraryUrlWithFilters,
-  parseFiltersFromUrl
 } from './utils/urlBuilder'
+import {
+  extractDeezerIdFromPath,
+  extractAlbumIdFromPath,
+  parsePageFromUrl,
+  parseFiltersFromUrl,
+} from './utils/urlParser'
+import { ROUTES } from './utils/routes'
 import { getTrackByDeezerId } from './services/api'
 import { AlbumPage } from './pages/Album'
 import { useMetaTags } from './hooks/useMetaTags'
@@ -269,7 +272,7 @@ function AppContent() {
       }
       console.log(`navigate: building digging URL - tab=${targetTab}, page=${targetPage}, preserveFilters=${preserveFilters}, result=${path}`)
     } else if (page === 'album' && albumId) {
-      path = `/album/${albumId}`
+      path = ROUTES.album(albumId)
     }
 
     const currentUrl = window.location.pathname + window.location.search
