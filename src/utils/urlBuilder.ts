@@ -16,20 +16,20 @@ export interface FilterParams {
 
 /**
  * Build a track URL that can be shared
- * @param hash - The track hash from the backend
- * @returns The path to the track (e.g., "/play/abc123def456")
+ * @param deezer_id - The Deezer track ID
+ * @returns The path to the track (e.g., "/track/123456789")
  */
-export function buildTrackUrl(hash: string): string {
-  return `/play/${hash}`
+export function buildTrackUrl(deezer_id: string): string {
+  return `/track/${deezer_id}`
 }
 
 /**
- * Extract track hash from a path
- * @param path - The URL path (e.g., "/play/abc123def456")
- * @returns The track hash or null if not a valid track URL
+ * Extract deezer_id from a track path
+ * @param path - The URL path (e.g., "/track/123456789")
+ * @returns The deezer_id or null if not a valid track URL
  */
-export function extractTrackHashFromPath(path: string): string | null {
-  const match = path.match(/^\/play\/([A-Za-z0-9+/=_-]+)$/)
+export function extractDeezerIdFromPath(path: string): string | null {
+  const match = path.match(/^\/track\/(\d+)$/)
   return match ? match[1] : null
 }
 
@@ -121,16 +121,16 @@ export function getStreamContext(): string {
 
 /**
  * Share a track by copying its URL to clipboard
- * @param hash - The track hash from the backend
+ * @param deezer_id - The Deezer track ID
  * @param showNotification - Function to show notification messages
  */
-export function shareTrack(hash: string, showNotification: (message: string, type: 'success' | 'error') => void): void {
-  if (!hash) {
-    showNotification('Cannot share this track', 'error')
+export function shareTrack(deezer_id: string, showNotification: (message: string, type: 'success' | 'error') => void): void {
+  if (!deezer_id || deezer_id === '0') {
+    showNotification('Cannot share this track - Deezer ID not available', 'error')
     return
   }
 
-  const trackUrl = `${window.location.origin}/play/${hash}`
+  const trackUrl = `${window.location.origin}/track/${deezer_id}`
 
   try {
     navigator.clipboard.writeText(trackUrl)
@@ -143,11 +143,11 @@ export function shareTrack(hash: string, showNotification: (message: string, typ
 
 /**
  * Build a canonical track URL with full domain for meta tags
- * @param hash - The track hash from the backend
- * @returns Full canonical URL (e.g., "https://stream.niprobin.com/play/abc123")
+ * @param deezer_id - The Deezer track ID
+ * @returns Full canonical URL (e.g., "https://stream.niprobin.com/track/123456789")
  */
-export function buildCanonicalTrackUrl(hash: string): string {
-  return `${window.location.origin}/play/${hash}`
+export function buildCanonicalTrackUrl(deezer_id: string): string {
+  return `${window.location.origin}/track/${deezer_id}`
 }
 
 /**

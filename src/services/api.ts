@@ -170,7 +170,7 @@ export async function getStreamUrl(
 
 // Download a track (returns blob directly)
 export async function downloadTrack(
-  trackId: string,
+  deezer_id: string,
   trackName: string,
   artistName: string
 ): Promise<Blob> {
@@ -180,7 +180,7 @@ export async function downloadTrack(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      trackId,
+      deezer_id,
       track: trackName,
       artist: artistName
     }),
@@ -522,23 +522,23 @@ export async function hideTrack(payload: HideTrackPayload, token: string | null)
   }
 }
 
-// Get track info and stream URL from hash
-export async function getTrackByHash(hash: string, token: string | null): Promise<StreamResponse> {
+// Get track info and stream URL from deezer_id
+export async function getTrackByDeezerId(deezer_id: string, token: string | null): Promise<StreamResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/stream', {
     method: 'POST',
     headers: authHeaders(token),
-    body: JSON.stringify({ hash, context: 'share' }),
+    body: JSON.stringify({ deezer_id, context: 'share' }),
   })
 
   if (!response.ok) {
-    throw new Error('Failed to get track by hash')
+    throw new Error('Failed to get track by Deezer ID')
   }
 
   const data = await response.json()
   return {
     streamUrl: data.stream_url,
-    trackId: String(data.track_id),
-    hashUrl: data.hash_url || hash,
+    trackId: String(data.track_id || deezer_id),
+    hashUrl: data.hash_url,
     track: data.track,
     artist: data.artist,
     album: data.album,

@@ -37,7 +37,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
 
   // Hide functionality
   const { hideItem: hideAlbumItem } = useHideItem(
-    (album: { album: string; artist: string }) => hideAlbum({ album: album.album, artist: album.artist }, token),
+    (album: { album: string; artist: string }) => hideAlbum({
+      album: album.album,
+      artist: album.artist,
+      deezer_id: albumId.toString()
+    }, token),
     (album) => `${album.album}-${album.artist}`,
     { persistentCacheKey: 'niprobin-hidden-albums' }
   )
@@ -130,7 +134,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       clearAlbum: false,
       albumName: albumName,
       coverArt: coverUrl,
-      deezer_id: '0', // Album tracks fallback
+      deezer_id: track.deezer_id,
     })
   }
 
@@ -162,6 +166,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         album: albumName,
         artist: artistName,
         rating: value,
+        deezer_id: albumId.toString(),
       }, token)
       showNotification(response.message, response.status)
     } catch (err) {
@@ -178,7 +183,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       const response = await saveAlbum({
         album: albumName,
         artist: artistName,
-        'album-id': albumId
+        deezer_id: albumId.toString()
       }, token)
       showNotification(response.message, response.status)
     } catch (err) {

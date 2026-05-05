@@ -42,7 +42,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
   // Use hide item hooks for albums and tracks
   const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem<DiscoverAlbum>(
-    (album) => hideAlbum({ album: album.album, artist: album.artist }, token),
+    (album) => hideAlbum({ album: album.album, artist: album.artist, deezer_id: album.deezer_id }, token),
     (album) => `${album.album}-${album.artist}`,
     { persistentCacheKey: 'niprobin-hidden-albums' }
   )

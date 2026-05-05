@@ -38,7 +38,7 @@ export interface TrackMetaData {
   artist: string
   album?: string
   coverArt?: string
-  hash: string
+  deezer_id: string
 }
 
 /**

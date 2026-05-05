@@ -67,7 +67,7 @@ export function generateTrackMetaTags(track: TrackMetaData): MetaTagConfig {
   const title = sanitizeForHtml(`${track.title} by ${track.artist}`)
   const description = sanitizeForHtml(`Listen to ${track.title} by ${track.artist} on nipstream`)
   const image = getFallbackImage(track.coverArt)
-  const url = getCanonicalUrl(`/play/${track.hash}`)
+  const url = getCanonicalUrl(`/track/${track.deezer_id}`)
 
   return {
     title,
@@ -153,11 +153,11 @@ export function generateDefaultMetaTags(): MetaTagConfig {
 
 /**
  * Build canonical URL for track sharing
- * @param hash - Track hash
+ * @param deezer_id - Deezer track ID
  * @returns Full canonical URL
  */
-export function buildCanonicalTrackUrl(hash: string): string {
-  return getCanonicalUrl(`/play/${hash}`)
+export function buildCanonicalTrackUrl(deezer_id: string): string {
+  return getCanonicalUrl(`/track/${deezer_id}`)
 }
 
 /**

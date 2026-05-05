@@ -83,7 +83,6 @@ export function Search() {
       const response = await saveAlbum({
         album: album.album,
         artist: album.artist,
-        'album-id': album['album-id'],
         deezer_id: album.deezer_id
       }, token)
 

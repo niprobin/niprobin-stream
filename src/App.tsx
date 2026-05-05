@@ -13,7 +13,7 @@ import { LibraryPage } from './pages/Library'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
 import {
-  extractTrackHashFromPath,
+  extractDeezerIdFromPath,
   extractAlbumIdFromPath,
   parsePageFromUrl,
   buildDiggingUrl,
@@ -22,7 +22,7 @@ import {
   buildLibraryUrlWithFilters,
   parseFiltersFromUrl
 } from './utils/urlBuilder'
-import { getTrackByHash } from './services/api'
+import { getTrackByDeezerId } from './services/api'
 import { AlbumPage } from './pages/Album'
 import { useMetaTags } from './hooks/useMetaTags'
 import { generateTrackMetaTags } from './utils/metaTagHelpers'
@@ -130,12 +130,12 @@ function AppContent() {
         return
       }
 
-      // Check if this is a track URL (/play/:hash)
-      const trackHash = extractTrackHashFromPath(path)
-      if (trackHash) {
+      // Check if this is a track URL (/track/:deezer_id)
+      const deezerId = extractDeezerIdFromPath(path)
+      if (deezerId) {
         try {
-          // Fetch track data from the hash
-          const streamResponse = await getTrackByHash(trackHash, token)
+          // Fetch track data from the deezer_id
+          const streamResponse = await getTrackByDeezerId(deezerId, token)
 
           // Update meta tags for the track BEFORE redirect
           const trackMetaTags = generateTrackMetaTags({
@@ -143,7 +143,7 @@ function AppContent() {
             artist: streamResponse.artist,
             album: streamResponse.album,
             coverArt: streamResponse.cover,
-            hash: trackHash
+            deezer_id: deezerId
           })
           setMetaTags(trackMetaTags)
 
@@ -156,6 +156,7 @@ function AppContent() {
             album: streamResponse.album,
             streamUrl: streamResponse.streamUrl,
             coverArt: streamResponse.cover,
+            deezer_id: deezerId,
           })
 
           // Redirect URL to home page after successful track load
