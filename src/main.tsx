@@ -5,6 +5,8 @@ import App from './App.tsx'
 import { AudioProvider } from './contexts/AudioContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { LoadingProvider } from './contexts/LoadingContext'
+import { NotificationProvider } from './contexts/NotificationContext'
+import { DiscoveryProvider } from './contexts/DiscoveryContext'
 import { registerSW } from 'virtual:pwa-register'
 
 // Register service worker
@@ -23,7 +25,11 @@ createRoot(document.getElementById('root')!).render(
     <AuthProvider>
       <AudioProvider>
         <LoadingProvider>
-          <App />
+          <NotificationProvider>
+            <DiscoveryProvider>
+              <App />
+            </DiscoveryProvider>
+          </NotificationProvider>
         </LoadingProvider>
       </AudioProvider>
     </AuthProvider>
