@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Search, Loader2 } from 'lucide-react'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
+import { useNotification } from '@/contexts/NotificationContext'
 import { getAlbumTracks, searchTracks, searchAlbums } from '@/services/api'
 import { ROUTES } from '@/utils/routes'
 import type { SearchResult, AlbumResult, DiscoverTrack, DiscoverAlbum } from '@/types/api'
@@ -60,10 +61,13 @@ export function SearchBar() {
   const [externalTracks, setExternalTracks] = useState<SearchResult[]>([])
   const [externalAlbums, setExternalAlbums] = useState<AlbumResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
+  const [searchedQuery, setSearchedQuery] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
+  const requestIdRef = useRef(0)
 
   const { discoverTracks, discoverAlbums } = useDiscovery()
   const { playTrack } = useTrackPlayer()
+  const { showNotification } = useNotification()
 
   const filteredDiggingTracks: DiscoverTrack[] = hasSearched && query
     ? discoverTracks
@@ -86,21 +90,25 @@ export function SearchBar() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
+    const id = ++requestIdRef.current
     setIsLoading(true)
     setIsOpen(true)
     setHasSearched(true)
+    setSearchedQuery(query)
     try {
       const [tracks, albums] = await Promise.all([
         searchTracks(query),
         searchAlbums(query),
       ])
+      if (id !== requestIdRef.current) return
       setExternalTracks(tracks.slice(0, 4))
       setExternalAlbums(albums.slice(0, 4))
     } catch {
+      if (id !== requestIdRef.current) return
       setExternalTracks([])
       setExternalAlbums([])
     } finally {
-      setIsLoading(false)
+      if (id === requestIdRef.current) setIsLoading(false)
     }
   }
 
@@ -109,6 +117,7 @@ export function SearchBar() {
     setQuery(val)
     if (!val) {
       setHasSearched(false)
+      setSearchedQuery('')
       setIsOpen(false)
       setExternalTracks([])
       setExternalAlbums([])
@@ -120,9 +129,13 @@ export function SearchBar() {
     try {
       const tracks = await getAlbumTracks(deezer_id, album, artist)
       const albumId = tracks[0]?.['album-id']
-      if (albumId) navigateTo(ROUTES.album(albumId))
-    } catch (err) {
-      console.error('Failed to load album:', err)
+      if (albumId) {
+        navigateTo(ROUTES.album(albumId))
+      } else {
+        showNotification('Could not load album. Please try again.', 'error')
+      }
+    } catch {
+      showNotification('Failed to load album. Please try again.', 'error')
     }
   }
 
@@ -158,7 +171,7 @@ export function SearchBar() {
             type="text"
             value={query}
             onChange={handleChange}
-            onFocus={() => hasSearched && setIsOpen(true)}
+            onFocus={() => hasSearched && query === searchedQuery && setIsOpen(true)}
             placeholder="Search…"
             className="bg-transparent text-sm text-white placeholder:text-slate-500 outline-none flex-1 min-w-0"
           />
@@ -166,7 +179,7 @@ export function SearchBar() {
       </form>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-hidden max-h-[70vh] overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-y-auto max-h-[70vh]">
           {isLoading ? (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
