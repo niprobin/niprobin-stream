@@ -1,5 +1,6 @@
 import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
+import { useNotification } from '@/contexts/NotificationContext'
 import { getAlbumTracks } from '@/services/api'
 import { ROUTES } from '@/utils/routes'
 import type { DiscoverTrack, DiscoverAlbum } from '@/types/api'
@@ -63,6 +64,8 @@ function TrackCard({
 }
 
 function AlbumCard({ album }: { album: DiscoverAlbum }) {
+  const { showNotification } = useNotification()
+
   const handleClick = async () => {
     try {
       const tracks = await getAlbumTracks(album.deezer_id, album.album, album.artist)
@@ -72,6 +75,7 @@ function AlbumCard({ album }: { album: DiscoverAlbum }) {
       }
     } catch (err) {
       console.error('Failed to load album:', err)
+      showNotification('Failed to load album. Please try again.', 'error')
     }
   }
 
