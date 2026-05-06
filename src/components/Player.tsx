@@ -302,7 +302,7 @@ export function Player() {
         </div>
       )}
 
-      <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 p-4 md:py-2 md:px-4 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
+      <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 p-4 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
         {/* Progress bar replaces top border */}
         <div
           className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 cursor-pointer"
@@ -458,12 +458,16 @@ export function Player() {
               <div className="flex items-center gap-3 py-2">
 
                 {/* Left: Album Cover */}
-                <div className="flex-shrink-0">
+                <div
+                  className={`flex-shrink-0 ${currentTrack.albumId ? 'cursor-pointer' : ''}`}
+                  onClick={currentTrack.albumId ? handleAlbumClick : undefined}
+                  title={currentTrack.albumId ? currentTrack.album : undefined}
+                >
                   {currentTrack.coverArt ? (
                     <img
                       src={currentTrack.coverArt}
                       alt={`${currentTrack.title} cover`}
-                      className="w-8 h-8 rounded-sm object-cover bg-slate-800"
+                      className={`w-12 h-12 rounded-sm object-cover bg-slate-800 ${currentTrack.albumId ? 'active:opacity-70' : ''}`}
                       onError={(e) => {
                         e.currentTarget.style.display = 'none'
                         const nextElement = e.currentTarget.nextElementSibling as HTMLElement
@@ -474,7 +478,7 @@ export function Player() {
                     />
                   ) : null}
                   <div
-                    className={`w-8 h-8 rounded-sm bg-slate-800 flex items-center justify-center ${
+                    className={`w-12 h-12 rounded-sm bg-slate-800 flex items-center justify-center ${
                       currentTrack.coverArt ? 'hidden' : 'flex'
                     }`}
                   >
@@ -492,24 +496,6 @@ export function Player() {
                       <div className="text-sm text-slate-400 truncate">
                         {currentTrack.artist}
                       </div>
-                      {currentTrack.album && (
-                        currentTrack.albumId ? (
-                          <a
-                            href={ROUTES.album(currentTrack.albumId!)}
-                            className="text-xs text-slate-500 truncate cursor-pointer hover:text-slate-300 transition-colors block"
-                            onClick={(e) => {
-                              e.preventDefault()
-                              handleAlbumClick()
-                            }}
-                          >
-                            {currentTrack.album}
-                          </a>
-                        ) : (
-                          <div className="text-xs text-slate-500 truncate">
-                            {currentTrack.album}
-                          </div>
-                        )
-                      )}
                     </div>
 
                     {/* Three Dots */}
