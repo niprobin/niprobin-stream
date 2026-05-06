@@ -72,8 +72,10 @@ export function TrackList(props: TrackListProps) {
     }
   }
 
-  // Grid column template: improved spacing for date and action columns
-  const gridCols = 'grid-cols-[28px_1fr_44px] md:grid-cols-[32px_1fr_120px_72px]'
+  // Compact mode (queue drawer) stays on the 3-column mobile grid to fit the narrow panel
+  const gridCols = compactSpacing
+    ? 'grid-cols-[28px_1fr_44px]'
+    : 'grid-cols-[28px_1fr_44px] md:grid-cols-[32px_1fr_120px_72px]'
   const horizontalPadding = compactSpacing ? 'px-4' : 'px-6 lg:px-10'
 
   return (
@@ -128,7 +130,7 @@ export function TrackList(props: TrackListProps) {
               </div>
 
               {/* Date Column */}
-              <div className="hidden md:block text-xs text-white/40 text-center px-2">
+              <div className={`${compactSpacing ? 'hidden' : 'hidden md:block'} text-xs text-white/40 text-center px-2`}>
                 {item.date || ''}
               </div>
 

@@ -1,47 +1,161 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { AlbumCard } from '@/components/ui/AlbumCard'
-import { searchTracks, searchAlbums, saveAlbum } from '@/services/api'
-import type { SearchResult, AlbumResult } from '@/services/api'
+import { searchTracks, searchAlbums, saveAlbum, getAlbumTracks } from '@/services/api'
+import type { SearchResult, AlbumResult } from '@/types/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
-import { Search as SearchIcon, ChevronDown, BookmarkPlus, Loader2 } from 'lucide-react'
-import { TrackList } from '@/components/TrackList'
+import { Search as SearchIcon, BookmarkPlus, Loader2 } from 'lucide-react'
 import { ROUTES } from '@/utils/routes'
+
+function navigateTo(path: string) {
+  window.history.pushState({}, '', path)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
+
+function CarouselSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <h2 className="text-white font-semibold text-lg">{title}</h2>
+      <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide">
+        {children}
+      </div>
+    </section>
+  )
+}
+
+function CarouselSkeleton() {
+  return (
+    <div className="flex gap-3 overflow-hidden pb-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex-shrink-0 w-32 space-y-2">
+          <div className="w-32 h-32 bg-slate-800 rounded-lg animate-pulse" />
+          <div className="h-3 bg-slate-800 rounded animate-pulse w-28" />
+          <div className="h-3 bg-slate-800 rounded animate-pulse w-20" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SearchTrackCard({
+  result,
+  onPlay,
+  isLoading,
+}: {
+  result: SearchResult
+  onPlay: () => void
+  isLoading: boolean
+}) {
+  return (
+    <button
+      onClick={onPlay}
+      disabled={isLoading}
+      className="flex-shrink-0 w-32 snap-start text-left space-y-2 group disabled:opacity-50"
+    >
+      {(result.cover_url || result.cover) ? (
+        <img
+          src={result.cover_url || result.cover}
+          alt={result.track}
+          className="w-32 h-32 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
+        />
+      ) : (
+        <div className="w-32 h-32 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
+          <span className="text-4xl">🎵</span>
+        </div>
+      )}
+      <div>
+        <p className="text-sm text-white truncate w-32">{result.track}</p>
+        <p className="text-xs text-slate-400 truncate w-32">{result.artist}</p>
+      </div>
+    </button>
+  )
+}
+
+function SearchAlbumCard({
+  album,
+  onSave,
+  isSaving,
+}: {
+  album: AlbumResult
+  onSave: () => void
+  isSaving: boolean
+}) {
+  const { showNotification } = useNotification()
+
+  const handleClick = async () => {
+    const albumId = album['album-id']
+    if (albumId) {
+      navigateTo(ROUTES.album(albumId))
+      return
+    }
+    try {
+      const tracks = await getAlbumTracks(album.deezer_id, album.album, album.artist)
+      const id = tracks[0]?.['album-id']
+      if (id) navigateTo(ROUTES.album(id))
+    } catch {
+      showNotification('Failed to load album.', 'error')
+    }
+  }
+
+  return (
+    <div className="flex-shrink-0 w-32 snap-start space-y-2">
+      <button onClick={handleClick} className="w-full text-left group">
+        {album.cover ? (
+          <img
+            src={album.cover}
+            alt={album.album}
+            className="w-32 h-32 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
+          />
+        ) : (
+          <div className="w-32 h-32 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
+            <span className="text-4xl">💿</span>
+          </div>
+        )}
+        <div className="mt-2">
+          <p className="text-sm text-white truncate w-32">{album.album}</p>
+          <p className="text-xs text-slate-400 truncate w-32">{album.artist}</p>
+        </div>
+      </button>
+      <button
+        onClick={onSave}
+        disabled={isSaving}
+        className="w-full h-7 text-xs flex items-center justify-center gap-1 text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded-md transition-colors disabled:opacity-50"
+      >
+        {isSaving ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <BookmarkPlus className="h-3 w-3" />
+        )}
+        {isSaving ? 'Saving...' : 'Save'}
+      </button>
+    </div>
+  )
+}
 
 export function Search({ initialQuery = '' }: { initialQuery?: string }) {
   const [query, setQuery] = useState(initialQuery)
-  const [results, setResults] = useState<SearchResult[]>([])
-  const { isLoading, increment, decrement } = useLoading()
-  const [searchType, setSearchType] = useState<'tracks' | 'albums'>('tracks')
+  const [trackResults, setTrackResults] = useState<SearchResult[]>([])
   const [albumResults, setAlbumResults] = useState<AlbumResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
-  const [savingAlbumId, setSavingAlbumId] = useState<number | null>(null)
+  const [savingAlbumId, setSavingAlbumId] = useState<string | null>(null)
 
+  const { isLoading, increment, decrement } = useLoading()
   const { showNotification } = useNotification()
   const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { setAutoPlayContext, updateDynamicQueue } = useAudio()
+  const { setAutoPlayContext } = useAudio()
   const { token } = useAuth()
 
-  // Core search logic, callable programmatically or from form submit
   const performSearch = async (q: string) => {
     if (!q.trim()) return
     increment()
     setHasSearched(true)
     try {
-      if (searchType === 'tracks') {
-        const searchResults = await searchTracks(q)
-        setResults(searchResults)
-        setAlbumResults([])
-        updateDynamicQueue()
-      } else {
-        const searchResults = await searchAlbums(q)
-        setAlbumResults(searchResults)
-        setResults([])
-      }
+      const [tracks, albums] = await Promise.all([searchTracks(q), searchAlbums(q)])
+      setTrackResults(tracks)
+      setAlbumResults(albums)
     } catch (err) {
       showNotification('Search failed. Please try again.', 'error')
       console.error(err)
@@ -50,181 +164,105 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
     }
   }
 
-  // Handle search submission
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-    await performSearch(query)
-  }
-
-  // Auto-submit on mount when coming from SearchBar "See all" link
   useEffect(() => {
-    if (initialQuery) {
-      performSearch(initialQuery)
-    }
+    if (initialQuery) performSearch(initialQuery)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Handle clicking a track to play it
-  const handlePlayTrack = async (result: SearchResult) => {
-    playTrack(
-      result.track,
-      result.artist,
-      {
-        clearAlbum: false,  // Keep auto-play context
-        albumName: result.album,
-        coverArt: result.cover,
-        deezer_id: result.deezer_id, // Use actual deezer_id from search results
-      }
-    )
-  }
-
-  // Handle clicking an album to navigate to album page
-  const handleAlbumClick = (album: AlbumResult) => {
-    const albumId = album['album-id'] || parseInt(album.deezer_id) || 0
-    window.history.pushState({}, '', ROUTES.album(albumId))
-    window.dispatchEvent(new PopStateEvent('popstate'))
-  }
-
   const handleSaveAlbum = async (album: AlbumResult) => {
-    setSavingAlbumId(album['album-id'] || parseInt(album.deezer_id) || 0)
-
+    setSavingAlbumId(album.deezer_id)
     try {
-      const response = await saveAlbum({
-        album: album.album,
-        artist: album.artist,
-        deezer_id: album.deezer_id
-      }, token)
-
+      const response = await saveAlbum(
+        { album: album.album, artist: album.artist, deezer_id: album.deezer_id },
+        token,
+      )
       showNotification(response.message, response.status)
-    } catch (err) {
+    } catch {
       showNotification('Failed to save album', 'error')
-      console.error(err)
     } finally {
       setSavingAlbumId(null)
     }
   }
 
   return (
-    <div className="w-full p-4 sm:p-6 lg:p-8">
+    <div className="w-full py-8 space-y-6">
       {/* Search Form */}
       <form
-        onSubmit={handleSearch}
-        className="flex flex-col gap-2 mb-6 sm:flex-row sm:items-center"
+        onSubmit={(e) => { e.preventDefault(); performSearch(query) }}
+        className="flex gap-2"
       >
-        <div className="flex items-center flex-1 rounded-full bg-gray-700 overflow-hidden focus-within:ring-2 focus-within:ring-white/20">
-          <div className="relative">
-            <select
-              value={searchType}
-              onChange={(e) => setSearchType(e.target.value as 'tracks' | 'albums')}
-              className="bg-slate-800/50 border-0 text-white text-sm font-medium h-11 pl-4 pr-8 cursor-pointer rounded-l-md appearance-none"
-              aria-label="Search scope"
-            >
-              <option value="tracks">Track</option>
-              <option value="albums">Album</option>
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-          </div>
-          <input
-            type="text"
-            placeholder={searchType === 'tracks' ? 'Find a track' : 'Find an album'}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-transparent border-0 text-white text-sm px-4 focus:outline-none placeholder:text-slate-400"
-          />
-        </div>
+        <input
+          type="text"
+          placeholder="Search tracks and albums..."
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="flex-1 bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 px-4 focus:outline-none focus:ring-2 focus:ring-slate-600"
+        />
         <Button
           type="submit"
           disabled={isLoading}
-          size="default"
-          className="flex-1 sm:flex-initial rounded-full bg-white text-slate-900 whitespace-nowrap h-11 px-6"
+          className="bg-white text-black h-10 px-5 rounded-lg hover:bg-white/90"
         >
-          {isLoading ? 'Searching...' : 'Search'}
-          <SearchIcon className="h-4 w-4" />
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <SearchIcon className="h-4 w-4" />
+          )}
         </Button>
       </form>
 
-      {/* Search Results - Track Results */}
-      {searchType === 'tracks' && (
-        <TrackList
-          variant="search"
-          tracks={results.map((result) => ({
-            id: result['track-id'],
-            title: result.track,
-            artist: result.artist,
-            album: result.album,
-            cover: result.cover,
-            deezer_id: result.deezer_id,
-          }))}
-          loadingTrackId={loadingTrackId}
-          onSelect={(_track, trackIndex) => {
-            // Convert search results to auto-play format
-            const searchTracks = results.map((result, index) => ({
-              track: result.track,
-              deezer_id: result.deezer_id,
-              artist: result.artist,
-              'track-number': index + 1,
-            }))
-
-            // Create dynamic queue provider for search results
-            const queueProvider = () => {
-              return results.map((result, index) => ({
-                track: result.track,
-                deezer_id: result.deezer_id,
-                artist: result.artist,
-                'track-number': index + 1,
-              }))
-            }
-
-            setAutoPlayContext(searchTracks, trackIndex, "Search Results", queueProvider)
-
-            // Find the original search result to get the deezer_id
-            const originalResult = results[trackIndex]
-            handlePlayTrack(originalResult)
-          }}
-        />
+      {/* Track Results */}
+      {(isLoading || trackResults.length > 0) && (
+        <CarouselSection title="Tracks">
+          {isLoading ? (
+            <CarouselSkeleton />
+          ) : (
+            trackResults.map((result, i) => (
+              <SearchTrackCard
+                key={`${result['track-id']}-${i}`}
+                result={result}
+                isLoading={loadingTrackId === result.deezer_id}
+                onPlay={() => {
+                  const queue = trackResults.map((r, idx) => ({
+                    track: r.track,
+                    deezer_id: r.deezer_id,
+                    artist: r.artist,
+                    'track-number': idx + 1,
+                  }))
+                  setAutoPlayContext(queue, i, 'Search Results', () => queue)
+                  playTrack(result.track, result.artist, {
+                    clearAlbum: false,
+                    albumName: result.album,
+                    coverArt: result.cover_url || result.cover,
+                    deezer_id: result.deezer_id,
+                  })
+                }}
+              />
+            ))
+          )}
+        </CarouselSection>
       )}
 
-      {/* Search Results - Album Results */}
-      {searchType === 'albums' && (
-        <div className="grid gap-4 [&>*]:max-w-[320px] [&>*]:mx-auto" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(320px, 100%), 1fr))' }}>
-          {albumResults.map((album, index) => (
-            <AlbumCard
-              key={`${album['album-id'] || album.deezer_id}-${index}`}
-              album={album}
-              onClick={() => handleAlbumClick(album)}
-              bottomButton={
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleSaveAlbum(album)
-                  }}
-                  disabled={savingAlbumId === (album['album-id'] || parseInt(album.deezer_id) || 0)}
-                  size="sm"
-                  variant="outline"
-                  className="w-full h-8 text-xs bg-transparent border-slate-600 text-slate-300 hover:bg-slate-800 hover:border-slate-500"
-                >
-                  {savingAlbumId === (album['album-id'] || parseInt(album.deezer_id) || 0) ? (
-                    <>
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <BookmarkPlus className="h-3 w-3 mr-1" />
-                      Save for Later
-                    </>
-                  )}
-                </Button>
-              }
-            />
-          ))}
-        </div>
+      {/* Album Results */}
+      {(isLoading || albumResults.length > 0) && (
+        <CarouselSection title="Albums">
+          {isLoading ? (
+            <CarouselSkeleton />
+          ) : (
+            albumResults.map((album, i) => (
+              <SearchAlbumCard
+                key={`${album.deezer_id}-${i}`}
+                album={album}
+                isSaving={savingAlbumId === album.deezer_id}
+                onSave={() => handleSaveAlbum(album)}
+              />
+            ))
+          )}
+        </CarouselSection>
       )}
 
-      {/* No Results Message */}
-      {!isLoading && hasSearched && results.length === 0 && albumResults.length === 0 && (
-        <div className="text-slate-400 text-center py-8">
-          No results found. Try a different search.
-        </div>
+      {/* No Results */}
+      {!isLoading && hasSearched && trackResults.length === 0 && albumResults.length === 0 && (
+        <p className="text-slate-400 text-center py-8">No results found for "{query}".</p>
       )}
     </div>
   )

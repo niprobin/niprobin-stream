@@ -20,13 +20,17 @@ function SectionLabel({ label }: { label: string }) {
   )
 }
 
-function TrackRow({ track, artist, onClick }: { track: string; artist: string; onClick: () => void }) {
+function TrackRow({ track, artist, cover, onClick }: { track: string; artist: string; cover?: string; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
       className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-800 text-left transition-colors"
     >
-      <div className="w-8 h-8 bg-slate-800 rounded flex items-center justify-center flex-shrink-0 text-sm">🎵</div>
+      {cover ? (
+        <img src={cover} alt={track} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+      ) : (
+        <div className="w-8 h-8 bg-slate-800 rounded flex items-center justify-center flex-shrink-0 text-sm">🎵</div>
+      )}
       <div className="min-w-0">
         <p className="text-sm text-white truncate">{track}</p>
         <p className="text-xs text-slate-400 truncate">{artist}</p>
@@ -205,8 +209,9 @@ export function SearchBar() {
                       key={i}
                       track={r.track}
                       artist={r.artist}
+                      cover={r.cover_url || r.cover}
                       onClick={() => {
-                        playTrack(r.track, r.artist, { clearAlbum: false, deezer_id: r.deezer_id })
+                        playTrack(r.track, r.artist, { clearAlbum: false, deezer_id: r.deezer_id, coverArt: r.cover_url || r.cover })
                         setIsOpen(false)
                       }}
                     />

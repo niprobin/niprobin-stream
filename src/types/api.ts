@@ -7,7 +7,8 @@ export type SearchResult = {
   artist: string
   album: string
   'track-id': string
-  cover: string
+  cover?: string
+  cover_url?: string
   deezer_id: string
 }
 
