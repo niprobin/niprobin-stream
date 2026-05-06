@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { Player } from './components/Player'
-import { Search } from './components/Search'
 import { InstallPrompt } from './components/InstallPrompt'
 import { useAuth } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
@@ -27,6 +26,7 @@ import {
 import { ROUTES } from './utils/routes'
 import { getTrackByDeezerId } from './services/api'
 import { AlbumPage } from './pages/Album'
+import { HomePage } from './pages/Home'
 import { useMetaTags } from './hooks/useMetaTags'
 import { generateTrackMetaTags } from './utils/metaTagHelpers'
 
@@ -553,7 +553,7 @@ function AppContent() {
                 onPageChange={navigateToDiggingPage}
               />
             ) : (
-              <Search />
+              <HomePage />
             )}
           </div>
         </div>
