@@ -11,6 +11,8 @@ import { AlbumsPage } from './pages/Digging'
 import { LibraryPage } from './pages/Library'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
+import { Search } from './components/Search'
+import { SearchBar } from './components/SearchBar'
 import {
   buildDiggingUrl,
   buildLibraryUrl,
@@ -111,11 +113,12 @@ function AppContent() {
   const { isAuthenticated, token } = useAuth()
   const { loadTrack } = useAudio()
   const { setMetaTags, resetToDefault } = useMetaTags()
-  const [activePage, setActivePage] = useState<'home' | 'library' | 'digging' | 'album'>('home')
+  const [activePage, setActivePage] = useState<'home' | 'library' | 'digging' | 'album' | 'search'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
   const [diggingPage, setDiggingPage] = useState<number>(1)
   const [libraryPage, setLibraryPage] = useState<number>(1)
+  const [searchInitialQuery, setSearchInitialQuery] = useState('')
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -221,6 +224,10 @@ function AppContent() {
           window.history.replaceState({}, '', '/')
           setActivePage('home')
         }
+      } else if (path === '/search') {
+        const params = new URLSearchParams(window.location.search)
+        setSearchInitialQuery(params.get('q') ?? '')
+        setActivePage('search')
       } else {
         resetToDefault()  // Reset to default meta tags for home page
         setActivePage('home')
@@ -237,7 +244,7 @@ function AppContent() {
   }, [isAuthenticated, loadTrack])
 
   const navigate = (
-    page: 'home' | 'library' | 'digging' | 'album',
+    page: 'home' | 'library' | 'digging' | 'album' | 'search',
     albumId?: number,
     diggingTabOverride?: 'tracks' | 'albums',
     pageNumber?: number,
@@ -273,6 +280,8 @@ function AppContent() {
       console.log(`navigate: building digging URL - tab=${targetTab}, page=${targetPage}, preserveFilters=${preserveFilters}, result=${path}`)
     } else if (page === 'album' && albumId) {
       path = ROUTES.album(albumId)
+    } else if (page === 'search') {
+      path = '/search'
     }
 
     const currentUrl = window.location.pathname + window.location.search
@@ -445,10 +454,24 @@ function AppContent() {
             )}
           </div>
           
+          {/* Center: SearchBar on desktop */}
+          {isAuthenticated && (
+            <div className="hidden md:flex flex-1 max-w-sm mx-6">
+              <SearchBar />
+            </div>
+          )}
+
           {/* Right: Auth Controls */}
           <AuthControls />
         </div>
         
+        {/* Mobile search bar - full width, shown below logo row */}
+        {isAuthenticated && (
+          <div className="md:hidden px-4 sm:px-6 pb-2">
+            <SearchBar />
+          </div>
+        )}
+
         {/* Mobile tabs - shown only on small screens when authenticated */}
         {isAuthenticated && (
           <div className="md:hidden pb-4">
@@ -552,6 +575,8 @@ function AppContent() {
                 currentPage={diggingPage}
                 onPageChange={navigateToDiggingPage}
               />
+            ) : activePage === 'search' ? (
+              <Search initialQuery={searchInitialQuery} />
             ) : (
               <HomePage />
             )}

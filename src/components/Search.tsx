@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { AlbumCard } from '@/components/ui/AlbumCard'
 import { searchTracks, searchAlbums, saveAlbum } from '@/services/api'
@@ -12,8 +12,8 @@ import { Search as SearchIcon, ChevronDown, BookmarkPlus, Loader2 } from 'lucide
 import { TrackList } from '@/components/TrackList'
 import { ROUTES } from '@/utils/routes'
 
-export function Search() {
-  const [query, setQuery] = useState('')
+export function Search({ initialQuery = '' }: { initialQuery?: string }) {
+  const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<SearchResult[]>([])
   const { isLoading, increment, decrement } = useLoading()
   const [searchType, setSearchType] = useState<'tracks' | 'albums'>('tracks')
@@ -26,27 +26,21 @@ export function Search() {
   const { setAutoPlayContext, updateDynamicQueue } = useAudio()
   const { token } = useAuth()
 
-  // Handle search submission
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!query.trim()) return
-
+  // Core search logic, callable programmatically or from form submit
+  const performSearch = async (q: string) => {
+    if (!q.trim()) return
     increment()
     setHasSearched(true)
-
     try {
       if (searchType === 'tracks') {
-        const searchResults = await searchTracks(query)
+        const searchResults = await searchTracks(q)
         setResults(searchResults)
-        setAlbumResults([]) // Clear album results
-
-        // Update dynamic queue if currently in search context
+        setAlbumResults([])
         updateDynamicQueue()
       } else {
-        const searchResults = await searchAlbums(query)
+        const searchResults = await searchAlbums(q)
         setAlbumResults(searchResults)
-        setResults([]) // Clear track results
+        setResults([])
       }
     } catch (err) {
       showNotification('Search failed. Please try again.', 'error')
@@ -55,6 +49,19 @@ export function Search() {
       decrement()
     }
   }
+
+  // Handle search submission
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault()
+    await performSearch(query)
+  }
+
+  // Auto-submit on mount when coming from SearchBar "See all" link
+  useEffect(() => {
+    if (initialQuery) {
+      performSearch(initialQuery)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Handle clicking a track to play it
   const handlePlayTrack = async (result: SearchResult) => {
