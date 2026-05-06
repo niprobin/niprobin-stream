@@ -309,21 +309,21 @@ export function Player() {
         </div>
       )}
 
-      <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 md:p-4 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
+      <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 md:py-2 md:px-4 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
       <div className="flex-shrink-0 w-full">
         {currentTrack ? (
           <>
             {/* Desktop Layout: 3 columns */}
-            <div className="hidden md:grid md:grid-cols-3 items-center gap-4 mb-4">
+            <div className="hidden md:grid md:grid-cols-3 items-center gap-4 mb-1.5">
                 {/* Left: Album Cover and Track Info */}
-                <div className="flex items-center gap-4 text-left">
+                <div className="flex items-center gap-3 text-left">
                   {/* Album Cover */}
                   <div className="flex-shrink-0">
                     {currentTrack.coverArt ? (
                       <img
                         src={currentTrack.coverArt}
                         alt={`${currentTrack.title} cover`}
-                        className="w-20 h-20 rounded-sm object-cover bg-slate-800"
+                        className="w-10 h-10 rounded-sm object-cover bg-slate-800"
                         onError={(e) => {
                           e.currentTarget.style.display = 'none'
                           const nextElement = e.currentTarget.nextElementSibling as HTMLElement
@@ -335,36 +335,18 @@ export function Player() {
                     ) : null}
                     {/* Fallback when no cover or image fails to load */}
                     <div
-                      className={`w-20 h-20 rounded-sm bg-slate-800 flex items-center justify-center ${
+                      className={`w-10 h-10 rounded-sm bg-slate-800 flex items-center justify-center ${
                         currentTrack.coverArt ? 'hidden' : 'flex'
                       }`}
                     >
-                      <Music className="h-4 w-4 text-slate-400" />
+                      <Music className="h-3.5 w-3.5 text-slate-400" />
                     </div>
                   </div>
 
                   {/* Track Info */}
                   <div className="min-w-0 flex-1">
-                    <div className="font-semibold text-white truncate">{currentTrack.title}</div>
-                    <div className="text-sm text-slate-400 truncate">{currentTrack.artist}</div>
-                    {currentTrack.album && (
-                      currentTrack.albumId ? (
-                        <a
-                          href={ROUTES.album(currentTrack.albumId!)}
-                          className="text-xs text-slate-500 truncate cursor-pointer hover:text-slate-300 transition-colors block"
-                          onClick={(e) => {
-                            e.preventDefault()
-                            handleAlbumClick()
-                          }}
-                        >
-                          {currentTrack.album}
-                        </a>
-                      ) : (
-                        <div className="text-xs text-slate-500 truncate">
-                          {currentTrack.album}
-                        </div>
-                      )
-                    )}
+                    <div className="text-sm font-semibold text-white truncate">{currentTrack.title}</div>
+                    <div className="text-xs text-slate-400 truncate">{currentTrack.artist}</div>
                   </div>
                 </div>
 
@@ -379,7 +361,7 @@ export function Player() {
                     className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
                     disabled={!canGoToPrevious}
                   >
-                    <SkipBack className="h-5 w-5" />
+                    <SkipBack className="h-4 w-4" />
                   </Button>
                 )}
 
@@ -388,15 +370,15 @@ export function Player() {
                   onClick={handlePlayPause}
                   size="icon"
                   variant="ghost"
-                  className="bg-white text-black rounded-full h-12 w-12 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-white text-black rounded-full h-9 w-9 disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isCurrentTrackLoading}
                 >
                   {isCurrentTrackLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : isPlaying ? (
-                    <Pause className="h-4 w-4" />
+                    <Pause className="h-3.5 w-3.5" />
                   ) : (
-                    <Play className="h-4 w-4" />
+                    <Play className="h-3.5 w-3.5" />
                   )}
                 </Button>
 
@@ -409,7 +391,7 @@ export function Player() {
                     className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
                     disabled={!canGoToNext}
                   >
-                    <SkipForward className="h-5 w-5" />
+                    <SkipForward className="h-4 w-4" />
                   </Button>
                 )}
               </div>
@@ -417,7 +399,7 @@ export function Player() {
               {/* Right: Buttons */}
               <div className="flex justify-end items-center gap-3">
                 {/* Track Action Buttons - Grouped container */}
-                <div className="flex gap-2 px-2 py-1 rounded-lg bg-slate-800/30">
+                <div className="flex gap-1 px-2 py-1 rounded-lg bg-slate-800/30">
                   {isAuthenticated && currentTrack && (
                     <Button
                       onClick={() => openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)}
@@ -429,7 +411,7 @@ export function Player() {
                       aria-pressed={isTrackLiked(currentTrack.title, currentTrack.artist)}
                     >
                       <Heart
-                        className="h-5 w-5"
+                        className="h-4 w-4"
                         fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
                       />
                     </Button>
@@ -441,7 +423,7 @@ export function Player() {
                     className="text-white hover:text-blue-400 hover:bg-slate-800"
                     title="Share track"
                   >
-                    <Share2 className="h-5 w-5" />
+                    <Share2 className="h-4 w-4" />
                   </Button>
                   <Button
                     onClick={handleDownload}
@@ -450,7 +432,7 @@ export function Player() {
                     disabled={isGlobalLoading}
                     className="text-white hover:text-white hover:bg-slate-800"
                   >
-                    <Download className={`h-5 w-5 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
+                    <Download className={`h-4 w-4 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
                   </Button>
                 </div>
 
@@ -462,7 +444,7 @@ export function Player() {
                     variant="ghost"
                     className="text-white/70 hover:text-white hover:bg-slate-800"
                   >
-                    <Maximize2 className="h-5 w-5" />
+                    <Maximize2 className="h-4 w-4" />
                   </Button>
                 )}
               </div>
