@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Player } from './components/Player'
 import { InstallPrompt } from './components/InstallPrompt'
 import { useAuth } from './contexts/AuthContext'
-import { NotificationProvider } from './contexts/NotificationContext'
 import { NotificationBanner } from './components/NotificationBanner'
 import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { Button } from './components/ui/button'
@@ -576,7 +575,7 @@ function AppContent() {
                 onPageChange={navigateToDiggingPage}
               />
             ) : activePage === 'search' ? (
-              <Search initialQuery={searchInitialQuery} />
+              <Search key={searchInitialQuery} initialQuery={searchInitialQuery} />
             ) : (
               <HomePage />
             )}
@@ -591,11 +590,7 @@ function AppContent() {
 }
 
 function App() {
-  return (
-    <NotificationProvider>
-      <AppContent />
-    </NotificationProvider>
-  )
+  return <AppContent />
 }
 
 export default App

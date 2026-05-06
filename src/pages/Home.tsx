@@ -1,6 +1,7 @@
 import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useNotification } from '@/contexts/NotificationContext'
+import { useAuth } from '@/contexts/AuthContext'
 import { getAlbumTracks } from '@/services/api'
 import { ROUTES } from '@/utils/routes'
 import type { DiscoverTrack, DiscoverAlbum } from '@/types/api'
@@ -100,14 +101,37 @@ function AlbumCard({ album }: { album: DiscoverAlbum }) {
   )
 }
 
+function CarouselSkeleton() {
+  return (
+    <div className="flex gap-3 overflow-hidden pb-3">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex-shrink-0 w-32 space-y-2">
+          <div className="w-32 h-32 bg-slate-800 rounded-lg animate-pulse" />
+          <div className="h-3 bg-slate-800 rounded animate-pulse w-28" />
+          <div className="h-3 bg-slate-800 rounded animate-pulse w-20" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export function HomePage() {
-  const { discoverTracks, discoverAlbums } = useDiscovery()
+  const { discoverTracks, discoverAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
   const { playTrack, loadingTrackId } = useTrackPlayer()
+  const { isAuthenticated } = useAuth()
+
+  if (!isAuthenticated) {
+    return (
+      <div className="py-16 text-center space-y-2">
+        <p className="text-slate-400 text-sm">Log in to discover tracks and albums.</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="py-8 space-y-10">
-      <CarouselSection title="Digging Tracks" seeAllHref={ROUTES.diggingTracks}>
-        {discoverTracks.slice(0, 20).map(track => (
+    <div className="py-8 space-y-6">
+      <CarouselSection title="Recently added tracks" seeAllHref={ROUTES.diggingTracks}>
+        {isLoadingTracks ? <CarouselSkeleton /> : discoverTracks.slice(0, 20).map(track => (
           <TrackCard
             key={track.deezer_id}
             track={track}
@@ -123,8 +147,8 @@ export function HomePage() {
         ))}
       </CarouselSection>
 
-      <CarouselSection title="Digging Albums" seeAllHref={ROUTES.diggingAlbums}>
-        {discoverAlbums.slice(0, 20).map(album => (
+      <CarouselSection title="Recently added albums" seeAllHref={ROUTES.diggingAlbums}>
+        {isLoadingAlbums ? <CarouselSkeleton /> : discoverAlbums.slice(0, 20).map(album => (
           <AlbumCard key={album.id} album={album} />
         ))}
       </CarouselSection>
