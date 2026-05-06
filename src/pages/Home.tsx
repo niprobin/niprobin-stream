@@ -20,7 +20,7 @@ function CarouselSection({
 }) {
   return (
     <section className="space-y-3">
-      <div className="flex items-center justify-between px-4 sm:px-6 lg:px-10">
+      <div className="flex items-center justify-between">
         <h2 className="text-white font-semibold text-lg">{title}</h2>
         <button
           onClick={() => navigateTo(seeAllHref)}
@@ -29,7 +29,7 @@ function CarouselSection({
           See all →
         </button>
       </div>
-      <div className="flex gap-3 overflow-x-auto px-4 sm:px-6 lg:px-10 pb-3 snap-x snap-mandatory scrollbar-hide">
+      <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide">
         {children}
       </div>
     </section>
