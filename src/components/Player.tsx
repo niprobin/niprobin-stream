@@ -514,20 +514,8 @@ export function Player() {
                   </div>
                 </div>
 
-                {/* Right: Navigation Controls */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  {/* Previous Button */}
-                  <Button
-                    onClick={handlePreviousTrack}
-                    size="icon"
-                    variant="ghost"
-                    className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                    disabled={!canGoToPrevious}
-                  >
-                    <SkipBack className="h-5 w-5" />
-                  </Button>
-
-                  {/* Play/Pause Button */}
+                {/* Right: Play/Pause only on mobile */}
+                <div className="flex items-center flex-shrink-0">
                   <Button
                     onClick={handlePlayPause}
                     size="icon-lg"
@@ -542,17 +530,6 @@ export function Player() {
                     ) : (
                       <Play className="h-4 w-4" />
                     )}
-                  </Button>
-
-                  {/* Next Button */}
-                  <Button
-                    onClick={handleNextTrack}
-                    size="icon"
-                    variant="ghost"
-                    className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                    disabled={!canGoToNext}
-                  >
-                    <SkipForward className="h-5 w-5" />
                   </Button>
                 </div>
 
