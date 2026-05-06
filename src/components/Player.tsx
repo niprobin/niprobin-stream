@@ -353,17 +353,15 @@ export function Player() {
               {/* Center: Navigation and Play Controls */}
               <div className="flex justify-center items-center gap-2">
                 {/* Previous Button */}
-                {hasAlbumContext && (
-                  <Button
-                    onClick={handlePreviousTrack}
-                    size="icon"
-                    variant="ghost"
-                    className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                    disabled={!canGoToPrevious}
-                  >
-                    <SkipBack className="h-4 w-4" />
-                  </Button>
-                )}
+                <Button
+                  onClick={handlePreviousTrack}
+                  size="icon"
+                  variant="ghost"
+                  className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
+                  disabled={!canGoToPrevious}
+                >
+                  <SkipBack className="h-4 w-4" />
+                </Button>
 
                 {/* Play/Pause Button */}
                 <Button
@@ -383,17 +381,15 @@ export function Player() {
                 </Button>
 
                 {/* Next Button */}
-                {hasAlbumContext && (
-                  <Button
-                    onClick={handleNextTrack}
-                    size="icon"
-                    variant="ghost"
-                    className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                    disabled={!canGoToNext}
-                  >
-                    <SkipForward className="h-4 w-4" />
-                  </Button>
-                )}
+                <Button
+                  onClick={handleNextTrack}
+                  size="icon"
+                  variant="ghost"
+                  className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
+                  disabled={!canGoToNext}
+                >
+                  <SkipForward className="h-4 w-4" />
+                </Button>
               </div>
 
               {/* Right: Buttons */}
@@ -531,17 +527,15 @@ export function Player() {
                 {/* Right: Navigation Controls */}
                 <div className="flex items-center gap-1 flex-shrink-0">
                   {/* Previous Button */}
-                  {hasAlbumContext && (
-                    <Button
-                      onClick={handlePreviousTrack}
-                      size="icon"
-                      variant="ghost"
-                      className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                      disabled={!canGoToPrevious}
-                    >
-                      <SkipBack className="h-5 w-5" />
-                    </Button>
-                  )}
+                  <Button
+                    onClick={handlePreviousTrack}
+                    size="icon"
+                    variant="ghost"
+                    className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
+                    disabled={!canGoToPrevious}
+                  >
+                    <SkipBack className="h-5 w-5" />
+                  </Button>
 
                   {/* Play/Pause Button */}
                   <Button
@@ -561,17 +555,15 @@ export function Player() {
                   </Button>
 
                   {/* Next Button */}
-                  {hasAlbumContext && (
-                    <Button
-                      onClick={handleNextTrack}
-                      size="icon"
-                      variant="ghost"
-                      className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                      disabled={!canGoToNext}
-                    >
-                      <SkipForward className="h-5 w-5" />
-                    </Button>
-                  )}
+                  <Button
+                    onClick={handleNextTrack}
+                    size="icon"
+                    variant="ghost"
+                    className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
+                    disabled={!canGoToNext}
+                  >
+                    <SkipForward className="h-5 w-5" />
+                  </Button>
                 </div>
 
               </div>
