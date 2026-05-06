@@ -53,9 +53,17 @@ function TrackCard({
       disabled={isLoading}
       className="flex-shrink-0 w-32 snap-start text-left space-y-2 group disabled:opacity-50"
     >
-      <div className="w-32 h-32 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
-        <span className="text-4xl">🎵</span>
-      </div>
+      {track.cover_url ? (
+        <img
+          src={track.cover_url}
+          alt={track.track}
+          className="w-32 h-32 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
+        />
+      ) : (
+        <div className="w-32 h-32 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
+          <span className="text-4xl">🎵</span>
+        </div>
+      )}
       <div>
         <p className="text-sm text-white truncate w-32">{track.track}</p>
         <p className="text-xs text-slate-400 truncate w-32">{track.artist}</p>

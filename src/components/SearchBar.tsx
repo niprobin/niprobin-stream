@@ -163,7 +163,7 @@ export function SearchBar() {
     filteredDiggingAlbums.length > 0
 
   return (
-    <div ref={containerRef} className="relative flex-1 max-w-sm">
+    <div ref={containerRef} className="relative flex-1">
       <form onSubmit={handleSubmit}>
         <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 focus-within:border-slate-500 rounded-lg px-3 py-1.5 transition-colors">
           <Search className="h-4 w-4 text-slate-400 flex-shrink-0" />

@@ -78,6 +78,7 @@ export type DiscoverTrack = {
   curator: string
   date: string
   deezer_id: string
+  cover_url?: string
   // TODO: Remove once confirmed the database field is fully gone
   'spotify-id'?: string
 }

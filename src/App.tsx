@@ -5,11 +5,12 @@ import { useAuth } from './contexts/AuthContext'
 import { NotificationBanner } from './components/NotificationBanner'
 import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { Button } from './components/ui/button'
-import { LogIn } from 'lucide-react'
+import { LogIn, RefreshCw } from 'lucide-react'
 import { AlbumsPage } from './pages/Digging'
 import { LibraryPage } from './pages/Library'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
+import { useDiscovery } from './contexts/DiscoveryContext'
 import { Search } from './components/Search'
 import { SearchBar } from './components/SearchBar'
 import {
@@ -112,6 +113,7 @@ function AppContent() {
   const { isAuthenticated, token } = useAuth()
   const { loadTrack } = useAudio()
   const { setMetaTags, resetToDefault } = useMetaTags()
+  const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
   const [activePage, setActivePage] = useState<'home' | 'library' | 'digging' | 'album' | 'search'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
@@ -455,13 +457,25 @@ function AppContent() {
           
           {/* Center: SearchBar on desktop */}
           {isAuthenticated && (
-            <div className="hidden md:flex flex-1 max-w-sm mx-6">
+            <div className="hidden md:flex flex-1 max-w-xl mx-6">
               <SearchBar />
             </div>
           )}
 
-          {/* Right: Auth Controls */}
-          <AuthControls />
+          {/* Right: Refresh + Auth Controls */}
+          <div className="flex items-center gap-2">
+            {isAuthenticated && (
+              <button
+                onClick={() => { refreshTracks(); refreshAlbums() }}
+                disabled={isLoadingTracks || isLoadingAlbums}
+                className="p-2 text-slate-400 hover:text-white disabled:opacity-40 transition-colors"
+                aria-label="Refresh discovery data"
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoadingTracks || isLoadingAlbums ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+            <AuthControls />
+          </div>
         </div>
         
         {/* Mobile search bar - full width, shown below logo row */}
