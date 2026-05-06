@@ -318,12 +318,16 @@ export function Player() {
                 {/* Left: Album Cover and Track Info */}
                 <div className="flex items-center gap-3 text-left">
                   {/* Album Cover */}
-                  <div className="flex-shrink-0">
+                  <div
+                    className={`flex-shrink-0 ${currentTrack.albumId ? 'cursor-pointer' : ''}`}
+                    onClick={currentTrack.albumId ? handleAlbumClick : undefined}
+                    title={currentTrack.albumId ? currentTrack.album : undefined}
+                  >
                     {currentTrack.coverArt ? (
                       <img
                         src={currentTrack.coverArt}
                         alt={`${currentTrack.title} cover`}
-                        className="w-10 h-10 rounded-sm object-cover bg-slate-800"
+                        className={`w-10 h-10 rounded-sm object-cover bg-slate-800 ${currentTrack.albumId ? 'hover:opacity-80 transition-opacity' : ''}`}
                         onError={(e) => {
                           e.currentTarget.style.display = 'none'
                           const nextElement = e.currentTarget.nextElementSibling as HTMLElement
