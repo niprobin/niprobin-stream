@@ -302,7 +302,7 @@ export function Player() {
         </div>
       )}
 
-      <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 p-4 md:py-2 md:px-4 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col relative`}>
+      <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 p-4 md:py-2 md:px-4 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
         {/* Progress bar replaces top border */}
         <div
           className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 cursor-pointer"
