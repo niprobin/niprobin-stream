@@ -3,10 +3,10 @@ import { Button } from '@/components/ui/button'
 import { Pagination } from '@/components/ui/Pagination'
 import { AlbumCard } from '@/components/ui/AlbumCard'
 import { RefreshCw, X, Search } from 'lucide-react'
-import { getAlbumsToDiscover, getTracksToDiscover, hideTrack, getAlbumTracks, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
+import { hideTrack, getAlbumTracks, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { TrackList } from '@/components/TrackList'
-import { useCachedData } from '@/hooks/useCachedData'
+import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
 import { albumFilterFunction } from '@/hooks/useDiscoverySearch'
@@ -18,10 +18,6 @@ import { ROUTES } from '@/utils/routes'
 type DiggingTab = 'tracks' | 'albums'
 
 
-const ALBUMS_CACHE_KEY = 'niprobin-albums-cache'
-const TRACKS_CACHE_KEY = 'niprobin-tracks-cache'
-const CACHE_DURATION_MS = 6 * 60 * 60 * 1000 // 6 hours
-
 interface AlbumsPageProps {
   activeTab: DiggingTab
   currentPage: number
@@ -29,7 +25,6 @@ interface AlbumsPageProps {
 }
 
 export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageProps) {
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [prevActiveTab, setPrevActiveTab] = useState<DiggingTab>(activeTab)
 
   // Use URL-based filters for state management
@@ -39,6 +34,13 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setAutoPlayContext, currentTrack } = useAudio()
   const { isAuthenticated, token } = useAuth()
+
+  const {
+    discoverTracks: tracks,
+    discoverAlbums: albums,
+    refreshTracks,
+    refreshAlbums,
+  } = useDiscovery()
 
   // Use hide item hooks for albums and tracks
   const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem<DiscoverAlbum>(
@@ -51,29 +53,6 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     (track) => hideTrack({ track: track.track, artist: track.artist, deezer_id: track.deezer_id }, token),
     (track) => `${track.track}-${track.artist}`,
     { persistentCacheKey: STORAGE_KEYS.HIDDEN_TRACKS }
-  )
-
-  // Use cached data hooks for albums and tracks
-  const { data: albums, refresh: refreshAlbums } = useCachedData<DiscoverAlbum[]>(
-    ALBUMS_CACHE_KEY,
-    () => getAlbumsToDiscover(token),
-    {
-      cacheDuration: CACHE_DURATION_MS,
-      refreshTrigger,
-      enabled: activeTab === 'albums',
-      errorMessage: 'Failed to load albums to discover.',
-    }
-  )
-
-  const { data: tracks, refresh: refreshTracks } = useCachedData<DiscoverTrack[]>(
-    TRACKS_CACHE_KEY,
-    () => getTracksToDiscover(token),
-    {
-      cacheDuration: CACHE_DURATION_MS,
-      refreshTrigger,
-      enabled: activeTab === 'tracks',
-      errorMessage: 'Failed to load tracks to discover.',
-    }
   )
 
   // Albums search is now handled by URL filters
@@ -106,10 +85,9 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const handleRefresh = () => {
     if (activeTab === 'albums') {
       refreshAlbums()
-    } else if (activeTab === 'tracks') {
+    } else {
       refreshTracks()
     }
-    setRefreshTrigger((prev) => prev + 1)
   }
 
   useEffect(() => {
@@ -139,7 +117,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                   className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600"
                 >
                   <option value="all">All Curators</option>
-                  {tracks && Array.from(
+                  {Array.from(
                     new Set(tracks.map(track => track.curator).filter(Boolean))
                   ).sort().map((curator) => (
                     <option key={curator} value={curator}>
@@ -165,7 +143,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
             </div>
           </div>
 
-          {!tracks || tracks.length === 0 ? (
+          {tracks.length === 0 ? (
             <div className="text-center text-slate-400 py-12">
               No tracks available yet. Check back soon.
             </div>
@@ -217,9 +195,8 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                         // Create dynamic queue provider that always returns current filtered tracks
                         const queueProvider = () => {
                           const currentFilteredTracks = tracks
-                            ?.filter((track) => !hiddenTracks.has(`${track.track}-${track.artist}`))
+                            .filter((track) => !hiddenTracks.has(`${track.track}-${track.artist}`))
                             .filter((track) => curator === 'all' || track.curator === curator)
-                            || []
 
                           return currentFilteredTracks.map((track, index) => ({
                             track: track.track,
@@ -330,7 +307,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
             )}
           </div>
 
-          {!albums || albums.length === 0 ? (
+          {albums.length === 0 ? (
             <div className="text-center text-slate-400 py-12">
               No albums available yet. Check back soon.
             </div>
