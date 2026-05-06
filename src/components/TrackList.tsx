@@ -83,7 +83,7 @@ export function TrackList(props: TrackListProps) {
         <span className="text-xs uppercase tracking-wider text-white/20">#</span>
         <span className="text-xs uppercase tracking-wider text-white/20">Title</span>
         <span className="hidden md:block text-xs uppercase tracking-wider text-white/20 text-center px-2">Date</span>
-        <span></span>
+        <span className="hidden md:block"></span>
       </div>
     )}
     <div className="overflow-hidden">
