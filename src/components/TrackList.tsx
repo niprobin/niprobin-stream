@@ -73,7 +73,7 @@ export function TrackList(props: TrackListProps) {
   }
 
   // Grid column template: improved spacing for date and action columns
-  const gridCols = 'grid-cols-[36px_1fr_44px] md:grid-cols-[44px_1fr_120px_72px]'
+  const gridCols = 'grid-cols-[28px_1fr_44px] md:grid-cols-[32px_1fr_120px_72px]'
   const horizontalPadding = compactSpacing ? 'px-4' : 'px-6 lg:px-10'
 
   return (
@@ -107,7 +107,7 @@ export function TrackList(props: TrackListProps) {
             >
               {/* Track Number / Play Button Column */}
               <div className="relative">
-                <span className={`text-sm font-normal text-center transition-colors group-hover:hidden ${
+                <span className={`text-xs font-normal text-center transition-colors group-hover:hidden ${
                   isCurrentTrack ? 'text-white' : 'text-white/20'
                 }`}>
                   {item['track-number']}
