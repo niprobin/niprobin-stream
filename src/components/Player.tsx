@@ -74,9 +74,7 @@ export function Player() {
     const handleClickOutside = (event: MouseEvent) => {
       if (showMobileActions &&
           mobileActionsRef.current &&
-          !mobileActionsRef.current.contains(event.target as Node) &&
-          threeDotsRef.current &&
-          !threeDotsRef.current.contains(event.target as Node)) {
+          !mobileActionsRef.current.contains(event.target as Node)) {
         setShowMobileActions(false)
       }
     }
@@ -234,74 +232,6 @@ export function Player() {
 
   return (
     <>
-      {/* Mobile Actions Menu - positioned outside player container */}
-      {showMobileActions && (
-        <div
-          ref={mobileActionsRef}
-          className="md:hidden fixed bottom-28 left-0 right-0 flex justify-center gap-8 bg-slate-800 border-y border-slate-600 px-2 py-2 shadow-xl z-[9999]"
-        >
-          {/* Like Button */}
-          {isAuthenticated && currentTrack && (
-            <Button
-              onClick={() => {
-                openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)
-                setShowMobileActions(false)
-              }}
-              size="icon-lg"
-              variant="ghost"
-              className={`text-white hover:text-red-400 hover:bg-slate-800/50 ${
-                isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
-              }`}
-            >
-              <Heart
-                className="h-4 w-4"
-                fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
-              />
-            </Button>
-          )}
-
-          {/* Share Button */}
-          <Button
-            onClick={handleShareStream}
-            size="icon-lg"
-            variant="ghost"
-            className="text-white hover:text-blue-400 hover:bg-slate-800/50"
-            title="Share track"
-          >
-            <Share2 className="h-4 w-4" />
-          </Button>
-
-          {/* Download Button */}
-          <Button
-            onClick={() => {
-              handleDownload()
-              setShowMobileActions(false)
-            }}
-            size="icon-lg"
-            variant="ghost"
-            disabled={isGlobalLoading}
-            className="text-white hover:text-green-400 hover:bg-slate-800/50"
-          >
-            <Download className={`h-4 w-4 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
-          </Button>
-
-          {/* Expand Button */}
-          {hasAlbumContext && (
-            <Button
-              onClick={() => {
-                toggleExpand()
-                setShowMobileActions(false)
-              }}
-              size="icon-lg"
-              variant="ghost"
-              className="text-white hover:text-purple-400 hover:bg-slate-800/50"
-            >
-              <Maximize2 className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      )}
-
       <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 p-4 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
         {/* Progress bar replaces top border */}
         <div
@@ -498,19 +428,71 @@ export function Player() {
                       </div>
                     </div>
 
-                    {/* Three Dots */}
-                    <Button
-                      ref={threeDotsRef}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setShowMobileActions(!showMobileActions)
-                      }}
-                      size="icon-sm"
-                      variant="ghost"
-                      className="text-slate-400 hover:text-white hover:bg-slate-800/50 flex-shrink-0"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    {/* Three Dots + Popover */}
+                    <div ref={mobileActionsRef} className="relative flex-shrink-0">
+                      <Button
+                        ref={threeDotsRef}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowMobileActions(!showMobileActions)
+                        }}
+                        size="icon-sm"
+                        variant="ghost"
+                        className="text-slate-400 hover:text-white hover:bg-slate-800/50"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+
+                      {showMobileActions && (
+                        <div className="absolute bottom-full right-0 mb-2 flex items-center gap-0.5 bg-slate-800 border border-slate-700 rounded-xl px-1.5 py-1.5 shadow-2xl">
+                          {isAuthenticated && currentTrack && (
+                            <Button
+                              onClick={() => {
+                                openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)
+                                setShowMobileActions(false)
+                              }}
+                              size="icon"
+                              variant="ghost"
+                              className={`text-white hover:text-red-400 hover:bg-slate-700 ${
+                                isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''
+                              }`}
+                            >
+                              <Heart
+                                className="h-4 w-4"
+                                fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
+                              />
+                            </Button>
+                          )}
+                          <Button
+                            onClick={() => { handleShareStream(); setShowMobileActions(false) }}
+                            size="icon"
+                            variant="ghost"
+                            className="text-white hover:text-blue-400 hover:bg-slate-700"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            onClick={() => { handleDownload(); setShowMobileActions(false) }}
+                            size="icon"
+                            variant="ghost"
+                            disabled={isGlobalLoading}
+                            className="text-white hover:bg-slate-700"
+                          >
+                            <Download className={`h-4 w-4 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
+                          </Button>
+                          {hasAlbumContext && (
+                            <Button
+                              onClick={() => { toggleExpand(); setShowMobileActions(false) }}
+                              size="icon"
+                              variant="ghost"
+                              className="text-white hover:text-purple-400 hover:bg-slate-700"
+                            >
+                              <Maximize2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
