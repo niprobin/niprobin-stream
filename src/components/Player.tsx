@@ -2,7 +2,6 @@ import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 import { Play, Pause, Download, Maximize2, Heart, Loader2, Share2, X, SkipBack, SkipForward, Music, MoreHorizontal } from 'lucide-react'
 import { downloadTrack } from '@/services/api'
 import { shareTrack } from '@/utils/urlBuilder'
@@ -134,12 +133,6 @@ export function Player() {
     const percentage = clickX / rect.width
     const newTime = percentage * duration
     seek(newTime)
-  }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
   // Calculate progress percentage
@@ -309,12 +302,19 @@ export function Player() {
         </div>
       )}
 
-      <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 p-4 md:py-2 md:px-4 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col`}>
+      <div ref={playerRef} className={`fixed bottom-0 left-0 right-0 bg-slate-900 p-4 md:py-2 md:px-4 transition-all duration-300 ${playerHeight} overflow-hidden flex flex-col relative`}>
+        {/* Progress bar replaces top border */}
+        <div
+          className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 cursor-pointer"
+          onClick={handleProgressClick}
+        >
+          <div className="h-full bg-white/70 transition-none" style={{ width: `${progress}%` }} />
+        </div>
       <div className="flex-shrink-0 w-full">
         {currentTrack ? (
           <>
             {/* Desktop Layout: 3 columns */}
-            <div className="hidden md:grid md:grid-cols-3 items-center gap-4 mb-1.5">
+            <div className="hidden md:grid md:grid-cols-3 items-center gap-4">
                 {/* Left: Album Cover and Track Info */}
                 <div className="flex items-center gap-3 text-left">
                   {/* Album Cover */}
@@ -573,26 +573,6 @@ export function Player() {
               </div>
             </div>
 
-            {/* Progress Bar - Same for both layouts */}
-            <div className="flex items-center gap-3 max-w-2xl mx-auto">
-              <span className="text-xs text-slate-400 w-12 text-right">
-                {formatTime(currentTime)}
-              </span>
-
-              <div
-                className="flex-1 cursor-pointer"
-                onClick={handleProgressClick}
-              >
-                <Progress
-                  value={progress}
-                  className="h-1 bg-white/20 [&>div]:bg-white"
-                />
-              </div>
-
-              <span className="text-xs text-slate-400 w-12">
-                {formatTime(duration)}
-              </span>
-            </div>
           </>
         ) : (
           <div className="flex items-center justify-center gap-2 py-2">
