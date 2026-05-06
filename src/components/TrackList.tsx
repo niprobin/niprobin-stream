@@ -73,7 +73,7 @@ export function TrackList(props: TrackListProps) {
   }
 
   // Grid column template: improved spacing for date and action columns
-  const gridCols = 'grid-cols-[44px_1fr_120px_72px]'
+  const gridCols = 'grid-cols-[36px_1fr_44px] md:grid-cols-[44px_1fr_120px_72px]'
   const horizontalPadding = compactSpacing ? 'px-4' : 'px-6 lg:px-10'
 
   return (
@@ -82,7 +82,7 @@ export function TrackList(props: TrackListProps) {
       <div className={`grid ${gridCols} ${horizontalPadding} py-3 border-b border-white/5`}>
         <span className="text-xs uppercase tracking-wider text-white/20">#</span>
         <span className="text-xs uppercase tracking-wider text-white/20">Title</span>
-        <span className="text-xs uppercase tracking-wider text-white/20 text-center px-2">Date</span>
+        <span className="hidden md:block text-xs uppercase tracking-wider text-white/20 text-center px-2">Date</span>
         <span></span>
       </div>
     )}
@@ -128,7 +128,7 @@ export function TrackList(props: TrackListProps) {
               </div>
 
               {/* Date Column */}
-              <div className="text-xs text-white/40 text-center px-2">
+              <div className="hidden md:block text-xs text-white/40 text-center px-2">
                 {item.date || ''}
               </div>
 
@@ -138,8 +138,8 @@ export function TrackList(props: TrackListProps) {
                 {props.enableLikeButtons && props.isAuthenticated && (
                   <button
                     type="button"
-                    className={`transition-all opacity-0 group-hover:opacity-100 ${
-                      liked ? 'text-red-400 opacity-100' : 'text-white/25'
+                    className={`transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 ${
+                      liked ? 'text-red-400' : 'text-white/25'
                     } hover:text-red-400`}
                     onClick={(event) => {
                       event.stopPropagation()
@@ -189,7 +189,7 @@ export function TrackList(props: TrackListProps) {
             </div>
 
             {/* Date Column */}
-            <div className="text-xs text-white/40 text-center px-2">
+            <div className="hidden md:block text-xs text-white/40 text-center px-2">
               {obj.date || ''}
             </div>
 
