@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { Pagination } from '@/components/ui/Pagination'
 import { AlbumCard } from '@/components/ui/AlbumCard'
-import { RefreshCw, X, Search } from 'lucide-react'
+import { X, Search } from 'lucide-react'
 import { hideTrack, getAlbumTracks, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { TrackList } from '@/components/TrackList'
@@ -38,8 +37,6 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const {
     discoverTracks: tracks,
     discoverAlbums: albums,
-    refreshTracks,
-    refreshAlbums,
   } = useDiscovery()
 
   // Use hide item hooks for albums and tracks
@@ -81,15 +78,6 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     console.log('Track liked successfully:', track.track, track.artist)
   }
 
-  // Handle manual refresh (clear cache and reload)
-  const handleRefresh = () => {
-    if (activeTab === 'albums') {
-      refreshAlbums()
-    } else {
-      refreshTracks()
-    }
-  }
-
   useEffect(() => {
     // Only reset page when actively switching tabs, not during navigation sync
     if (prevActiveTab !== activeTab) {
@@ -106,41 +94,22 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
       {activeTab === 'tracks' && (
         <div>
-          {/* Curator Filter and Sync Button */}
+          {/* Curator Filter */}
           <div className="px-2 pt-4 pb-3">
-            <div className="flex items-center gap-3">
-              {/* Curator Filter - 80% width */}
-              <div className="flex-1 min-w-0" style={{ flexBasis: '80%' }}>
-                <select
-                  value={curator}
-                  onChange={(e) => updateFilter('curator', e.target.value)}
-                  className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600"
-                >
-                  <option value="all">All Curators</option>
-                  {Array.from(
-                    new Set(tracks.map(track => track.curator).filter(Boolean))
-                  ).sort().map((curator) => (
-                    <option key={curator} value={curator}>
-                      {curator}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Sync Tracks Button - 20% width */}
-              <div className="flex-shrink-0">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="text-xs text-slate-500 hover:text-white flex items-center gap-1.5 h-10 px-4"
-                >
-                  <RefreshCw className="h-3 w-3" />
-                  Sync Tracks
-                </Button>
-              </div>
-            </div>
+            <select
+              value={curator}
+              onChange={(e) => updateFilter('curator', e.target.value)}
+              className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600"
+            >
+              <option value="all">All Curators</option>
+              {Array.from(
+                new Set(tracks.map(track => track.curator).filter(Boolean))
+              ).sort().map((curator) => (
+                <option key={curator} value={curator}>
+                  {curator}
+                </option>
+              ))}
+            </select>
           </div>
 
           {tracks.length === 0 ? (
@@ -260,43 +229,26 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
       {activeTab === 'albums' && (
         <div>
-          {/* Search Bar and Sync Button */}
+          {/* Search Bar */}
           <div className="px-2 pt-4 pb-3">
-            <div className="flex items-center gap-3">
-              {/* Search Input - 80% width */}
-              <div className="relative flex-1 min-w-0" style={{ flexBasis: '80%' }}>
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="Search albums..."
-                  value={search}
-                  onChange={(e) => updateFilter('search', e.target.value)}
-                  className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
-                />
-                {search && (
-                  <button
-                    onClick={() => updateFilter('search', '')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 hover:text-white"
-                    aria-label="Clear search"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Sync Albums Button - 20% width */}
-              <div className="flex-shrink-0">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleRefresh}
-                  className="text-xs text-slate-500 hover:text-white flex items-center gap-1.5 h-10 px-4"
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search albums..."
+                value={search}
+                onChange={(e) => updateFilter('search', e.target.value)}
+                className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 pl-10 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
+              />
+              {search && (
+                <button
+                  onClick={() => updateFilter('search', '')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 hover:text-white"
+                  aria-label="Clear search"
                 >
-                  <RefreshCw className="h-3 w-3" />
-                  Sync Albums
-                </Button>
-              </div>
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
 
             {/* Results count */}
