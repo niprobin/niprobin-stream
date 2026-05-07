@@ -4,6 +4,7 @@ import { AlbumCard } from '@/components/ui/AlbumCard'
 import { X, Search } from 'lucide-react'
 import { hideTrack, getAlbumTracks, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
+import { useNotification } from '@/contexts/NotificationContext'
 import { TrackList } from '@/components/TrackList'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
@@ -33,6 +34,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setAutoPlayContext, currentTrack } = useAudio()
   const { isAuthenticated, token } = useAuth()
+  const { showNotification } = useNotification()
 
   const {
     discoverTracks: tracks,
@@ -40,16 +42,22 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   } = useDiscovery()
 
   // Use hide item hooks for albums and tracks
-  const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem<DiscoverAlbum>(
-    (album) => hideAlbum({ album: album.album, artist: album.artist, deezer_id: album.deezer_id }, token),
-    (album) => `${album.album}-${album.artist}`,
-    { persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS }
+  const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem(
+    (album: DiscoverAlbum) => hideAlbum({ album: album.album, artist: album.artist, deezer_id: album.deezer_id }, token),
+    (album: DiscoverAlbum) => `${album.album}-${album.artist}`,
+    {
+      persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS,
+      onSuccess: (result) => showNotification(result.message, result.status),
+    }
   )
 
-  const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem<DiscoverTrack>(
-    (track) => hideTrack({ track: track.track, artist: track.artist, deezer_id: track.deezer_id }, token),
-    (track) => `${track.track}-${track.artist}`,
-    { persistentCacheKey: STORAGE_KEYS.HIDDEN_TRACKS }
+  const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem(
+    (track: DiscoverTrack) => hideTrack({ track: track.track, artist: track.artist, deezer_id: track.deezer_id }, token),
+    (track: DiscoverTrack) => `${track.track}-${track.artist}`,
+    {
+      persistentCacheKey: STORAGE_KEYS.HIDDEN_TRACKS,
+      onSuccess: (result) => showNotification(result.message, result.status),
+    }
   )
 
   // Albums search is now handled by URL filters

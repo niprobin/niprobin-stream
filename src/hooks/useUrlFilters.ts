@@ -8,7 +8,7 @@ import { updateUrlFilters } from '@/utils/urlBuilder'
 import type { FilterParams } from '@/utils/urlBuilder'
 import { parseFiltersFromUrl } from '@/utils/urlParser'
 
-export type PageType = 'digging' | 'library' | 'search'
+export type PageType = 'digging' | 'search'
 
 interface UseUrlFiltersOptions {
   /** Whether to update URL immediately on filter changes (default: true) */

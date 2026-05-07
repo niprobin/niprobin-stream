@@ -7,7 +7,6 @@ import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { Button } from './components/ui/button'
 import { LogIn, RefreshCw } from 'lucide-react'
 import { AlbumsPage } from './pages/Digging'
-import { LibraryPage } from './pages/Library'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
 import { useDiscovery } from './contexts/DiscoveryContext'
@@ -15,9 +14,7 @@ import { Search } from './components/Search'
 import { SearchBar } from './components/SearchBar'
 import {
   buildDiggingUrl,
-  buildLibraryUrl,
   buildDiggingUrlWithFilters,
-  buildLibraryUrlWithFilters,
 } from './utils/urlBuilder'
 import {
   extractDeezerIdFromPath,
@@ -114,11 +111,10 @@ function AppContent() {
   const { loadTrack } = useAudio()
   const { setMetaTags, resetToDefault } = useMetaTags()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
-  const [activePage, setActivePage] = useState<'home' | 'library' | 'digging' | 'album' | 'search'>('home')
+  const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'search'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
   const [diggingPage, setDiggingPage] = useState<number>(1)
-  const [libraryPage, setLibraryPage] = useState<number>(1)
   const [searchInitialQuery, setSearchInitialQuery] = useState('')
 
   useEffect(() => {
@@ -180,25 +176,6 @@ function AppContent() {
         return
       }
 
-      // Check if this is a library URL (/library)
-      const isLibraryRoute = path === '/library'
-      console.log(`syncFromLocation: isLibraryRoute=${isLibraryRoute}`)
-      if (isLibraryRoute) {
-        if (isAuthenticated) {
-          resetToDefault()  // Reset to default meta tags for library page
-          setActivePage('library')
-
-          // Parse page from URL query parameters
-          const currentPage = parsePageFromUrl(window.location.search)
-          console.log(`syncFromLocation: parsed library page=${currentPage}`)
-          setLibraryPage(currentPage)
-        } else {
-          window.history.replaceState({}, '', '/')
-          setActivePage('home')
-        }
-        return
-      }
-
       // Existing page routing logic - check pathname only (no query params)
       const isDiggingRoute = path === '/digging' || path === '/digging/tracks' || path === '/digging/albums'
       console.log(`syncFromLocation: isDiggingRoute=${isDiggingRoute}`)
@@ -245,29 +222,18 @@ function AppContent() {
   }, [isAuthenticated, loadTrack])
 
   const navigate = (
-    page: 'home' | 'library' | 'digging' | 'album' | 'search',
+    page: 'home' | 'digging' | 'album' | 'search',
     albumId?: number,
     diggingTabOverride?: 'tracks' | 'albums',
     pageNumber?: number,
     preserveFilters?: boolean
   ) => {
-    if ((page === 'digging' || page === 'library') && !isAuthenticated) {
+    if (page === 'digging' && !isAuthenticated) {
       return
     }
 
     let path = '/'
-    if (page === 'library') {
-      const targetPage = pageNumber !== undefined ? pageNumber : libraryPage
-
-      if (preserveFilters) {
-        // Parse current filters from URL and preserve them
-        const currentFilters = parseFiltersFromUrl(window.location.search)
-        path = buildLibraryUrlWithFilters({ ...currentFilters, page: targetPage })
-      } else {
-        path = buildLibraryUrl(targetPage)
-      }
-      console.log(`navigate: building library URL - page=${targetPage}, preserveFilters=${preserveFilters}, result=${path}`)
-    } else if (page === 'digging') {
+    if (page === 'digging') {
       const targetTab = diggingTabOverride || diggingTab
       const targetPage = pageNumber !== undefined ? pageNumber : diggingPage
 
@@ -299,11 +265,7 @@ function AppContent() {
       setCurrentAlbumId(null)
     }
 
-    if (page === 'library') {
-      if (pageNumber !== undefined) {
-        setLibraryPage(pageNumber)
-      }
-    } else if (page === 'digging') {
+    if (page === 'digging') {
       if (diggingTabOverride) {
         setDiggingTab(diggingTabOverride)
       }
@@ -314,16 +276,6 @@ function AppContent() {
 
     setActivePage(page)
   }
-
-  // Navigation function that preserves filters (for use within the same page type)
-  // Currently not used directly but kept for future extensibility
-  // const navigatePreservingFilters = (
-  //   page: 'library' | 'digging',
-  //   diggingTabOverride?: 'tracks' | 'albums',
-  //   pageNumber?: number
-  // ) => {
-  //   navigate(page, undefined, diggingTabOverride, pageNumber, true)
-  // }
 
   const navigateToDiggingTab = (tab: 'tracks' | 'albums', page?: number) => {
     // When switching tabs, preserve filters
@@ -336,14 +288,6 @@ function AppContent() {
     console.log(`navigateToDiggingPage: page=${page}, validPage=${validPage}, diggingTab=${diggingTab}`)
     // Preserve filters when changing pages within the same context
     navigate('digging', undefined, diggingTab, validPage, true)
-  }
-
-  const navigateToLibraryPage = (page: number) => {
-    // Validate page number - ensure it's at least 1
-    const validPage = Math.max(1, Math.floor(page))
-    console.log(`navigateToLibraryPage: page=${page}, validPage=${validPage}`)
-    // Preserve filters when changing pages within the same context
-    navigate('library', undefined, undefined, validPage, true)
   }
 
   return (
@@ -400,19 +344,6 @@ function AppContent() {
                   >
                     Digging
                   </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={activePage === 'library'}
-                    onClick={() => navigate('library')}
-                    className={`px-3 py-2 text-sm font-medium rounded-md transition ${
-                      activePage === 'library'
-                        ? 'bg-slate-800 text-white'
-                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-                    }`}
-                  >
-                    Library
-                  </button>
                 </nav>
 
                 {/* Sub-tabs for Digging page */}
@@ -457,7 +388,7 @@ function AppContent() {
           
           {/* Center: SearchBar on desktop */}
           {isAuthenticated && (
-            <div className="hidden md:flex flex-1 max-w-xl mx-6">
+            <div className="hidden md:flex flex-1 max-w-2xl mx-6">
               <SearchBar />
             </div>
           )}
@@ -515,19 +446,6 @@ function AppContent() {
               >
                 Digging
               </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activePage === 'library'}
-                onClick={() => navigate('library')}
-                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition ${
-                  activePage === 'library'
-                    ? 'bg-slate-800 text-white'
-                    : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-                }`}
-              >
-                Library
-              </button>
             </nav>
 
             {/* Sub-tabs for Digging page on mobile */}
@@ -577,11 +495,6 @@ function AppContent() {
           <div className="w-full">
             {activePage === 'album' && currentAlbumId ? (
               <AlbumPage key={currentAlbumId} albumId={currentAlbumId} />
-            ) : activePage === 'library' ? (
-              <LibraryPage
-                currentPage={libraryPage}
-                onPageChange={navigateToLibraryPage}
-              />
             ) : activePage === 'digging' ? (
               <AlbumsPage
                 activeTab={diggingTab}

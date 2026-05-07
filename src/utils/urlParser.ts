@@ -29,8 +29,7 @@ export function parsePageFromUrl(url?: string): number {
 export function getStreamContext(): string {
   if (typeof window === 'undefined') return 'search'
   const path = window.location.pathname
-  if (path === '/library') return 'library'
-  if (path === '/digging' || path.startsWith('/digging/')) return 'digging'
+if (path === '/digging' || path.startsWith('/digging/')) return 'digging'
   if (path.startsWith('/album/')) return 'album'
   return 'search'
 }

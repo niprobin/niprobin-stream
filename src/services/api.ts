@@ -9,10 +9,8 @@ import type {
   LikeTrackResponse,
   RateAlbumPayload,
   RateDiscoveryAlbumPayload,
-  LibraryAlbum,
   DiscoverAlbum,
   DiscoverTrack,
-  LibraryTrack,
   HideAlbumPayload,
   HideDiscoveryAlbumPayload,
   HideTrackPayload,
@@ -27,10 +25,8 @@ export type {
   AlbumResponse,
   StreamResponse,
   LikeTrackResponse,
-  LibraryAlbum,
   DiscoverAlbum,
   DiscoverTrack,
-  LibraryTrack,
 }
 
 // Auth headers helper
@@ -338,50 +334,8 @@ export async function getTracksToDiscover(token: string | null): Promise<Discove
   return []
 }
 
-export async function getLibraryTracks(token: string | null): Promise<LibraryTrack[]> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/library', {
-    method: 'GET',
-    headers: authHeaders(token),
-  })
 
-  if (!response.ok) {
-    throw new Error('Failed to load library tracks')
-  }
-
-  const data = await response.json()
-  if (Array.isArray(data)) {
-    return data
-  }
-
-  if (data?.results && Array.isArray(data.results)) {
-    return data.results
-  }
-
-  return []
-}
-
-export async function getLibraryAlbums(): Promise<LibraryAlbum[]> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/albums-to-discover', {
-    method: 'GET',
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to load albums')
-  }
-
-  const data = await response.json()
-  if (Array.isArray(data)) {
-    return data
-  }
-
-  if (data?.results && Array.isArray(data.results)) {
-    return data.results
-  }
-
-  return []
-}
-
-export async function hideAlbum(payload: HideAlbumPayload, token: string | null): Promise<void> {
+export async function hideAlbum(payload: HideAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/hide-album', {
     method: 'POST',
     headers: authHeaders(token),
@@ -391,9 +345,11 @@ export async function hideAlbum(payload: HideAlbumPayload, token: string | null)
   if (!response.ok) {
     throw new Error('Failed to hide album')
   }
+
+  return response.json()
 }
 
-export async function hideDiscoveryAlbum(payload: HideDiscoveryAlbumPayload, token: string | null): Promise<void> {
+export async function hideDiscoveryAlbum(payload: HideDiscoveryAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/hide-album', {
     method: 'POST',
     headers: authHeaders(token),
@@ -403,9 +359,11 @@ export async function hideDiscoveryAlbum(payload: HideDiscoveryAlbumPayload, tok
   if (!response.ok) {
     throw new Error('Failed to hide discovery album')
   }
+
+  return response.json()
 }
 
-export async function hideTrack(payload: HideTrackPayload, token: string | null): Promise<void> {
+export async function hideTrack(payload: HideTrackPayload, token: string | null): Promise<LikeTrackResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/hide-track', {
     method: 'POST',
     headers: authHeaders(token),
@@ -415,6 +373,8 @@ export async function hideTrack(payload: HideTrackPayload, token: string | null)
   if (!response.ok) {
     throw new Error('Failed to hide track')
   }
+
+  return response.json()
 }
 
 // Get track info and stream URL from deezer_id

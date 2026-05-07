@@ -127,7 +127,7 @@ export function Player() {
       >
         {/* Progress bar at top edge */}
         <div
-          className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 cursor-pointer"
+          className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 cursor-pointer group/progress hover:h-2 transition-all duration-100"
           onClick={handleProgressClick}
         >
           <div className="h-full bg-white/70 transition-none" style={{ width: `${progress}%` }} />

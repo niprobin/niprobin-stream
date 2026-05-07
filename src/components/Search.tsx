@@ -9,31 +9,21 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { Search as SearchIcon, BookmarkPlus, Loader2 } from 'lucide-react'
 import { ROUTES } from '@/utils/routes'
+import { CarouselSection } from '@/components/ui/CarouselSection'
 
 function navigateTo(path: string) {
   window.history.pushState({}, '', path)
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
-function CarouselSection({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-3">
-      <h2 className="text-white font-semibold text-lg">{title}</h2>
-      <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide">
-        {children}
-      </div>
-    </section>
-  )
-}
-
 function CarouselSkeleton() {
   return (
     <div className="flex gap-3 overflow-hidden pb-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex-shrink-0 w-32 space-y-2">
-          <div className="w-32 h-32 bg-slate-800 rounded-lg animate-pulse" />
+        <div key={i} className="flex-shrink-0 w-40 space-y-2">
+          <div className="w-40 h-40 bg-slate-800 rounded-lg animate-pulse" />
+          <div className="h-3 bg-slate-800 rounded animate-pulse w-36" />
           <div className="h-3 bg-slate-800 rounded animate-pulse w-28" />
-          <div className="h-3 bg-slate-800 rounded animate-pulse w-20" />
         </div>
       ))}
     </div>
@@ -53,22 +43,22 @@ function SearchTrackCard({
     <button
       onClick={onPlay}
       disabled={isLoading}
-      className="flex-shrink-0 w-32 snap-start text-left space-y-2 group disabled:opacity-50"
+      className="flex-shrink-0 w-40 snap-start text-left space-y-2 group disabled:opacity-50"
     >
       {(result.cover_url || result.cover) ? (
         <img
           src={result.cover_url || result.cover}
           alt={result.track}
-          className="w-32 h-32 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
+          className="w-40 h-40 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
         />
       ) : (
-        <div className="w-32 h-32 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
+        <div className="w-40 h-40 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
           <span className="text-4xl">🎵</span>
         </div>
       )}
       <div>
-        <p className="text-sm text-white truncate w-32">{result.track}</p>
-        <p className="text-xs text-slate-400 truncate w-32">{result.artist}</p>
+        <p className="text-sm text-white truncate w-40">{result.track}</p>
+        <p className="text-xs text-slate-400 truncate w-40">{result.artist}</p>
       </div>
     </button>
   )
@@ -101,22 +91,22 @@ function SearchAlbumCard({
   }
 
   return (
-    <div className="flex-shrink-0 w-32 snap-start space-y-2">
+    <div className="flex-shrink-0 w-60 snap-start space-y-2">
       <button onClick={handleClick} className="w-full text-left group">
         {album.cover ? (
           <img
             src={album.cover}
             alt={album.album}
-            className="w-32 h-32 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
+            className="w-60 h-60 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
           />
         ) : (
-          <div className="w-32 h-32 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
+          <div className="w-60 h-60 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
             <span className="text-4xl">💿</span>
           </div>
         )}
         <div className="mt-2">
-          <p className="text-sm text-white truncate w-32">{album.album}</p>
-          <p className="text-xs text-slate-400 truncate w-32">{album.artist}</p>
+          <p className="text-sm text-white truncate w-60">{album.album}</p>
+          <p className="text-xs text-slate-400 truncate w-60">{album.artist}</p>
         </div>
       </button>
       <button

@@ -26,12 +26,6 @@ export function buildDiggingUrl(tab: 'tracks' | 'albums', page?: number): string
   return `${basePath}?page=${page}`
 }
 
-export function buildLibraryUrl(page?: number): string {
-  const basePath = '/library'
-  if (!page || page <= 1) return basePath
-  return `${basePath}?page=${page}`
-}
-
 /**
  * Share a track by copying its URL to clipboard
  * @param deezer_id - The Deezer track ID
@@ -117,17 +111,6 @@ export function buildDiggingUrlWithFilters(
 }
 
 /**
- * Build a library URL with filter parameters
- * @param params - Filter parameters to include
- * @returns The path to the library page with filters
- */
-export function buildLibraryUrlWithFilters(params: FilterParams = {}): string {
-  const basePath = '/library'
-  const searchString = encodeFilterParams(params)
-  return basePath + searchString
-}
-
-/**
  * Build a search URL with filter parameters
  * @param params - Filter parameters to include
  * @returns The path to the search page with filters
@@ -146,7 +129,7 @@ export function buildSearchUrlWithFilters(params: FilterParams = {}): string {
  */
 export function updateUrlFilters(
   newParams: Partial<FilterParams>,
-  pageType: 'digging' | 'library' | 'search',
+  pageType: 'digging' | 'search',
   replaceHistory: boolean = true
 ): void {
   // Get current filters from URL
@@ -162,9 +145,7 @@ export function updateUrlFilters(
 
   // Build new URL based on page type
   let newUrl: string
-  if (pageType === 'library') {
-    newUrl = buildLibraryUrlWithFilters(updatedFilters)
-  } else if (pageType === 'search') {
+  if (pageType === 'search') {
     newUrl = buildSearchUrlWithFilters(updatedFilters)
   } else {
     // For digging page, determine tab from current URL

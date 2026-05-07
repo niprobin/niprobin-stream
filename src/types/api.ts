@@ -58,13 +58,6 @@ export type LikeTrackResponse = {
   message: string
 }
 
-export type LibraryAlbum = {
-  album: string
-  artist: string
-  'album-id': number
-  cover: string
-}
-
 export type DiscoverAlbum = {
   id: string
   album: string
@@ -82,14 +75,6 @@ export type DiscoverTrack = {
   cover_url?: string
   // TODO: Remove once confirmed the database field is fully gone
   'spotify-id'?: string
-}
-
-export type LibraryTrack = {
-  track: string
-  artist: string
-  folder: string
-  uploaded_at: string
-  stream_url: string
 }
 
 // Payload types — shapes sent TO n8n webhooks

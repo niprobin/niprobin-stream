@@ -3,5 +3,4 @@ export const ROUTES = {
   digging: '/digging',
   diggingTracks: '/digging/tracks',
   diggingAlbums: '/digging/albums',
-  library: '/library',
 } as const

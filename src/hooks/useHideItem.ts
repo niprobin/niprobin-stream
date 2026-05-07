@@ -1,21 +1,22 @@
 import { useState, useCallback, useEffect } from 'react'
 import { addHiddenItem, getHiddenItems } from '../utils/hiddenItemsStorage'
 
-interface UseHideItemOptions {
+interface UseHideItemOptions<R> {
   persistentCacheKey?: string
   persistentCacheDuration?: number
+  onSuccess?: (result: R, item: unknown) => void
 }
 
 /**
  * Generic hook for hiding items with optimistic UI updates
  * @param apiFn - The API function to call for persisting the hide action
  * @param keyExtractor - Function to extract a unique key from the item
- * @param options - Optional configuration for persistent storage
+ * @param options - Optional configuration for persistent storage and success callback
  */
-export function useHideItem<T>(
-  apiFn: (item: T) => Promise<void>,
+export function useHideItem<T, R = void>(
+  apiFn: (item: T) => Promise<R>,
   keyExtractor: (item: T) => string,
-  options?: UseHideItemOptions
+  options?: UseHideItemOptions<R>
 ) {
   const [sessionHiddenItems, setSessionHiddenItems] = useState<Set<string>>(new Set())
   const [persistentHiddenItems, setPersistentHiddenItems] = useState<Set<string>>(new Set())
@@ -46,7 +47,8 @@ export function useHideItem<T>(
       }
 
       try {
-        await apiFn(item)
+        const result = await apiFn(item)
+        options?.onSuccess?.(result, item)
       } catch (err) {
         console.error('Failed to hide item', err)
         // Revert session state on error
