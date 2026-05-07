@@ -190,6 +190,14 @@ export function SearchBar() {
             placeholder="Search…"
             className="bg-transparent text-sm text-white placeholder:text-slate-500 outline-none flex-1 min-w-0"
           />
+          {query.trim() && (
+            <button
+              type="submit"
+              className="flex-shrink-0 px-3 py-1 text-sm font-medium text-white bg-slate-800 hover:bg-slate-700 rounded-md transition"
+            >
+              Search
+            </button>
+          )}
         </div>
       </form>
 
