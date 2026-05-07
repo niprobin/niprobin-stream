@@ -51,22 +51,22 @@ function TrackCard({
     <button
       onClick={onPlay}
       disabled={isLoading}
-      className="flex-shrink-0 w-32 snap-start text-left space-y-2 group disabled:opacity-50"
+      className="flex-shrink-0 w-40 snap-start text-left space-y-2 group disabled:opacity-50"
     >
       {track.cover_url ? (
         <img
           src={track.cover_url}
           alt={track.track}
-          className="w-32 h-32 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
+          className="w-40 h-40 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
         />
       ) : (
-        <div className="w-32 h-32 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
+        <div className="w-40 h-40 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
           <span className="text-4xl">🎵</span>
         </div>
       )}
       <div>
-        <p className="text-sm text-white truncate w-32">{track.track}</p>
-        <p className="text-xs text-slate-400 truncate w-32">{track.artist}</p>
+        <p className="text-sm text-white truncate w-40">{track.track}</p>
+        <p className="text-xs text-slate-400 truncate w-40">{track.artist}</p>
       </div>
     </button>
   )
@@ -89,21 +89,21 @@ function AlbumCard({ album }: { album: DiscoverAlbum }) {
   }
 
   return (
-    <button onClick={handleClick} className="flex-shrink-0 w-32 snap-start text-left space-y-2">
+    <button onClick={handleClick} className="flex-shrink-0 w-40 snap-start text-left space-y-2">
       {album.cover_url ? (
         <img
           src={album.cover_url}
           alt={album.album}
-          className="w-32 h-32 rounded-lg object-cover"
+          className="w-40 h-40 rounded-lg object-cover"
         />
       ) : (
-        <div className="w-32 h-32 bg-slate-800 rounded-lg flex items-center justify-center">
+        <div className="w-40 h-40 bg-slate-800 rounded-lg flex items-center justify-center">
           <span className="text-4xl">💿</span>
         </div>
       )}
       <div>
-        <p className="text-sm text-white truncate w-32">{album.album}</p>
-        <p className="text-xs text-slate-400 truncate w-32">{album.artist}</p>
+        <p className="text-sm text-white truncate w-40">{album.album}</p>
+        <p className="text-xs text-slate-400 truncate w-40">{album.artist}</p>
       </div>
     </button>
   )
@@ -113,10 +113,10 @@ function CarouselSkeleton() {
   return (
     <div className="flex gap-3 overflow-hidden pb-3">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex-shrink-0 w-32 space-y-2">
-          <div className="w-32 h-32 bg-slate-800 rounded-lg animate-pulse" />
+        <div key={i} className="flex-shrink-0 w-40 space-y-2">
+          <div className="w-40 h-40 bg-slate-800 rounded-lg animate-pulse" />
+          <div className="h-3 bg-slate-800 rounded animate-pulse w-36" />
           <div className="h-3 bg-slate-800 rounded animate-pulse w-28" />
-          <div className="h-3 bg-slate-800 rounded animate-pulse w-20" />
         </div>
       ))}
     </div>

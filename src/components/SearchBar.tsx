@@ -68,6 +68,7 @@ export function SearchBar() {
   const [searchedQuery, setSearchedQuery] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
   const requestIdRef = useRef(0)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { discoverTracks, discoverAlbums } = useDiscovery()
   const { playTrack } = useTrackPlayer()
@@ -91,18 +92,16 @@ export function SearchBar() {
         .slice(0, 4)
     : []
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!query.trim()) return
+  const fetchResults = async (q: string) => {
     const id = ++requestIdRef.current
     setIsLoading(true)
     setIsOpen(true)
     setHasSearched(true)
-    setSearchedQuery(query)
+    setSearchedQuery(q)
     try {
       const [tracks, albums] = await Promise.all([
-        searchTracks(query),
-        searchAlbums(query),
+        searchTracks(q),
+        searchAlbums(q),
       ])
       if (id !== requestIdRef.current) return
       setExternalTracks(tracks.slice(0, 4))
@@ -116,15 +115,26 @@ export function SearchBar() {
     }
   }
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!query.trim()) return
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    setIsOpen(false)
+    navigateTo(`/search?q=${encodeURIComponent(query)}`)
+  }
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
     setQuery(val)
+    if (debounceRef.current) clearTimeout(debounceRef.current)
     if (!val) {
       setHasSearched(false)
       setSearchedQuery('')
       setIsOpen(false)
       setExternalTracks([])
       setExternalAlbums([])
+    } else {
+      debounceRef.current = setTimeout(() => fetchResults(val), 300)
     }
   }
 
@@ -157,6 +167,7 @@ export function SearchBar() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleKeyDown)
+      if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [])
 
