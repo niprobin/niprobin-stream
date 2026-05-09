@@ -128,6 +128,10 @@ export async function searchAlbums(query: string): Promise<AlbumResult[]> {
   return data.results || data
 }
 
+// Single-entry cache so getAlbumById can reuse data already fetched by getAlbumTracks
+// during the same click-to-navigate flow, avoiding a redundant network request.
+let albumCache: { deezer_id: string; data: AlbumResponse } | null = null
+
 // Get tracks for a specific album
 export async function getAlbumTracks(
   deezer_id: string,
@@ -154,13 +158,29 @@ export async function getAlbumTracks(
     const albumId = parseInt(albumData['album-id']) || 0
 
     // Add album metadata to each track
-    return albumData.tracks.map((track: any) => ({
+    const tracks = albumData.tracks.map((track: any) => ({
       ...track,
       deezer_id: track.deezer_id, // Ensure deezer_id is preserved
       'album-id': albumId,
       album: albumData.album,
       cover: albumData.cover
     }))
+
+    // Cache keyed by album-id (the URL ID), since getAlbumById is called with that value
+    albumCache = {
+      deezer_id: albumId.toString(),
+      data: {
+        tracks,
+        albumId,
+        album: albumData.album || '',
+        artist: albumData.artist || '',
+        cover: albumData.cover || '',
+        id: albumData.id,
+        streamingLink: albumData.streaming_link,
+      },
+    }
+
+    return tracks
   }
 
   // Fallback to previous formats for backward compatibility
@@ -178,6 +198,13 @@ export async function getAlbumTracks(
 
 // Get album by ID (for album page)
 export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
+  // Reuse data already fetched by getAlbumTracks during the same navigation click
+  if (albumCache?.deezer_id === deezer_id) {
+    const cached = albumCache.data
+    albumCache = null
+    return cached
+  }
+
   const response = await fetch('https://n8n.niprobin.com/webhook/stream-album', {
     method: 'POST',
     headers: {
