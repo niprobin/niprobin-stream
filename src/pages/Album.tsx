@@ -4,11 +4,11 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, type AlbumTrack } from '@/services/api'
+import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, downloadAlbum, type AlbumTrack } from '@/services/api'
 import { StarRating } from '@/components/ui/StarRating'
 import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
-import { Share2, X, Loader2, Music4 } from 'lucide-react'
+import { Share2, X, Loader2, Music4, Download } from 'lucide-react'
 import { useMetaTags } from '@/hooks/useMetaTags'
 import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
@@ -27,6 +27,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [albumRating, setAlbumRating] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const [showShareTooltip, setShowShareTooltip] = useState(false)
 
   const { currentTrack, setAlbumContext, setAutoPlayContext } = useAudio()
@@ -189,6 +190,21 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       console.error('Failed to save album:', err)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  // Handle download album
+  const handleDownloadAlbum = async () => {
+    setIsDownloading(true)
+
+    try {
+      const response = await downloadAlbum(albumId.toString(), token)
+      showNotification(response.message, response.status)
+    } catch (err) {
+      showNotification('Failed to download album', 'error')
+      console.error('Failed to download album:', err)
+    } finally {
+      setIsDownloading(false)
     }
   }
 
@@ -368,6 +384,27 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
               >
                 <span>Hide</span>
                 <X className="h-3.5 w-3.5" strokeWidth={1.5} />
+              </button>
+            )}
+
+            {/* Download Button */}
+            {isAuthenticated && (
+              <button
+                onClick={handleDownloadAlbum}
+                disabled={isDownloading}
+                className="ap-action-btn"
+              >
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" strokeWidth={1.5} />
+                    <span>Downloading...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Download</span>
+                    <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  </>
+                )}
               </button>
             )}
           </div>
