@@ -321,18 +321,18 @@ export async function saveAlbum(payload: SaveAlbumPayload, token: string | null)
 export async function downloadAlbum(
   deezer_id: string,
   token: string | null
-): Promise<{ message: string; status: string }> {
+): Promise<LikeTrackResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/download-album', {
     method: 'POST',
     headers: authHeaders(token),
     body: JSON.stringify({ deezer_id }),
   })
 
-  if (!response.ok) {
-    throw new Error('Failed to trigger album download')
-  }
-
-  return response.json()
+  const rawBody = await response.text()
+  return parseApiResponse(response, rawBody, {
+    successMessage: 'Album download initiated',
+    errorMessage: 'Failed to trigger album download',
+  })
 }
 
 export async function getAlbumsToDiscover(token: string | null): Promise<DiscoverAlbum[]> {
