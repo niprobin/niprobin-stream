@@ -7,7 +7,7 @@ import { useAuth } from './contexts/AuthContext'
 import { NotificationBanner } from './components/NotificationBanner'
 import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { Button } from './components/ui/button'
-import { LogIn, RefreshCw } from 'lucide-react'
+import { LogIn, RefreshCw, Download } from 'lucide-react'
 import { AlbumsPage } from './pages/Digging'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
@@ -31,6 +31,7 @@ import { AlbumPage } from './pages/Album'
 import { HomePage } from './pages/Home'
 import { useMetaTags } from './hooks/useMetaTags'
 import { generateTrackMetaTags } from './utils/metaTagHelpers'
+import { useInstallPrompt } from './hooks/useInstallPrompt'
 
 function AuthControls() {
   const { isAuthenticated, login, logout } = useAuth()
@@ -115,6 +116,7 @@ function AppContent() {
   const { setMetaTags, resetToDefault } = useMetaTags()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
   const isMobile = useIsMobile()
+  const { canInstall, install } = useInstallPrompt()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
@@ -345,6 +347,20 @@ function AppContent() {
               <span className="text-sm font-medium">
                 {isLoadingTracks || isLoadingAlbums ? 'Refreshing…' : 'Refresh discovery'}
               </span>
+            </button>
+          </div>
+        )}
+
+        {canInstall && (
+          <div className="space-y-2">
+            <p className="text-xs text-slate-500 uppercase tracking-wider">App</p>
+            <button
+              type="button"
+              onClick={install}
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-slate-900 text-white active:bg-slate-800 transition-colors"
+            >
+              <Download className="h-5 w-5 text-slate-400" />
+              <span className="text-sm font-medium">Install app</span>
             </button>
           </div>
         )}
