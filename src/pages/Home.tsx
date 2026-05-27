@@ -55,10 +55,13 @@ function TrackCard({
           <X className="h-4 w-4 text-white" />
         </button>
       </div>
-      <button onClick={onPlay} disabled={isLoading} className="text-left w-40 disabled:opacity-50">
+      <div
+        onClick={isLoading ? undefined : onPlay}
+        className={`text-left w-40 cursor-pointer ${isLoading ? 'opacity-50 pointer-events-none' : ''}`}
+      >
         <p className="text-sm text-white truncate">{track.track}</p>
         <p className="text-xs text-slate-400 truncate">{track.artist}</p>
-      </button>
+      </div>
     </div>
   )
 }
@@ -109,10 +112,10 @@ function AlbumCard({
           <X className="h-4 w-4 text-white" />
         </button>
       </div>
-      <button onClick={handleClick} className="text-left w-60">
+      <div onClick={handleClick} className="text-left w-60 cursor-pointer">
         <p className="text-sm text-white truncate">{album.album}</p>
         <p className="text-xs text-slate-400 truncate">{album.artist}</p>
-      </button>
+      </div>
     </div>
   )
 }
@@ -205,7 +208,7 @@ export function HomePage() {
       <CarouselSection title="Recently added albums" seeAllHref={ROUTES.diggingAlbums}>
         {isLoadingAlbums ? <CarouselSkeleton /> : visibleAlbums.map((album) => (
           <AlbumCard
-            key={album.id}
+            key={album.deezer_id}
             album={album}
             onHide={(e) => hideAlbumItem(album, e)}
           />

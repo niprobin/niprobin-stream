@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Player } from './components/Player'
+import { MobileBottomNav } from './components/MobileBottomNav'
+import { MobilePlayer } from './components/MobilePlayer'
 import { InstallPrompt } from './components/InstallPrompt'
 import { useAuth } from './contexts/AuthContext'
 import { NotificationBanner } from './components/NotificationBanner'
@@ -10,6 +12,7 @@ import { AlbumsPage } from './pages/Digging'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
 import { useDiscovery } from './contexts/DiscoveryContext'
+import { useIsMobile } from './hooks/useIsMobile'
 import { Search } from './components/Search'
 import { SearchBar } from './components/SearchBar'
 import {
@@ -111,11 +114,13 @@ function AppContent() {
   const { loadTrack } = useAudio()
   const { setMetaTags, resetToDefault } = useMetaTags()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
-  const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'search'>('home')
+  const isMobile = useIsMobile()
+  const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
   const [diggingPage, setDiggingPage] = useState<number>(1)
   const [searchInitialQuery, setSearchInitialQuery] = useState('')
+  const [mobilePlayerOpen, setMobilePlayerOpen] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -277,6 +282,12 @@ function AppContent() {
     setActivePage(page)
   }
 
+  const handleMobilePageChange = (page: string) => {
+    if (page === 'digging') navigate('digging')
+    else if (page === 'menu') setActivePage('menu')
+    else navigate('home')
+  }
+
   const navigateToDiggingTab = (tab: 'tracks' | 'albums', page?: number) => {
     // When switching tabs, preserve filters
     navigate('digging', undefined, tab, page !== undefined ? page : 1, true)
@@ -290,11 +301,123 @@ function AppContent() {
     navigate('digging', undefined, diggingTab, validPage, true)
   }
 
+  const pageContent = (
+    <div className="w-full px-4 sm:px-6 lg:px-10">
+      <InstallPrompt />
+      <div className="w-full">
+        {activePage === 'album' && currentAlbumId ? (
+          <AlbumPage key={currentAlbumId} albumId={currentAlbumId} />
+        ) : activePage === 'digging' ? (
+          <AlbumsPage
+            activeTab={diggingTab}
+            currentPage={diggingPage}
+            onPageChange={navigateToDiggingPage}
+          />
+        ) : activePage === 'search' ? (
+          <Search key={searchInitialQuery} initialQuery={searchInitialQuery} />
+        ) : (
+          <HomePage />
+        )}
+      </div>
+    </div>
+  )
+
+  if (isMobile) {
+    const mobileCurrentPage: 'home' | 'digging' | 'menu' =
+      activePage === 'digging' || activePage === 'album' ? 'digging'
+      : activePage === 'menu' ? 'menu'
+      : 'home'
+
+    const mobileMenuContent = (
+      <div className="py-8 px-6 space-y-6">
+        <h2 className="text-white text-xl font-semibold">Menu</h2>
+
+        {isAuthenticated && (
+          <div className="space-y-2">
+            <p className="text-xs text-slate-500 uppercase tracking-wider">Discovery</p>
+            <button
+              type="button"
+              onClick={() => { refreshTracks(); refreshAlbums() }}
+              disabled={isLoadingTracks || isLoadingAlbums}
+              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-slate-900 text-white disabled:opacity-40 active:bg-slate-800 transition-colors"
+            >
+              <RefreshCw className={`h-5 w-5 text-slate-400 ${isLoadingTracks || isLoadingAlbums ? 'animate-spin' : ''}`} />
+              <span className="text-sm font-medium">
+                {isLoadingTracks || isLoadingAlbums ? 'Refreshing…' : 'Refresh discovery'}
+              </span>
+            </button>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          <p className="text-xs text-slate-500 uppercase tracking-wider">Account</p>
+          <div className="px-4 py-3 rounded-xl bg-slate-900">
+            <AuthControls />
+          </div>
+        </div>
+      </div>
+    )
+
+    return (
+      <>
+        <NotificationBanner />
+        <GlobalLoadingOverlay />
+        <div className="flex flex-col bg-slate-950" style={{ height: '100dvh' }}>
+          {/* Digging sub-tabs — only shown when on digging page */}
+          {isAuthenticated && activePage === 'digging' && (
+            <div className="flex-shrink-0 border-b border-slate-800">
+              <div className="flex px-4">
+                <button
+                  type="button"
+                  onClick={() => navigateToDiggingTab('tracks')}
+                  className={`flex-1 py-2.5 text-sm font-medium border-b-2 transition ${
+                    diggingTab === 'tracks'
+                      ? 'border-white text-white'
+                      : 'border-transparent text-slate-400'
+                  }`}
+                >
+                  Tracks
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigateToDiggingTab('albums')}
+                  className={`flex-1 py-2.5 text-sm font-medium border-b-2 transition ${
+                    diggingTab === 'albums'
+                      ? 'border-white text-white'
+                      : 'border-transparent text-slate-400'
+                  }`}
+                >
+                  Albums
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Scrollable page content */}
+          <div className="flex-1 overflow-y-auto pb-[104px]">
+            {activePage === 'menu' ? mobileMenuContent : pageContent}
+          </div>
+
+          <MobileBottomNav
+            currentPage={mobileCurrentPage}
+            onPageChange={handleMobilePageChange}
+            onNowPlayingClick={() => setMobilePlayerOpen(true)}
+          />
+          <MobilePlayer
+            isOpen={mobilePlayerOpen}
+            onClose={() => setMobilePlayerOpen(false)}
+            isAuthenticated={isAuthenticated}
+          />
+        </div>
+      </>
+    )
+  }
+
   return (
     <>
       <NotificationBanner />
       <GlobalLoadingOverlay />
-      
+
       {/* Sticky Navbar */}
       <nav className="sticky top-0 z-50 bg-slate-950 md:border-b md:border-slate-800">
         <div className="w-full px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between">
@@ -488,28 +611,7 @@ function AppContent() {
       </nav>
 
       <div className="min-h-screen bg-slate-950 pb-32 md:pb-24">
-        {/* Main Content Area */}
-        <div className="w-full px-4 sm:px-6 lg:px-10">
-          <InstallPrompt />
-
-          <div className="w-full">
-            {activePage === 'album' && currentAlbumId ? (
-              <AlbumPage key={currentAlbumId} albumId={currentAlbumId} />
-            ) : activePage === 'digging' ? (
-              <AlbumsPage
-                activeTab={diggingTab}
-                currentPage={diggingPage}
-                onPageChange={navigateToDiggingPage}
-              />
-            ) : activePage === 'search' ? (
-              <Search key={searchInitialQuery} initialQuery={searchInitialQuery} />
-            ) : (
-              <HomePage />
-            )}
-          </div>
-        </div>
-
-        {/* Player stays at the bottom */}
+        {pageContent}
         <Player />
       </div>
     </>

@@ -345,15 +345,12 @@ export async function getAlbumsToDiscover(token: string | null): Promise<Discove
     throw new Error('Failed to load albums to discover')
   }
 
-  const data = await response.json()
-  if (Array.isArray(data)) {
-    return data
-  }
+  const text = await response.text()
+  if (!text.trim()) return []
 
-  if (data?.results && Array.isArray(data.results)) {
-    return data.results
-  }
-
+  const data = JSON.parse(text)
+  if (Array.isArray(data)) return data
+  if (data?.results && Array.isArray(data.results)) return data.results
   return []
 }
 
@@ -367,15 +364,12 @@ export async function getTracksToDiscover(token: string | null): Promise<Discove
     throw new Error('Failed to load tracks to discover')
   }
 
-  const data = await response.json()
-  if (Array.isArray(data)) {
-    return data
-  }
+  const text = await response.text()
+  if (!text.trim()) return []
 
-  if (data?.results && Array.isArray(data.results)) {
-    return data.results
-  }
-
+  const data = JSON.parse(text)
+  if (Array.isArray(data)) return data
+  if (data?.results && Array.isArray(data.results)) return data.results
   return []
 }
 

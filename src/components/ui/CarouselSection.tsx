@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react'
+
 function navigateTo(path: string) {
   window.history.pushState({}, '', path)
   window.dispatchEvent(new PopStateEvent('popstate'))
@@ -10,7 +12,7 @@ export function CarouselSection({
 }: {
   title: string
   seeAllHref?: string
-  children: React.ReactNode
+  children: ReactNode
 }) {
   return (
     <section className="space-y-3">
