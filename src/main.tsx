@@ -8,29 +8,15 @@ import { LoadingProvider } from './contexts/LoadingContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { DiscoveryProvider } from './contexts/DiscoveryContext'
 import { registerSW } from 'virtual:pwa-register'
+import { setInstallPrompt, type BeforeInstallPromptEvent } from './installPromptStore'
 
-// Capture beforeinstallprompt at module level — before React mounts — so the
-// timing race where the event fires before useEffect registers a listener is avoided.
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
-
-let _deferredInstallPrompt: BeforeInstallPromptEvent | null = null
-
+// Capture beforeinstallprompt before React mounts to close the timing race
+// where the event fires before useEffect registers a listener.
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault()
-  _deferredInstallPrompt = e as BeforeInstallPromptEvent
+  setInstallPrompt(e as BeforeInstallPromptEvent)
   window.dispatchEvent(new Event('installpromptcaptured'))
 })
-
-export function getDeferredInstallPrompt() {
-  return _deferredInstallPrompt
-}
-
-export function clearDeferredInstallPrompt() {
-  _deferredInstallPrompt = null
-}
 
 // Register service worker
 const updateSW = registerSW({

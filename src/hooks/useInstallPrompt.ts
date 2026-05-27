@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react'
-import { getDeferredInstallPrompt, clearDeferredInstallPrompt } from '@/main'
-
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
-}
+import { getInstallPrompt, clearInstallPrompt, type BeforeInstallPromptEvent } from '@/installPromptStore'
 
 export function useInstallPrompt() {
-  // Initialize from the event already captured in main.tsx (closes the timing race)
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(() =>
-    getDeferredInstallPrompt()
+    getInstallPrompt()
   )
   const [isInstalled, setIsInstalled] = useState(() =>
     window.matchMedia('(display-mode: standalone)').matches
@@ -18,7 +12,7 @@ export function useInstallPrompt() {
   useEffect(() => {
     if (isInstalled) return
     // Handle the case where the event fires after this hook mounts
-    const onCaptured = () => setInstallPrompt(getDeferredInstallPrompt())
+    const onCaptured = () => setInstallPrompt(getInstallPrompt())
     window.addEventListener('installpromptcaptured', onCaptured)
     return () => window.removeEventListener('installpromptcaptured', onCaptured)
   }, [isInstalled])
@@ -28,7 +22,7 @@ export function useInstallPrompt() {
     installPrompt.prompt()
     const result = await installPrompt.userChoice
     if (result.outcome === 'accepted') {
-      clearDeferredInstallPrompt()
+      clearInstallPrompt()
       setInstallPrompt(null)
       setIsInstalled(true)
     }
