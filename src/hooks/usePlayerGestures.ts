@@ -59,5 +59,5 @@ export function usePlayerGestures(
       el.removeEventListener('touchstart', handleTouchStart)
       el.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [ref, minSwipeDistance, horizontalTolerance, verticalTolerance])
+  }, [ref, minSwipeDistance])
 }
