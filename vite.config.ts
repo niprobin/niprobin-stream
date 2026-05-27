@@ -10,12 +10,15 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['android-chrome-192x192.png', 'android-chrome-512x512.png', 'apple-touch-icon.png'],
       manifest: {
+        id: '/',
         name: 'Niprobin Stream',
         short_name: 'NiproStream',
         description: 'Personal music streaming app',
         theme_color: '#0f172a',
         background_color: '#020617',
         display: 'standalone',
+        orientation: 'portrait',
+        prefer_related_applications: false,
         icons: [
           {
             src: 'android-chrome-192x192.png',
@@ -27,7 +30,13 @@ export default defineConfig({
             src: 'android-chrome-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable'
+            purpose: 'any'
+          },
+          {
+            src: 'android-chrome-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       },

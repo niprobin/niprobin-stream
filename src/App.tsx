@@ -2,12 +2,11 @@ import { useEffect, useState } from 'react'
 import { Player } from './components/Player'
 import { MobileBottomNav } from './components/MobileBottomNav'
 import { MobilePlayer } from './components/MobilePlayer'
-import { InstallPrompt } from './components/InstallPrompt'
 import { useAuth } from './contexts/AuthContext'
 import { NotificationBanner } from './components/NotificationBanner'
 import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { Button } from './components/ui/button'
-import { LogIn, RefreshCw, Download } from 'lucide-react'
+import { LogIn, RefreshCw } from 'lucide-react'
 import { AlbumsPage } from './pages/Digging'
 import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
@@ -31,7 +30,6 @@ import { AlbumPage } from './pages/Album'
 import { HomePage } from './pages/Home'
 import { useMetaTags } from './hooks/useMetaTags'
 import { generateTrackMetaTags } from './utils/metaTagHelpers'
-import { useInstallPrompt } from './hooks/useInstallPrompt'
 
 function AuthControls() {
   const { isAuthenticated, login, logout } = useAuth()
@@ -116,7 +114,6 @@ function AppContent() {
   const { setMetaTags, resetToDefault } = useMetaTags()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
   const isMobile = useIsMobile()
-  const { canInstall, isInstalled, install } = useInstallPrompt()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
@@ -305,7 +302,6 @@ function AppContent() {
 
   const pageContent = (
     <div className="w-full px-4 sm:px-6 lg:px-10">
-      <InstallPrompt />
       <div className="w-full">
         {activePage === 'album' && currentAlbumId ? (
           <AlbumPage key={currentAlbumId} albumId={currentAlbumId} />
@@ -348,31 +344,6 @@ function AppContent() {
                 {isLoadingTracks || isLoadingAlbums ? 'Refreshing…' : 'Refresh discovery'}
               </span>
             </button>
-          </div>
-        )}
-
-        {!isInstalled && (
-          <div className="space-y-2">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">App</p>
-            {canInstall ? (
-              <button
-                type="button"
-                onClick={install}
-                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-slate-900 text-white active:bg-slate-800 transition-colors"
-              >
-                <Download className="h-5 w-5 text-slate-400" />
-                <span className="text-sm font-medium">Install app</span>
-              </button>
-            ) : (
-              <div className="px-4 py-3 rounded-xl bg-slate-900 space-y-1">
-                <p className="text-sm text-white font-medium">Install app</p>
-                {/iPhone|iPad|iPod/i.test(navigator.userAgent) ? (
-                  <p className="text-xs text-slate-400">Tap the <strong className="text-slate-300">Share</strong> button in Safari, then <strong className="text-slate-300">Add to Home Screen</strong>.</p>
-                ) : (
-                  <p className="text-xs text-slate-400">Open in <strong className="text-slate-300">Chrome</strong>, then tap the browser menu and choose <strong className="text-slate-300">Install app</strong>.</p>
-                )}
-              </div>
-            )}
           </div>
         )}
 

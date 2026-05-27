@@ -8,15 +8,6 @@ import { LoadingProvider } from './contexts/LoadingContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { DiscoveryProvider } from './contexts/DiscoveryContext'
 import { registerSW } from 'virtual:pwa-register'
-import { setInstallPrompt, type BeforeInstallPromptEvent } from './installPromptStore'
-
-// Capture beforeinstallprompt before React mounts to close the timing race
-// where the event fires before useEffect registers a listener.
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault()
-  setInstallPrompt(e as BeforeInstallPromptEvent)
-  window.dispatchEvent(new Event('installpromptcaptured'))
-})
 
 // Register service worker
 const updateSW = registerSW({
