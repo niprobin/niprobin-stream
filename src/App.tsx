@@ -116,7 +116,7 @@ function AppContent() {
   const { setMetaTags, resetToDefault } = useMetaTags()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
   const isMobile = useIsMobile()
-  const { canInstall, install } = useInstallPrompt()
+  const { canInstall, isInstalled, install } = useInstallPrompt()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
@@ -351,17 +351,28 @@ function AppContent() {
           </div>
         )}
 
-        {canInstall && (
+        {!isInstalled && (
           <div className="space-y-2">
             <p className="text-xs text-slate-500 uppercase tracking-wider">App</p>
-            <button
-              type="button"
-              onClick={install}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-slate-900 text-white active:bg-slate-800 transition-colors"
-            >
-              <Download className="h-5 w-5 text-slate-400" />
-              <span className="text-sm font-medium">Install app</span>
-            </button>
+            {canInstall ? (
+              <button
+                type="button"
+                onClick={install}
+                className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-slate-900 text-white active:bg-slate-800 transition-colors"
+              >
+                <Download className="h-5 w-5 text-slate-400" />
+                <span className="text-sm font-medium">Install app</span>
+              </button>
+            ) : (
+              <div className="px-4 py-3 rounded-xl bg-slate-900 space-y-1">
+                <p className="text-sm text-white font-medium">Install app</p>
+                {/iPhone|iPad|iPod/i.test(navigator.userAgent) ? (
+                  <p className="text-xs text-slate-400">Tap the <strong className="text-slate-300">Share</strong> button in Safari, then <strong className="text-slate-300">Add to Home Screen</strong>.</p>
+                ) : (
+                  <p className="text-xs text-slate-400">Open in <strong className="text-slate-300">Chrome</strong>, then tap the browser menu and choose <strong className="text-slate-300">Install app</strong>.</p>
+                )}
+              </div>
+            )}
           </div>
         )}
 
