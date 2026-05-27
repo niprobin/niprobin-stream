@@ -9,8 +9,6 @@ interface GestureHandlers {
 
 interface GestureConfig {
   minSwipeDistance?: number
-  horizontalTolerance?: number
-  verticalTolerance?: number
 }
 
 export function usePlayerGestures(
@@ -18,7 +16,7 @@ export function usePlayerGestures(
   handlers: GestureHandlers,
   config: GestureConfig = {}
 ): void {
-  const { minSwipeDistance = 40, horizontalTolerance = 20, verticalTolerance = 20 } = config
+  const { minSwipeDistance = 40 } = config
   const touchStart = useRef<{ x: number; y: number } | null>(null)
   const handlersRef = useRef(handlers)
   handlersRef.current = handlers
@@ -41,12 +39,12 @@ export function usePlayerGestures(
       const absDiffY = Math.abs(diffY)
       touchStart.current = null
 
-      if (absDiffY >= minSwipeDistance && absDiffX <= horizontalTolerance) {
+      if (absDiffY >= minSwipeDistance && absDiffY > absDiffX) {
         e.preventDefault()
         navigator.vibrate?.(30)
         if (diffY > 0) handlersRef.current.onSwipeUp?.()
         else handlersRef.current.onSwipeDown?.()
-      } else if (absDiffX >= minSwipeDistance && absDiffY <= verticalTolerance) {
+      } else if (absDiffX >= minSwipeDistance && absDiffX > absDiffY) {
         e.preventDefault()
         navigator.vibrate?.([30, 50, 30])
         if (diffX > 0) handlersRef.current.onSwipeLeft?.()

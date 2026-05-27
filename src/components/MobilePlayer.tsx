@@ -55,8 +55,9 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
   const queueTitle = albumInfo?.artist === 'Auto-play' ? 'Queue' : (albumInfo?.name ?? 'Queue')
 
   usePlayerGestures(containerRef as React.RefObject<HTMLElement>, {
-    onSwipeDown: () => { if (!showQueue) onClose() },
-    onSwipeLeft: () => { if (!showQueue && canGoToNext) playNextTrack() },
+    onSwipeUp:   () => { if (!showQueue && hasQueue) setShowQueue(true) },
+    onSwipeDown: () => { if (showQueue) setShowQueue(false); else onClose() },
+    onSwipeLeft:  () => { if (!showQueue && canGoToNext) playNextTrack() },
     onSwipeRight: () => { if (!showQueue && canGoToPrevious) playPreviousTrack() },
   })
 
