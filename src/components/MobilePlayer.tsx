@@ -104,9 +104,11 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
     shareTrack(currentTrack.deezer_id, showNotification)
   }
 
+  const queueTracks = albumTracks.slice(currentTrackIndex)
+
   const handlePlayQueueTrack = async (track: AlbumTrackItem, trackIndex: number) => {
     if (!albumInfo) return
-    setAutoPlayContext(albumTracks, trackIndex, albumInfo.name)
+    setAutoPlayContext(albumTracks, currentTrackIndex + trackIndex, albumInfo.name)
     playTrack(track.track, track.artist, {
       clearAlbum: false,
       albumName: albumInfo.name,
@@ -322,7 +324,7 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
             <div className="flex-1 overflow-y-auto">
               <TrackList
                 variant="album"
-                tracks={albumTracks}
+                tracks={queueTracks}
                 onSelect={handlePlayQueueTrack}
                 enableLikeButtons={isAuthenticated}
                 onLikeTrack={handleLikeQueueTrack}
