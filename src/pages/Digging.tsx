@@ -47,7 +47,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     (album: DiscoverAlbum) => `${album.album}-${album.artist}`,
     {
       persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS,
-      onSuccess: (result) => showNotification(result.message, result.status),
+      onSuccess: (result) => showNotification(result.message || 'Album hidden', result.status),
     }
   )
 
@@ -56,7 +56,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     (track: DiscoverTrack) => `${track.track}-${track.artist}`,
     {
       persistentCacheKey: STORAGE_KEYS.HIDDEN_TRACKS,
-      onSuccess: (result) => showNotification(result.message, result.status),
+      onSuccess: (result) => showNotification(result.message || 'Track hidden', result.status),
     }
   )
 

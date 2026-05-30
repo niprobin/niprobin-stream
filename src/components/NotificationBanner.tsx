@@ -4,7 +4,7 @@ import { useNotification } from '@/contexts/NotificationContext'
 export function NotificationBanner() {
   const { notification, dismissNotification } = useNotification()
 
-  if (!notification) {
+  if (!notification?.message) {
     return null
   }
 
