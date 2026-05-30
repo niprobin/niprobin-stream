@@ -99,9 +99,10 @@ export function Player() {
     shareTrack(currentTrack.deezer_id, showNotification)
   }
 
-  const handlePlayAlbumTrack = async (track: AlbumTrackItem, trackIndex: number) => {
+  const handlePlayAlbumTrack = async (track: AlbumTrackItem, slicedIndex: number) => {
     if (!albumInfo) return
-    setAutoPlayContext(albumTracks, trackIndex, albumInfo.name)
+    const absoluteIndex = currentTrackIndex + slicedIndex
+    setAutoPlayContext(albumTracks, absoluteIndex, albumInfo.name)
     playTrack(track.track, track.artist, {
       clearAlbum: false,
       albumName: albumInfo.name,
@@ -372,7 +373,7 @@ export function Player() {
         <div className="flex-1 overflow-y-auto min-h-0">
           <TrackList
             variant="album"
-            tracks={albumTracks}
+            tracks={albumTracks.slice(currentTrackIndex)}
             onSelect={handlePlayAlbumTrack}
             enableLikeButtons={isAuthenticated}
             onLikeTrack={handleLikeTrack}
