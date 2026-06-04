@@ -6,9 +6,8 @@ import { useAuth } from './contexts/AuthContext'
 import { NotificationBanner } from './components/NotificationBanner'
 import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { Button } from './components/ui/button'
-import { LogIn, RefreshCw } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
 import { AlbumsPage } from './pages/Digging'
-import { useNotification } from './contexts/NotificationContext'
 import { useAudio } from './contexts/AudioContext'
 import { useDiscovery } from './contexts/DiscoveryContext'
 import { useIsMobile } from './hooks/useIsMobile'
@@ -28,91 +27,15 @@ import { ROUTES } from './utils/routes'
 import { getTrackByDeezerId } from './services/api'
 import { AlbumPage } from './pages/Album'
 import { HomePage } from './pages/Home'
+import { LoginPage } from './pages/Login'
 import { useMetaTags } from './hooks/useMetaTags'
 import { generateTrackMetaTags } from './utils/metaTagHelpers'
 
-function AuthControls() {
-  const { isAuthenticated, login, logout } = useAuth()
-  const { showNotification } = useNotification()
-  const [code, setCode] = useState('')
-  const [isPanelOpen, setIsPanelOpen] = useState(false)
-  const [isLoggingIn, setIsLoggingIn] = useState(false)
-
-  const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault()
-    setIsLoggingIn(true)
-    try {
-      const result = await login(code)
-      if (!result.success) {
-        showNotification(result.error ?? 'Invalid code', 'error')
-      } else {
-        setCode('')
-        setIsPanelOpen(false)
-      }
-    } catch (error) {
-      showNotification('Login failed - please try again', 'error')
-    } finally {
-      setIsLoggingIn(false)
-    }
-  }
-
-  if (isAuthenticated) {
-    return (
-      <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={logout}
-          className="text-slate-300 hover:text-white hover:bg-slate-800"
-        >
-          Logout
-        </Button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setIsPanelOpen((prev) => !prev)}
-        className="text-slate-300 hover:text-white hover:bg-slate-800"
-      >
-        Login
-      </Button>
-      {isPanelOpen && (
-        <form onSubmit={handleSubmit} className="flex items-center gap-2">
-          <input
-            type="password"
-            inputMode="text"
-            autoComplete="off"
-            name="niprobin-access"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="Access code"
-            className="w-32 rounded-md bg-slate-900 border border-slate-700 px-2 py-1 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white/30"
-          />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={isLoggingIn}
-            className="h-8 w-8 bg-white text-black hover:bg-white/90 disabled:opacity-50"
-            aria-label="Submit access code"
-          >
-            <LogIn className="h-4 w-4" />
-          </Button>
-        </form>
-      )}
-    </div>
-  )
-}
-
 function AppContent() {
-  const { isAuthenticated, token } = useAuth()
+  const { isAuthenticated, token, username, logout } = useAuth()
   const { loadTrack } = useAudio()
   const { setMetaTags, resetToDefault } = useMetaTags()
-  const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
+  const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, discoverTracks, discoverAlbums } = useDiscovery()
   const isMobile = useIsMobile()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
@@ -349,8 +272,18 @@ function AppContent() {
 
         <div className="space-y-2">
           <p className="text-xs text-slate-500 uppercase tracking-wider">Account</p>
-          <div className="px-4 py-3 rounded-xl bg-slate-900">
-            <AuthControls />
+          <div className="px-4 py-3 rounded-xl bg-slate-900 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-white">{username ?? 'User'}</p>
+              <p className="text-xs text-slate-500">Signed in</p>
+            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="text-sm text-slate-400 hover:text-white transition-colors"
+            >
+              Sign out
+            </button>
           </div>
         </div>
       </div>
@@ -360,32 +293,52 @@ function AppContent() {
       <>
         <NotificationBanner />
         <GlobalLoadingOverlay />
-        <div className="flex flex-col bg-slate-950" style={{ height: '100dvh' }}>
-          {/* Digging sub-tabs — only shown when on digging page */}
+        <div
+          className="flex flex-col bg-slate-950"
+          style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' }}
+        >
+          {/* Search bar — shown on all pages except menu */}
+          {activePage !== 'menu' && (
+            <div className="flex-shrink-0 px-[18px] py-[10px]">
+              <SearchBar containerClassName="h-[42px] !rounded-[12px]" />
+            </div>
+          )}
+
+          {/* Digging segmented control — only shown when on digging page */}
           {isAuthenticated && activePage === 'digging' && (
-            <div className="flex-shrink-0 border-b border-slate-800">
-              <div className="flex px-4">
+            <div className="flex-shrink-0 px-[18px] py-3 border-b border-slate-800">
+              <div className="flex bg-slate-800 rounded-[11px] p-[3px] gap-[3px]">
                 <button
                   type="button"
                   onClick={() => navigateToDiggingTab('tracks')}
-                  className={`flex-1 py-2.5 text-sm font-medium border-b-2 transition ${
+                  className={`flex-1 flex items-center justify-center gap-[5px] py-2 text-sm font-semibold rounded-[8px] transition-all ${
                     diggingTab === 'tracks'
-                      ? 'border-white text-white'
-                      : 'border-transparent text-slate-400'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-400'
                   }`}
                 >
                   Tracks
+                  {discoverTracks.length > 0 && (
+                    <span className={`text-[11px] font-mono ${diggingTab === 'tracks' ? 'text-blue-500' : 'text-blue-400'}`}>
+                      {discoverTracks.length}
+                    </span>
+                  )}
                 </button>
                 <button
                   type="button"
                   onClick={() => navigateToDiggingTab('albums')}
-                  className={`flex-1 py-2.5 text-sm font-medium border-b-2 transition ${
+                  className={`flex-1 flex items-center justify-center gap-[5px] py-2 text-sm font-semibold rounded-[8px] transition-all ${
                     diggingTab === 'albums'
-                      ? 'border-white text-white'
-                      : 'border-transparent text-slate-400'
+                      ? 'bg-white text-slate-900 shadow-sm'
+                      : 'text-slate-400'
                   }`}
                 >
                   Albums
+                  {discoverAlbums.length > 0 && (
+                    <span className={`text-[11px] font-mono ${diggingTab === 'albums' ? 'text-blue-500' : 'text-blue-400'}`}>
+                      {discoverAlbums.length}
+                    </span>
+                  )}
                 </button>
               </div>
             </div>
@@ -514,19 +467,27 @@ function AppContent() {
             </div>
           )}
 
-          {/* Right: Refresh + Auth Controls */}
+          {/* Right: Refresh + Logout */}
           <div className="flex items-center gap-2">
-            {isAuthenticated && (
-              <button
-                onClick={() => { refreshTracks(); refreshAlbums() }}
-                disabled={isLoadingTracks || isLoadingAlbums}
-                className="p-2 text-slate-400 hover:text-white disabled:opacity-40 transition-colors"
-                aria-label="Refresh discovery data"
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoadingTracks || isLoadingAlbums ? 'animate-spin' : ''}`} />
-              </button>
+            <button
+              onClick={() => { refreshTracks(); refreshAlbums() }}
+              disabled={isLoadingTracks || isLoadingAlbums}
+              className="p-2 text-slate-400 hover:text-white disabled:opacity-40 transition-colors"
+              aria-label="Refresh discovery data"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingTracks || isLoadingAlbums ? 'animate-spin' : ''}`} />
+            </button>
+            {username && (
+              <span className="hidden md:block text-sm text-slate-400">{username}</span>
             )}
-            <AuthControls />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={logout}
+              className="text-slate-300 hover:text-white hover:bg-slate-800"
+            >
+              Logout
+            </Button>
           </div>
         </div>
         
@@ -617,6 +578,8 @@ function AppContent() {
 }
 
 function App() {
+  const { isAuthenticated } = useAuth()
+  if (!isAuthenticated) return <LoginPage />
   return <AppContent />
 }
 

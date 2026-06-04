@@ -58,7 +58,7 @@ function AlbumRow({ album, artist, cover, onClick }: { album: string; artist: st
   )
 }
 
-export function SearchBar() {
+export function SearchBar({ containerClassName }: { containerClassName?: string } = {}) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -180,7 +180,7 @@ export function SearchBar() {
   return (
     <div ref={containerRef} className="relative flex-1">
       <form onSubmit={handleSubmit}>
-        <div className="flex items-center gap-2 bg-slate-900 border border-slate-700 focus-within:border-slate-500 rounded-lg px-3 py-1.5 transition-colors">
+        <div className={`flex items-center gap-2 bg-slate-900 border border-slate-700 focus-within:border-slate-500 rounded-lg px-3 py-1.5 transition-colors ${containerClassName ?? ''}`}>
           <Search className="h-4 w-4 text-slate-400 flex-shrink-0" />
           <input
             type="text"

@@ -5,28 +5,33 @@ import { STORAGE_KEYS } from '@/utils/storageKeys'
 type AuthContextType = {
   isAuthenticated: boolean
   token: string | null
-  login: (code: string) => Promise<{ success: boolean; error?: string }>
+  username: string | null
+  login: (username: string, code: string) => Promise<{ success: boolean; error?: string }>
   logout: () => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-const TOKEN_STORAGE_KEY = STORAGE_KEYS.AUTH_TOKEN
 const AUTH_WEBHOOK_URL = import.meta.env.VITE_AUTH_WEBHOOK_URL || 'https://n8n.niprobin.com/webhook/auth'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null)
+  const [username, setUsername] = useState<string | null>(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY)
+    const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)
+    const storedUsername = localStorage.getItem(STORAGE_KEYS.USERNAME)
     if (storedToken) {
       setToken(storedToken)
       setIsAuthenticated(true)
     }
+    if (storedUsername) {
+      setUsername(storedUsername)
+    }
   }, [])
 
-  const login = useCallback(async (code: string): Promise<{ success: boolean; error?: string }> => {
+  const login = useCallback(async (username: string, code: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await fetch(AUTH_WEBHOOK_URL, {
         method: 'POST',
@@ -50,8 +55,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: 'No token received from server' }
       }
 
-      localStorage.setItem(TOKEN_STORAGE_KEY, authToken)
+      const trimmedUsername = username.trim()
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, authToken)
+      localStorage.setItem(STORAGE_KEYS.USERNAME, trimmedUsername)
       setToken(authToken)
+      setUsername(trimmedUsername)
       setIsAuthenticated(true)
       return { success: true }
     } catch (error) {
@@ -61,8 +69,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_STORAGE_KEY)
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN)
+    localStorage.removeItem(STORAGE_KEYS.USERNAME)
     setToken(null)
+    setUsername(null)
     setIsAuthenticated(false)
   }, [])
 
@@ -71,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         isAuthenticated,
         token,
+        username,
         login,
         logout,
       }}
