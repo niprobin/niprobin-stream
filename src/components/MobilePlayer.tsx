@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import {
   ChevronDown, Heart, Share2, Download, ListMusic,
-  Play, Pause, SkipBack, SkipForward, Music, Loader2, X,
+  Play, Pause, SkipBack, SkipForward, Music, Loader2, X, MoreHorizontal,
 } from 'lucide-react'
 import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -127,7 +127,7 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
       <div
         ref={containerRef}
         className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
-        style={{ background: 'linear-gradient(160deg, #534AB7 0%, #2a2860 55%, #131320 100%)' }}
+        style={{ background: 'linear-gradient(to top, #000000, #152331)' }}
         role="dialog"
         aria-modal="true"
         aria-label="Full player"
@@ -145,8 +145,14 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
           >
             <ChevronDown className="h-6 w-6" />
           </button>
-          <span className="text-[11px] font-medium text-white/50 uppercase tracking-widest">Now Playing</span>
-          <div className="w-11" />
+          <span className="text-[11px] font-semibold text-white/40 uppercase tracking-[0.22em]">Now Playing</span>
+          <button
+            type="button"
+            className="flex items-center justify-center w-11 h-11 rounded-full text-white/70 hover:text-white active:bg-white/20 transition-colors"
+            aria-label="More options"
+          >
+            <MoreHorizontal className="h-5 w-5" />
+          </button>
         </div>
 
         {/* Body — album art grows to fill space, controls pinned at bottom */}
@@ -157,8 +163,13 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
               <img
                 src={currentTrack.coverArt}
                 alt={currentTrack.title}
-                className="rounded-2xl object-cover shadow-2xl"
-                style={{ width: 'min(280px, 60vw, 40vh)', height: 'min(280px, 60vw, 40vh)' }}
+                className="object-cover"
+                style={{
+                  width: 'min(312px, 80vw, 45vh)',
+                  height: 'min(312px, 80vw, 45vh)',
+                  borderRadius: '20px',
+                  boxShadow: '0 28px 55px rgba(0,0,0,0.55), inset 0 0 0 0.5px rgba(255,255,255,0.08)',
+                }}
                 onError={(e) => {
                   e.currentTarget.style.display = 'none'
                   const sib = e.currentTarget.nextElementSibling as HTMLElement
@@ -167,10 +178,12 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
               />
             ) : null}
             <div
-              className={`rounded-2xl items-center justify-center shadow-2xl ${currentTrack?.coverArt ? 'hidden' : 'flex'}`}
+              className={`items-center justify-center ${currentTrack?.coverArt ? 'hidden' : 'flex'}`}
               style={{
-                width: 'min(280px, 60vw, 40vh)',
-                height: 'min(280px, 60vw, 40vh)',
+                width: 'min(312px, 80vw, 45vh)',
+                height: 'min(312px, 80vw, 45vh)',
+                borderRadius: '20px',
+                boxShadow: '0 28px 55px rgba(0,0,0,0.55)',
                 background: 'linear-gradient(135deg, #6c63d9, #2e9e7a)',
               }}
             >
@@ -184,12 +197,33 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
             style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}
           >
             {/* Track info */}
-            <div className="text-center">
-              <div className="text-[18px] font-semibold text-white truncate leading-snug">
+            <div className="flex flex-col gap-1">
+              <div className="text-[26px] font-bold text-white leading-snug tracking-tight line-clamp-2">
                 {currentTrack?.title ?? '—'}
               </div>
-              <div className="text-[14px] text-white/55 truncate mt-0.5">
-                {currentTrack?.artist ?? ''}
+              <div className="flex items-center gap-2">
+                <span className="text-[15px] text-white/55 truncate flex-1">
+                  {currentTrack?.artist ?? ''}
+                </span>
+                {currentTrack && (
+                  <button
+                    type="button"
+                    onClick={() => isAuthenticated
+                      ? openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)
+                      : undefined
+                    }
+                    className={`flex-shrink-0 transition-opacity active:scale-90 ${
+                      !isAuthenticated ? 'opacity-30 pointer-events-none' : ''
+                    }`}
+                    aria-label="Like track"
+                  >
+                    <Heart
+                      className="h-6 w-6"
+                      style={{ color: isTrackLiked(currentTrack.title, currentTrack.artist) ? '#e8743c' : 'rgba(255,255,255,0.65)' }}
+                      fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? '#e8743c' : 'none'}
+                    />
+                  </button>
+                )}
               </div>
             </div>
 
@@ -204,19 +238,19 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
                 onChange={handleSeek}
                 className="w-full h-1 rounded-full cursor-pointer appearance-none"
                 style={{
-                  background: `linear-gradient(to right, rgba(255,255,255,0.9) ${progress}%, rgba(255,255,255,0.2) ${progress}%)`,
-                  accentColor: 'white',
+                  background: `linear-gradient(to right, #e8743c ${progress}%, rgba(255,255,255,0.16) ${progress}%)`,
+                  accentColor: '#e8743c',
                 }}
                 aria-label="Playback progress"
               />
               <div className="flex justify-between mt-1.5">
-                <span className="text-[12px] text-white/45">{formatTime(currentTime)}</span>
-                <span className="text-[12px] text-white/45">{formatTime(duration)}</span>
+                <span className="text-[12px] text-white/45 tabular-nums">{formatTime(currentTime)}</span>
+                <span className="text-[12px] text-white/45 tabular-nums">-{formatTime(Math.max(0, duration - currentTime))}</span>
               </div>
             </div>
 
             {/* Main controls */}
-            <div className="flex items-center justify-center gap-10">
+            <div className="flex items-center justify-center gap-[52px]">
               <button
                 type="button"
                 onClick={() => { if (canGoToPrevious) playPreviousTrack() }}
@@ -230,7 +264,8 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
                 type="button"
                 onClick={handlePlayPause}
                 disabled={isCurrentTrackLoading}
-                className="flex items-center justify-center w-16 h-16 rounded-full bg-white text-black shadow-lg disabled:opacity-50 active:scale-95 transition-transform"
+                className="flex items-center justify-center w-[74px] h-[74px] rounded-full bg-white text-black disabled:opacity-50 active:scale-95 transition-transform"
+                style={{ boxShadow: '0 10px 26px rgba(0,0,0,0.4)' }}
                 aria-label={isPlaying ? 'Pause' : 'Play'}
               >
                 {isCurrentTrackLoading
@@ -251,50 +286,55 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
             </div>
 
             {/* Quick actions */}
-            <div className="flex justify-around pt-3 border-t border-white/10">
-              {isAuthenticated && currentTrack && (
-                <button
-                  type="button"
-                  onClick={() => openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)}
-                  className={`flex flex-col items-center gap-1.5 min-w-[44px] min-h-[44px] justify-center transition-opacity active:opacity-50 ${
-                    isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : 'text-white/65'
-                  }`}
-                  aria-label="Like track"
-                >
-                  <Heart className="h-5 w-5" fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'} />
-                  <span className="text-[11px]">Like</span>
-                </button>
-              )}
+            <div className="grid grid-cols-4 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => currentTrack && isAuthenticated
+                  ? openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)
+                  : undefined
+                }
+                className={`flex flex-col items-center gap-1.5 py-2 justify-center transition-opacity active:opacity-50 ${
+                  !isAuthenticated || !currentTrack ? 'opacity-30 pointer-events-none' : ''
+                }`}
+                aria-label="Like track"
+              >
+                <Heart
+                  className="h-[22px] w-[22px]"
+                  style={{ color: currentTrack && isTrackLiked(currentTrack.title, currentTrack.artist) ? '#e8743c' : 'rgba(255,255,255,0.65)' }}
+                  fill={currentTrack && isTrackLiked(currentTrack.title, currentTrack.artist) ? '#e8743c' : 'none'}
+                />
+                <span className="text-[11.5px] text-white/55">Like</span>
+              </button>
               <button
                 type="button"
                 onClick={handleShare}
-                className="flex flex-col items-center gap-1.5 min-w-[44px] min-h-[44px] justify-center text-white/65 active:opacity-50 transition-opacity"
+                className="flex flex-col items-center gap-1.5 py-2 justify-center text-white/65 active:opacity-50 transition-opacity"
                 aria-label="Share track"
               >
-                <Share2 className="h-5 w-5" />
-                <span className="text-[11px]">Share</span>
+                <Share2 className="h-[22px] w-[22px]" />
+                <span className="text-[11.5px] text-white/55">Share</span>
               </button>
               <button
                 type="button"
                 onClick={handleDownload}
                 disabled={isGlobalLoading}
-                className="flex flex-col items-center gap-1.5 min-w-[44px] min-h-[44px] justify-center text-white/65 disabled:opacity-35 active:opacity-50 transition-opacity"
+                className="flex flex-col items-center gap-1.5 py-2 justify-center text-white/65 disabled:opacity-30 active:opacity-50 transition-opacity"
                 aria-label="Download track"
               >
-                <Download className={`h-5 w-5 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
-                <span className="text-[11px]">Download</span>
+                <Download className={`h-[22px] w-[22px] ${isGlobalLoading ? 'animate-pulse' : ''}`} />
+                <span className="text-[11.5px] text-white/55">Download</span>
               </button>
-              {hasQueue && (
-                <button
-                  type="button"
-                  onClick={() => setShowQueue(true)}
-                  className="flex flex-col items-center gap-1.5 min-w-[44px] min-h-[44px] justify-center text-white/65 active:opacity-50 transition-opacity"
-                  aria-label="View queue"
-                >
-                  <ListMusic className="h-5 w-5" />
-                  <span className="text-[11px]">Queue</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => hasQueue ? setShowQueue(true) : undefined}
+                className={`flex flex-col items-center gap-1.5 py-2 justify-center transition-opacity active:opacity-50 ${
+                  !hasQueue ? 'opacity-30 pointer-events-none' : 'text-white/65'
+                }`}
+                aria-label="View queue"
+              >
+                <ListMusic className="h-[22px] w-[22px]" />
+                <span className="text-[11.5px] text-white/55">Queue</span>
+              </button>
             </div>
           </div>
         </div>
