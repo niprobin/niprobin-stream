@@ -35,6 +35,7 @@ export type AlbumResponse = {
   albumId: number
   album: string
   artist: string
+  artistId?: string
   cover: string
   id?: string
   streamingLink?: string
@@ -124,4 +125,36 @@ export type HideTrackPayload = {
   artist: string
   'spotify-id'?: string
   deezer_id?: string
+}
+
+export type ArtistSearchResult = {
+  artist: string
+  deezer_id: number
+  cover_url: string
+}
+
+export type ArtistTrack = {
+  deezer_id: string
+  title: string
+  cover: string
+  artist: string
+}
+
+export type ArtistAlbum = {
+  deezer_id: number
+  title: string
+  cover: string
+  year: string
+}
+
+export type ArtistInfo = {
+  name: string
+  deezer_id: string
+  cover_url: string
+}
+
+export type ArtistPageData = {
+  info: ArtistInfo
+  tracks: ArtistTrack[]
+  albums: ArtistAlbum[]
 }

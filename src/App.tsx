@@ -20,12 +20,14 @@ import {
 import {
   extractDeezerIdFromPath,
   extractAlbumIdFromPath,
+  extractArtistIdFromPath,
   parsePageFromUrl,
   parseFiltersFromUrl,
 } from './utils/urlParser'
 import { ROUTES } from './utils/routes'
 import { getTrackByDeezerId } from './services/api'
 import { AlbumPage } from './pages/Album'
+import { ArtistPage } from './pages/Artist'
 import { HomePage } from './pages/Home'
 import { LoginPage } from './pages/Login'
 import { useMetaTags } from './hooks/useMetaTags'
@@ -37,8 +39,9 @@ function AppContent() {
   const { setMetaTags, resetToDefault } = useMetaTags()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, discoverTracks, discoverAlbums } = useDiscovery()
   const isMobile = useIsMobile()
-  const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'search' | 'menu'>('home')
+  const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
+  const [currentArtistId, setCurrentArtistId] = useState<string | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
   const [diggingPage, setDiggingPage] = useState<number>(1)
   const [searchInitialQuery, setSearchInitialQuery] = useState('')
@@ -57,6 +60,14 @@ function AppContent() {
       if (albumId) {
         setCurrentAlbumId(albumId)
         setActivePage('album')
+        return
+      }
+
+      // Check if this is an artist URL (/artist/:deezer_id)
+      const artistId = extractArtistIdFromPath(path)
+      if (artistId) {
+        setCurrentArtistId(artistId)
+        setActivePage('artist')
         return
       }
 
@@ -226,7 +237,9 @@ function AppContent() {
   const pageContent = (
     <div className="w-full px-4 sm:px-6 lg:px-10">
       <div className="w-full">
-        {activePage === 'album' && currentAlbumId ? (
+        {activePage === 'artist' && currentArtistId ? (
+          <ArtistPage key={currentArtistId} artistId={currentArtistId} />
+        ) : activePage === 'album' && currentAlbumId ? (
           <AlbumPage key={currentAlbumId} albumId={currentAlbumId} />
         ) : activePage === 'digging' ? (
           <AlbumsPage

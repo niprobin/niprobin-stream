@@ -12,6 +12,7 @@ import { Share2, X, Loader2, Music4, Download } from 'lucide-react'
 import { useMetaTags } from '@/hooks/useMetaTags'
 import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
+import { ROUTES } from '@/utils/routes'
 
 type AlbumPageProps = {
   albumId: number
@@ -24,6 +25,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [coverUrl, setCoverUrl] = useState('')
   const [albumDataId, setAlbumDataId] = useState<string | number | undefined>(undefined)
   const [streamingLink, setStreamingLink] = useState<string | undefined>(undefined)
+  const [artistId, setArtistId] = useState<string | undefined>(undefined)
   const [albumRating, setAlbumRating] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -73,6 +75,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         setTracks(data.tracks)
         setAlbumName(data.album)
         setArtistName(data.artist)
+        setArtistId(data.artistId)
         setCoverUrl(data.cover)
         setAlbumDataId(data.id)
         setStreamingLink(data.streamingLink)
@@ -289,7 +292,16 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             <h1 className="font-bebas text-4xl lg:text-5xl xl:text-6xl leading-none text-white mb-2">
               {albumName}
             </h1>
-            <p className="text-xs text-slate-400 uppercase tracking-widest font-light">{artistName}</p>
+            {artistId ? (
+              <button
+                onClick={() => { window.history.pushState({}, '', ROUTES.artist(artistId)); window.dispatchEvent(new PopStateEvent('popstate')) }}
+                className="text-xs text-slate-400 uppercase tracking-widest font-light hover:text-white transition-colors text-center lg:text-left"
+              >
+                {artistName}
+              </button>
+            ) : (
+              <p className="text-xs text-slate-400 uppercase tracking-widest font-light">{artistName}</p>
+            )}
           </div>
         </div>
 

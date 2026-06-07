@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { searchTracks, searchAlbums, saveAlbum, getAlbumTracks } from '@/services/api'
-import type { SearchResult, AlbumResult } from '@/types/api'
+import { searchTracks, searchAlbums, searchArtists, saveAlbum, getAlbumTracks } from '@/services/api'
+import type { SearchResult, AlbumResult, ArtistSearchResult } from '@/types/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
@@ -125,10 +125,35 @@ function SearchAlbumCard({
   )
 }
 
+function SearchArtistCard({ result }: { result: ArtistSearchResult }) {
+  return (
+    <button
+      onClick={() => navigateTo(ROUTES.artist(result.deezer_id))}
+      className="flex-shrink-0 w-36 snap-start text-left space-y-2 group"
+    >
+      <div className="w-36 h-36 rounded-full overflow-hidden bg-slate-800 group-hover:opacity-90 transition-opacity">
+        {result.cover_url ? (
+          <img
+            src={result.cover_url}
+            alt={result.artist}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-3xl">🎤</span>
+          </div>
+        )}
+      </div>
+      <p className="text-sm text-white truncate w-36 text-center">{result.artist}</p>
+    </button>
+  )
+}
+
 export function Search({ initialQuery = '' }: { initialQuery?: string }) {
   const [query, setQuery] = useState(initialQuery)
   const [trackResults, setTrackResults] = useState<SearchResult[]>([])
   const [albumResults, setAlbumResults] = useState<AlbumResult[]>([])
+  const [artistResults, setArtistResults] = useState<ArtistSearchResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [savingAlbumId, setSavingAlbumId] = useState<string | null>(null)
 
@@ -143,9 +168,15 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
     increment()
     setHasSearched(true)
     try {
-      const [tracks, albums] = await Promise.all([searchTracks(q), searchAlbums(q)])
-      setTrackResults(tracks)
-      setAlbumResults(albums)
+      const [tracksRes, albumsRes, artistsRes] = await Promise.allSettled([
+        searchTracks(q),
+        searchAlbums(q),
+        searchArtists(q),
+      ])
+      if (tracksRes.status === 'fulfilled') setTrackResults(tracksRes.value)
+      else { showNotification('Track search failed. Please try again.', 'error'); console.error(tracksRes.reason) }
+      if (albumsRes.status === 'fulfilled') setAlbumResults(albumsRes.value)
+      if (artistsRes.status === 'fulfilled') setArtistResults(artistsRes.value)
     } catch (err) {
       showNotification('Search failed. Please try again.', 'error')
       console.error(err)
@@ -200,6 +231,26 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
         </Button>
       </form>
 
+      {/* Artist Results */}
+      {(isLoading || artistResults.length > 0) && (
+        <CarouselSection title="Artists">
+          {isLoading ? (
+            <div className="flex gap-4 overflow-hidden pb-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex-shrink-0 w-36 space-y-2">
+                  <div className="w-36 h-36 bg-slate-800 rounded-full animate-pulse" />
+                  <div className="h-3 bg-slate-800 rounded animate-pulse w-28 mx-auto" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            artistResults.map((artist, i) => (
+              <SearchArtistCard key={`${artist.deezer_id}-${i}`} result={artist} />
+            ))
+          )}
+        </CarouselSection>
+      )}
+
       {/* Track Results */}
       {(isLoading || trackResults.length > 0) && (
         <CarouselSection title="Tracks">
@@ -251,7 +302,7 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
       )}
 
       {/* No Results */}
-      {!isLoading && hasSearched && trackResults.length === 0 && albumResults.length === 0 && (
+      {!isLoading && hasSearched && trackResults.length === 0 && albumResults.length === 0 && artistResults.length === 0 && (
         <p className="text-slate-400 text-center py-8">No results found for "{query}".</p>
       )}
     </div>

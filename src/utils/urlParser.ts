@@ -10,6 +10,11 @@ export function extractAlbumIdFromPath(path: string): number | null {
   return match ? parseInt(match[1], 10) : null
 }
 
+export function extractArtistIdFromPath(path: string): string | null {
+  const match = path.match(/^\/artist\/([^/]+)$/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
 export function parsePageFromUrl(url?: string): number {
   if (!url) return 1
   try {
@@ -31,6 +36,7 @@ export function getStreamContext(): string {
   const path = window.location.pathname
 if (path === '/digging' || path.startsWith('/digging/')) return 'digging'
   if (path.startsWith('/album/')) return 'album'
+  if (path.startsWith('/artist/')) return 'artist'
   return 'search'
 }
 

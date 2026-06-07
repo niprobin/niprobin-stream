@@ -15,6 +15,8 @@ import type {
   HideDiscoveryAlbumPayload,
   HideTrackPayload,
   SaveAlbumPayload,
+  ArtistSearchResult,
+  ArtistPageData,
 } from '@/types/api'
 
 // Re-export all public types so existing imports from '@/services/api' keep working
@@ -27,6 +29,8 @@ export type {
   LikeTrackResponse,
   DiscoverAlbum,
   DiscoverTrack,
+  ArtistSearchResult,
+  ArtistPageData,
 }
 
 // Auth headers helper
@@ -128,6 +132,22 @@ export async function searchAlbums(query: string): Promise<AlbumResult[]> {
   return data.results || data
 }
 
+// Parses album metadata from either the old flat format or the new structured format.
+function parseAlbumMeta(albumData: any, fallbackId: string) {
+  const isNewFormat = albumData.album && typeof albumData.album === 'object'
+  return {
+    albumTitle: isNewFormat ? (albumData.album.title || '') : (albumData.album || ''),
+    albumCover: isNewFormat ? (albumData.album.covercover || albumData.album.cover || '') : (albumData.cover || ''),
+    albumId: isNewFormat
+      ? (Number(albumData.album.deezer_id) || parseInt(fallbackId) || 0)
+      : (parseInt(albumData['album-id']) || parseInt(fallbackId) || 0),
+    streamingLink: isNewFormat ? albumData.album.streaming_link : albumData.streaming_link,
+    artistName: isNewFormat ? (albumData.artist?.name || '') : (albumData.artist || ''),
+    artistId: isNewFormat ? (albumData.artist?.id ?? undefined) : undefined,
+    legacyId: isNewFormat ? undefined : albumData.id,
+  }
+}
+
 // Single-entry cache so getAlbumById can reuse data already fetched by getAlbumTracks
 // during the same click-to-navigate flow, avoiding a redundant network request.
 let albumCache: { deezer_id: string; data: AlbumResponse } | null = null
@@ -155,28 +175,28 @@ export async function getAlbumTracks(
   // The endpoint now returns an array with album objects containing tracks
   if (Array.isArray(data) && data.length > 0 && data[0].tracks && Array.isArray(data[0].tracks)) {
     const albumData = data[0]
-    const albumId = parseInt(albumData['album-id']) || 0
+    const { albumTitle, albumCover, albumId, streamingLink, artistName, artistId, legacyId } = parseAlbumMeta(albumData, '0')
 
-    // Add album metadata to each track
     const tracks = albumData.tracks.map((track: any) => ({
       ...track,
-      deezer_id: track.deezer_id, // Ensure deezer_id is preserved
+      deezer_id: track.deezer_id,
+      'track-number': typeof track['track-number'] === 'string' ? parseInt(track['track-number']) : track['track-number'],
       'album-id': albumId,
-      album: albumData.album,
-      cover: albumData.cover
+      album: albumTitle,
+      cover: albumCover,
     }))
 
-    // Cache keyed by album-id (the URL ID), since getAlbumById is called with that value
     albumCache = {
       deezer_id: albumId.toString(),
       data: {
         tracks,
         albumId,
-        album: albumData.album || '',
-        artist: albumData.artist || '',
-        cover: albumData.cover || '',
-        id: albumData.id,
-        streamingLink: albumData.streaming_link,
+        album: albumTitle,
+        artist: artistName,
+        artistId,
+        cover: albumCover,
+        id: legacyId,
+        streamingLink,
       },
     }
 
@@ -226,26 +246,25 @@ export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
   if (Array.isArray(data) && data.length > 0) {
     albumData = data[0]
     if (albumData.tracks && Array.isArray(albumData.tracks)) {
-      const parsedAlbumId = parseInt(albumData['album-id']) || parseInt(deezer_id) || 0
+      const { albumTitle, albumCover, albumId: parsedAlbumId, streamingLink, artistName, artistId, legacyId } = parseAlbumMeta(albumData, deezer_id)
 
-      // Add album metadata to each track
       tracks = albumData.tracks.map((track: any) => ({
         ...track,
-        deezer_id: track.deezer_id, // Ensure deezer_id is preserved
+        deezer_id: track.deezer_id,
+        'track-number': typeof track['track-number'] === 'string' ? parseInt(track['track-number']) : track['track-number'],
         'album-id': parsedAlbumId,
-        album: albumData.album,
-        cover: albumData.cover
+        album: albumTitle,
+        cover: albumCover,
       }))
+
+      return { tracks, albumId: parsedAlbumId, album: albumTitle, artist: artistName, artistId, cover: albumCover, id: legacyId, streamingLink }
     }
   } else if (Array.isArray(data)) {
-    // Fallback: if data is just an array of tracks
     tracks = data
   } else if (data.tracks && Array.isArray(data.tracks)) {
-    // Fallback: if data object has tracks property
     tracks = data.tracks
     albumData = data
   } else if (data.results && Array.isArray(data.results)) {
-    // Fallback: legacy results format
     tracks = data.results
     albumData = data
   }
@@ -256,8 +275,8 @@ export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
     album: albumData.album || (tracks.length > 0 ? tracks[0].album || '' : ''),
     artist: albumData.artist || (tracks.length > 0 ? tracks[0].artist : ''),
     cover: albumData.cover || (tracks.length > 0 ? tracks[0].cover || '' : ''),
-    id: albumData.id, // Include MD5 hash ID if present
-    streamingLink: albumData.streaming_link, // Include streaming service link if present
+    id: albumData.id,
+    streamingLink: albumData.streaming_link,
   }
 }
 
@@ -414,6 +433,36 @@ export async function hideTrack(payload: HideTrackPayload, token: string | null)
   }
 
   return response.json()
+}
+
+export async function searchArtists(query: string): Promise<ArtistSearchResult[]> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/search-artist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Artist search failed')
+  }
+
+  const data = await response.json()
+  return data.results || data
+}
+
+export async function getArtistPage(deezer_id: string | number): Promise<ArtistPageData> {
+  const response = await fetch('https://n8n.niprobin.com/webhook/artist-page', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ deezer_id }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to load artist page')
+  }
+
+  const data = await response.json()
+  return Array.isArray(data) ? data[0] : data
 }
 
 // Get track info and stream URL from deezer_id

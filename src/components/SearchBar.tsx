@@ -3,9 +3,9 @@ import { Search, Loader2 } from 'lucide-react'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useNotification } from '@/contexts/NotificationContext'
-import { getAlbumTracks, searchTracks, searchAlbums } from '@/services/api'
+import { getAlbumTracks, searchTracks, searchAlbums, searchArtists } from '@/services/api'
 import { ROUTES } from '@/utils/routes'
-import type { SearchResult, AlbumResult, DiscoverTrack, DiscoverAlbum } from '@/types/api'
+import type { SearchResult, AlbumResult, ArtistSearchResult, DiscoverTrack, DiscoverAlbum } from '@/types/api'
 
 function navigateTo(path: string) {
   window.history.pushState({}, '', path)
@@ -39,6 +39,22 @@ function TrackRow({ track, artist, cover, onClick }: { track: string; artist: st
   )
 }
 
+function ArtistRow({ artist, cover_url, onClick }: { artist: string; cover_url: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-800 text-left transition-colors"
+    >
+      {cover_url ? (
+        <img src={cover_url} alt={artist} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+      ) : (
+        <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center flex-shrink-0 text-sm">🎤</div>
+      )}
+      <p className="text-sm text-white truncate">{artist}</p>
+    </button>
+  )
+}
+
 function AlbumRow({ album, artist, cover, onClick }: { album: string; artist: string; cover?: string; onClick: () => void }) {
   return (
     <button
@@ -64,6 +80,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
   const [isLoading, setIsLoading] = useState(false)
   const [externalTracks, setExternalTracks] = useState<SearchResult[]>([])
   const [externalAlbums, setExternalAlbums] = useState<AlbumResult[]>([])
+  const [externalArtists, setExternalArtists] = useState<ArtistSearchResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [searchedQuery, setSearchedQuery] = useState('')
   const containerRef = useRef<HTMLDivElement>(null)
@@ -99,17 +116,20 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
     setHasSearched(true)
     setSearchedQuery(q)
     try {
-      const [tracks, albums] = await Promise.all([
+      const [tracksRes, albumsRes, artistsRes] = await Promise.allSettled([
         searchTracks(q),
         searchAlbums(q),
+        searchArtists(q),
       ])
       if (id !== requestIdRef.current) return
-      setExternalTracks(tracks.slice(0, 4))
-      setExternalAlbums(albums.slice(0, 4))
+      setExternalTracks(tracksRes.status === 'fulfilled' ? tracksRes.value.slice(0, 4) : [])
+      setExternalAlbums(albumsRes.status === 'fulfilled' ? albumsRes.value.slice(0, 4) : [])
+      setExternalArtists(artistsRes.status === 'fulfilled' ? artistsRes.value.slice(0, 3) : [])
     } catch {
       if (id !== requestIdRef.current) return
       setExternalTracks([])
       setExternalAlbums([])
+      setExternalArtists([])
     } finally {
       if (id === requestIdRef.current) setIsLoading(false)
     }
@@ -133,6 +153,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
       setIsOpen(false)
       setExternalTracks([])
       setExternalAlbums([])
+      setExternalArtists([])
     } else {
       debounceRef.current = setTimeout(() => fetchResults(val), 300)
     }
@@ -174,6 +195,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
   const hasResults =
     externalTracks.length > 0 ||
     externalAlbums.length > 0 ||
+    externalArtists.length > 0 ||
     filteredDiggingTracks.length > 0 ||
     filteredDiggingAlbums.length > 0
 
@@ -209,10 +231,27 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
             </div>
           ) : hasResults ? (
             <div className="py-1">
+              {externalArtists.length > 0 && (
+                <div>
+                  <SectionLabel label="Artists" />
+                  {externalArtists.map((a, i) => (
+                    <ArtistRow
+                      key={i}
+                      artist={a.artist}
+                      cover_url={a.cover_url}
+                      onClick={() => {
+                        navigateTo(ROUTES.artist(a.deezer_id))
+                        setIsOpen(false)
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+
               {externalTracks.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between pr-3">
-                    <SectionLabel label="External Tracks" />
+                    <SectionLabel label="Tracks" />
                     <button
                       onClick={() => {
                         navigateTo(`/search?q=${encodeURIComponent(query)}`)
@@ -240,7 +279,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
 
               {externalAlbums.length > 0 && (
                 <div>
-                  <SectionLabel label="External Albums" />
+                  <SectionLabel label="Albums" />
                   {externalAlbums.map((r, i) => (
                     <AlbumRow
                       key={i}
