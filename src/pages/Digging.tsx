@@ -15,7 +15,7 @@ import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { useIsMobile } from '@/hooks/useIsMobile'
 import { useLikeModal } from '@/hooks/useLikeModal'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
-import { ROUTES } from '@/utils/routes'
+import { ROUTES, navigateTo } from '@/utils/routes'
 import type { AlbumTrackItem } from '@/contexts/AudioContext'
 import type { FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
@@ -169,8 +169,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   }
 
   const handleAlbumClick = (album: DiscoverAlbum) => {
-    window.history.pushState({}, '', ROUTES.album(album.deezer_id))
-    window.dispatchEvent(new PopStateEvent('popstate'))
+    navigateTo(ROUTES.album(album.deezer_id))
   }
 
   const handleLikeTrack = (track: any) => {

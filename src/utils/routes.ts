@@ -5,3 +5,8 @@ export const ROUTES = {
   diggingTracks: '/digging/tracks',
   diggingAlbums: '/digging/albums',
 } as const
+
+export function navigateTo(path: string) {
+  window.history.pushState({}, '', path)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}

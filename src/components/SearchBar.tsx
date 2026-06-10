@@ -4,13 +4,8 @@ import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 
 import { searchTracks, searchAlbums, searchArtists } from '@/services/api'
-import { ROUTES } from '@/utils/routes'
+import { ROUTES, navigateTo } from '@/utils/routes'
 import type { SearchResult, AlbumResult, ArtistSearchResult, DiscoverTrack, DiscoverAlbum } from '@/types/api'
-
-function navigateTo(path: string) {
-  window.history.pushState({}, '', path)
-  window.dispatchEvent(new PopStateEvent('popstate'))
-}
 
 function SectionLabel({ label }: { label: string }) {
   return (
@@ -159,10 +154,6 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
     }
   }
 
-  const handleAlbumClick = (deezer_id: string, _album: string, _artist: string) => {
-    setIsOpen(false)
-    navigateTo(ROUTES.album(deezer_id))
-  }
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -276,7 +267,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       album={r.album}
                       artist={r.artist}
                       cover={r.cover}
-                      onClick={() => handleAlbumClick(r.deezer_id, r.album, r.artist)}
+                      onClick={() => { setIsOpen(false); navigateTo(ROUTES.album(r.deezer_id)) }}
                     />
                   ))}
                 </div>
@@ -312,7 +303,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       album={a.album}
                       artist={a.artist}
                       cover={a.cover_url}
-                      onClick={() => handleAlbumClick(a.deezer_id, a.album, a.artist)}
+                      onClick={() => { setIsOpen(false); navigateTo(ROUTES.album(a.deezer_id)) }}
                     />
                   ))}
                 </div>

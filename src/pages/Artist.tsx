@@ -6,13 +6,8 @@ import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { AlbumCard } from '@/components/ui/AlbumCard'
-import { ROUTES } from '@/utils/routes'
+import { ROUTES, navigateTo } from '@/utils/routes'
 import { Loader2 } from 'lucide-react'
-
-function navigateTo(path: string) {
-  window.history.pushState({}, '', path)
-  window.dispatchEvent(new PopStateEvent('popstate'))
-}
 
 export function ArtistPage({ artistId }: { artistId: string }) {
   const [data, setData] = useState<ArtistPageData | null>(null)

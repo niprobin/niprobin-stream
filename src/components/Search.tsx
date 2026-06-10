@@ -8,13 +8,8 @@ import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { Search as SearchIcon, BookmarkPlus, Loader2 } from 'lucide-react'
-import { ROUTES } from '@/utils/routes'
+import { ROUTES, navigateTo } from '@/utils/routes'
 import { CarouselSection } from '@/components/ui/CarouselSection'
-
-function navigateTo(path: string) {
-  window.history.pushState({}, '', path)
-  window.dispatchEvent(new PopStateEvent('popstate'))
-}
 
 function CarouselSkeleton() {
   return (

@@ -148,53 +148,6 @@ function parseAlbumMeta(albumData: any, fallbackId: string) {
   }
 }
 
-// Get tracks for a specific album — also triggers audio pre-download on n8n side
-export async function getAlbumTracks(
-  deezer_id: string,
-  album: string,
-  artist: string
-): Promise<AlbumTrack[]> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/stream-album', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ deezer_id, album, artist }),
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to get album tracks')
-  }
-
-  const data = await response.json()
-
-  // The endpoint now returns an array with album objects containing tracks
-  if (Array.isArray(data) && data.length > 0 && data[0].tracks && Array.isArray(data[0].tracks)) {
-    const albumData = data[0]
-    const { albumTitle, albumCover, albumId } = parseAlbumMeta(albumData, '0')
-
-    return albumData.tracks.map((track: any) => ({
-      ...track,
-      deezer_id: track.deezer_id,
-      'track-number': typeof track['track-number'] === 'string' ? parseInt(track['track-number']) : track['track-number'],
-      'album-id': albumId,
-      album: albumTitle,
-      cover: albumCover,
-    }))
-  }
-
-  // Fallback to previous formats for backward compatibility
-  if (Array.isArray(data)) {
-    return data
-  }
-
-  if (data.results && Array.isArray(data.results)) {
-    return data.results
-  }
-
-  return []
-}
-
 // Get album metadata only — calls the lightweight /album-info endpoint (no audio download)
 export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
   const response = await fetch('https://n8n.niprobin.com/webhook/album-info', {

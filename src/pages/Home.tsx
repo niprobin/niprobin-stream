@@ -5,16 +5,11 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { useHideItem } from '@/hooks/useHideItem'
 import { hideTrack, hideAlbum } from '@/services/api'
-import { ROUTES } from '@/utils/routes'
+import { ROUTES, navigateTo } from '@/utils/routes'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
 import type { DiscoverTrack, DiscoverAlbum } from '@/types/api'
 import { CarouselSection } from '@/components/ui/CarouselSection'
 import { X } from 'lucide-react'
-
-function navigateTo(path: string) {
-  window.history.pushState({}, '', path)
-  window.dispatchEvent(new PopStateEvent('popstate'))
-}
 
 function TrackCard({
   track,
