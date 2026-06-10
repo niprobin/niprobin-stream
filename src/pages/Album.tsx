@@ -143,8 +143,6 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   // Handle "Play Album" button - plays first track
   const handlePlayAlbum = () => {
     if (tracks.length === 0) return
-
-    // Set album context for player integration when user actually plays
     setAlbumContext(
       tracks.map((t) => ({
         track: t.track,
@@ -155,7 +153,6 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       { name: albumName, artist: artistName, cover: coverUrl, id: albumDataId?.toString(), streamingLink },
       { expand: false, loadFirst: false }
     )
-
     handlePlayTrack(tracks[0])
   }
 
@@ -436,7 +433,6 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         onSelect={(trackItem, trackIndex) => {
           const originalTrack = tracks.find(t => t.track === trackItem.track && t.artist === trackItem.artist)
           if (originalTrack) {
-            // Update the current track index for proper auto-play sequencing
             const albumTracksForContext = tracks.map((t) => ({
               track: t.track,
               deezer_id: t.deezer_id,
@@ -444,7 +440,6 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
               'track-number': t['track-number'],
             }))
             setAutoPlayContext(albumTracksForContext, trackIndex, albumName)
-
             handlePlayTrack(originalTrack)
           }
         }}

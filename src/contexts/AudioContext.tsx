@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useRef, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
-import { getStreamUrl } from '@/services/api'
+import { getStreamUrl, type StreamResponse } from '@/services/api'
 import { getStreamContext } from '@/utils/urlParser'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -103,6 +103,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   // Ref: Holds the actual Audio object (doesn't trigger re-renders when changed)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  // Cache for pre-fetched stream URLs keyed by deezer_id
+  const prefetchCacheRef = useRef<Map<string, StreamResponse>>(new Map())
 
   const startPlayback = useCallback(
     (track: Track) => {
@@ -199,6 +201,20 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [queueProvider, albumInfo, currentTrack])
 
+  // Silently pre-fetches the stream URL for the track after `fromIndex`.
+  // Any failure is swallowed — this must never affect current playback.
+  const prefetchNext = useCallback(async (fromIndex: number) => {
+    const next = albumTracks[fromIndex + 1]
+    if (!next?.deezer_id) return
+    if (prefetchCacheRef.current.has(next.deezer_id)) return
+    try {
+      const res = await getStreamUrl(next.deezer_id, next.track, next.artist, token, getStreamContext())
+      prefetchCacheRef.current.set(next.deezer_id, res)
+    } catch {
+      // intentionally silent
+    }
+  }, [albumTracks, token])
+
   // Function: Play next track in album or auto-play context
   const playNextTrack = useCallback(async () => {
     // For dynamic contexts, refresh queue before proceeding
@@ -224,14 +240,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       try {
         setCurrentTrackIndex(nextIndex)
 
-        const streamResponse = await getStreamUrl(
+        const cached = prefetchCacheRef.current.get(nextTrack.deezer_id || '')
+        prefetchCacheRef.current.delete(nextTrack.deezer_id || '')
+        const streamResponse = cached ?? await getStreamUrl(
           nextTrack.deezer_id || '0',
           nextTrack.track,
           nextTrack.artist,
           token,
           getStreamContext()
         )
-
 
         startPlayback({
           id: streamResponse.trackId,
@@ -245,12 +262,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           deezer_id: nextTrack.deezer_id,
           curator: nextTrack.curator,
         })
+
+        void prefetchNext(nextIndex)
       } catch (err) {
         console.error('Failed to load next track:', err)
         setIsPlaying(false)
       }
     }
-  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback, queueProvider, updateDynamicQueue])
+  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback, queueProvider, updateDynamicQueue, prefetchNext])
 
   // Function: Play previous track in album or auto-play context
   const playPreviousTrack = useCallback(async () => {
@@ -373,6 +392,14 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [playPreviousTrack, playNextTrack])
 
+  // Prefetch the next track's stream URL whenever the current track index changes
+  // or playback starts — covers the first track in any new queue.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!isPlaying || albumTracks.length === 0) return
+    void prefetchNext(currentTrackIndex)
+  }, [currentTrackIndex, isPlaying])
+
   // URL sync removed: tracks are not encoded into the URL anymore.
 
   // Function: Play a new track
@@ -445,6 +472,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     info: AlbumInfo,
     options?: { expand?: boolean; loadFirst?: boolean },
   ) => {
+    prefetchCacheRef.current.clear()
     setAlbumTracks(tracks)
     setAlbumInfo(info)
     setAlbumAutoExpand(options?.expand ?? true)
@@ -476,6 +504,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
 
   // Function: Set auto-play context for any track list
   const setAutoPlayContext = (tracks: AlbumTrackItem[], startIndex: number, contextName: string, dynamicQueueProvider?: QueueProvider) => {
+    prefetchCacheRef.current.clear()
     setAlbumTracks(tracks)
     setAlbumInfo({
       name: contextName,

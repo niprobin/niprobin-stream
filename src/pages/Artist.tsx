@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getArtistPage, getAlbumTracks } from '@/services/api'
+import { getArtistPage } from '@/services/api'
 import type { ArtistPageData, ArtistTrack, ArtistAlbum } from '@/types/api'
 import { useAudio } from '@/contexts/AudioContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
@@ -59,15 +59,8 @@ export function ArtistPage({ artistId }: { artistId: string }) {
     })
   }
 
-  const handleAlbumClick = async (album: ArtistAlbum) => {
-    if (!data) return
-    try {
-      const tracks = await getAlbumTracks(album.deezer_id.toString(), album.title, data.info.name)
-      const albumId = tracks[0]?.['album-id']
-      if (albumId) navigateTo(ROUTES.album(albumId))
-    } catch {
-      showNotification('Failed to load album.', 'error')
-    }
+  const handleAlbumClick = (album: ArtistAlbum) => {
+    navigateTo(ROUTES.album(album.deezer_id.toString()))
   }
 
   if (error) {

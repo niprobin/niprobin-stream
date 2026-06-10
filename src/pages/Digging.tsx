@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Pagination } from '@/components/ui/Pagination'
 import { AlbumCard } from '@/components/ui/AlbumCard'
 import { X, ChevronDown, Music, Heart, Loader2 } from 'lucide-react'
-import { hideTrack, getAlbumTracks, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
+import { hideTrack, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { TrackList } from '@/components/TrackList'
@@ -168,17 +168,9 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     await handleModalSubmit(event)
   }
 
-  const handleAlbumClick = async (album: DiscoverAlbum) => {
-    try {
-      const albumTracks = await getAlbumTracks(album.deezer_id, album.album, album.artist)
-      const albumId = albumTracks[0]?.['album-id']
-      if (albumId) {
-        window.history.pushState({}, '', ROUTES.album(albumId))
-        window.dispatchEvent(new PopStateEvent('popstate'))
-      }
-    } catch (err) {
-      console.error('Failed to load album:', err)
-    }
+  const handleAlbumClick = (album: DiscoverAlbum) => {
+    window.history.pushState({}, '', ROUTES.album(album.deezer_id))
+    window.dispatchEvent(new PopStateEvent('popstate'))
   }
 
   const handleLikeTrack = (track: any) => {

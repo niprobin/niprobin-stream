@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
-import { searchTracks, searchAlbums, searchArtists, saveAlbum, getAlbumTracks } from '@/services/api'
+import { searchTracks, searchAlbums, searchArtists, saveAlbum } from '@/services/api'
 import type { SearchResult, AlbumResult, ArtistSearchResult } from '@/types/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
@@ -73,21 +73,8 @@ function SearchAlbumCard({
   onSave: () => void
   isSaving: boolean
 }) {
-  const { showNotification } = useNotification()
-
-  const handleClick = async () => {
-    const albumId = album['album-id']
-    if (albumId) {
-      navigateTo(ROUTES.album(albumId))
-      return
-    }
-    try {
-      const tracks = await getAlbumTracks(album.deezer_id, album.album, album.artist)
-      const id = tracks[0]?.['album-id']
-      if (id) navigateTo(ROUTES.album(id))
-    } catch {
-      showNotification('Failed to load album.', 'error')
-    }
+  const handleClick = () => {
+    navigateTo(ROUTES.album(album.deezer_id))
   }
 
   return (

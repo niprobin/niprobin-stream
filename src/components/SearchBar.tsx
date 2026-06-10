@@ -2,8 +2,8 @@ import { useState, useRef, useEffect } from 'react'
 import { Search, Loader2 } from 'lucide-react'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { useNotification } from '@/contexts/NotificationContext'
-import { getAlbumTracks, searchTracks, searchAlbums, searchArtists } from '@/services/api'
+
+import { searchTracks, searchAlbums, searchArtists } from '@/services/api'
 import { ROUTES } from '@/utils/routes'
 import type { SearchResult, AlbumResult, ArtistSearchResult, DiscoverTrack, DiscoverAlbum } from '@/types/api'
 
@@ -89,7 +89,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
 
   const { discoverTracks, discoverAlbums } = useDiscovery()
   const { playTrack } = useTrackPlayer()
-  const { showNotification } = useNotification()
+
 
   const filteredDiggingTracks: DiscoverTrack[] = hasSearched && query
     ? discoverTracks
@@ -159,19 +159,9 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
     }
   }
 
-  const handleAlbumClick = async (deezer_id: string, album: string, artist: string) => {
+  const handleAlbumClick = (deezer_id: string, _album: string, _artist: string) => {
     setIsOpen(false)
-    try {
-      const tracks = await getAlbumTracks(deezer_id, album, artist)
-      const albumId = tracks[0]?.['album-id']
-      if (albumId) {
-        navigateTo(ROUTES.album(albumId))
-      } else {
-        showNotification('Could not load album. Please try again.', 'error')
-      }
-    } catch {
-      showNotification('Failed to load album. Please try again.', 'error')
-    }
+    navigateTo(ROUTES.album(deezer_id))
   }
 
   useEffect(() => {

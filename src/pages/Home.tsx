@@ -4,7 +4,7 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { useHideItem } from '@/hooks/useHideItem'
-import { getAlbumTracks, hideTrack, hideAlbum } from '@/services/api'
+import { hideTrack, hideAlbum } from '@/services/api'
 import { ROUTES } from '@/utils/routes'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
 import type { DiscoverTrack, DiscoverAlbum } from '@/types/api'
@@ -73,19 +73,8 @@ function AlbumCard({
   album: DiscoverAlbum
   onHide: (e: React.MouseEvent) => void
 }) {
-  const { showNotification } = useNotification()
-
-  const handleClick = async () => {
-    try {
-      const tracks = await getAlbumTracks(album.deezer_id, album.album, album.artist)
-      const albumId = tracks[0]?.['album-id']
-      if (albumId) {
-        navigateTo(ROUTES.album(albumId))
-      }
-    } catch (err) {
-      console.error('Failed to load album:', err)
-      showNotification('Failed to load album. Please try again.', 'error')
-    }
+  const handleClick = () => {
+    navigateTo(ROUTES.album(album.deezer_id))
   }
 
   return (

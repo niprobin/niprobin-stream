@@ -148,11 +148,7 @@ function parseAlbumMeta(albumData: any, fallbackId: string) {
   }
 }
 
-// Single-entry cache so getAlbumById can reuse data already fetched by getAlbumTracks
-// during the same click-to-navigate flow, avoiding a redundant network request.
-let albumCache: { deezer_id: string; data: AlbumResponse } | null = null
-
-// Get tracks for a specific album
+// Get tracks for a specific album — also triggers audio pre-download on n8n side
 export async function getAlbumTracks(
   deezer_id: string,
   album: string,
@@ -175,9 +171,9 @@ export async function getAlbumTracks(
   // The endpoint now returns an array with album objects containing tracks
   if (Array.isArray(data) && data.length > 0 && data[0].tracks && Array.isArray(data[0].tracks)) {
     const albumData = data[0]
-    const { albumTitle, albumCover, albumId, streamingLink, artistName, artistId, legacyId } = parseAlbumMeta(albumData, '0')
+    const { albumTitle, albumCover, albumId } = parseAlbumMeta(albumData, '0')
 
-    const tracks = albumData.tracks.map((track: any) => ({
+    return albumData.tracks.map((track: any) => ({
       ...track,
       deezer_id: track.deezer_id,
       'track-number': typeof track['track-number'] === 'string' ? parseInt(track['track-number']) : track['track-number'],
@@ -185,22 +181,6 @@ export async function getAlbumTracks(
       album: albumTitle,
       cover: albumCover,
     }))
-
-    albumCache = {
-      deezer_id: albumId.toString(),
-      data: {
-        tracks,
-        albumId,
-        album: albumTitle,
-        artist: artistName,
-        artistId,
-        cover: albumCover,
-        id: legacyId,
-        streamingLink,
-      },
-    }
-
-    return tracks
   }
 
   // Fallback to previous formats for backward compatibility
@@ -212,20 +192,12 @@ export async function getAlbumTracks(
     return data.results
   }
 
-  // If data is not an array, return empty array
   return []
 }
 
-// Get album by ID (for album page)
+// Get album metadata only — calls the lightweight /album-info endpoint (no audio download)
 export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
-  // Reuse data already fetched by getAlbumTracks during the same navigation click
-  if (albumCache?.deezer_id === deezer_id) {
-    const cached = albumCache.data
-    albumCache = null
-    return cached
-  }
-
-  const response = await fetch('https://n8n.niprobin.com/webhook/stream-album', {
+  const response = await fetch('https://n8n.niprobin.com/webhook/album-info', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
