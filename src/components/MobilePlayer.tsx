@@ -119,15 +119,13 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
 
   const handleLikeQueueTrack = (_track: AlbumTrackItem) => {}
 
-  if (!isOpen) return null
-
   return (
     <>
       {/* Full-screen player — fixed, no scroll */}
       <div
         ref={containerRef}
         className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
-        style={{ background: 'linear-gradient(to top, #000000, #152331)' }}
+        style={{ background: 'linear-gradient(to top, #000000, #152331)', display: isOpen ? 'flex' : 'none' }}
         role="dialog"
         aria-modal="true"
         aria-label="Full player"
@@ -361,7 +359,11 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto">
+            <div
+              className="flex-1 overflow-y-auto"
+              onTouchStart={(e) => e.stopPropagation()}
+              onTouchEnd={(e) => e.stopPropagation()}
+            >
               <TrackList
                 variant="album"
                 tracks={queueTracks}
