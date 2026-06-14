@@ -34,6 +34,7 @@ const SPRING = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
 
 function ArtBox({ coverArt, title, size }: { coverArt?: string; title?: string; size: string }) {
   const [imgFailed, setImgFailed] = useState(false)
+  useEffect(() => { setImgFailed(false) }, [coverArt])
   const showPlaceholder = !coverArt || imgFailed
   return (
     <div style={{ width: size, height: size, borderRadius: '20px', overflow: 'hidden', flexShrink: 0 }}>
@@ -72,6 +73,7 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
   const [showQueue, setShowQueue] = useState(false)
   const [dragX, setDragX] = useState(0)
   const [dragY, setDragY] = useState(0)
+  const dragYRef = useRef(0)
   const [isDragging, setIsDragging] = useState(false)
 
   const {
@@ -119,13 +121,16 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
       if (showQueue) return
       setIsDragging(true)
       // deltaY positive = finger moving up = queue revealing
-      setDragY(Math.max(0, Math.min(window.innerHeight * 0.85, deltaY)))
+      const clamped = Math.max(0, Math.min(window.innerHeight * 0.85, deltaY))
+      dragYRef.current = clamped
+      setDragY(clamped)
     },
     onDragEnd: () => {
       setIsDragging(false)
-      if (dragY > window.innerHeight * 0.3) {
+      if (dragYRef.current > window.innerHeight * 0.3) {
         setShowQueue(true)
       }
+      dragYRef.current = 0
       setDragX(0)
       setDragY(0)
     },
@@ -430,6 +435,8 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
             transform: `translateY(${queueTranslateY})`,
             transition: queueTransition,
           }}
+          aria-hidden={!showQueue}
+          ref={el => { if (el) el.inert = !showQueue }}
           onTouchStart={(e) => e.stopPropagation()}
           onTouchEnd={(e) => e.stopPropagation()}
         >
