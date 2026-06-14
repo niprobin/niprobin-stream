@@ -45,8 +45,10 @@ export function usePlayerGestures(
       if (!axisLock.current) {
         if (Math.abs(deltaX) > 8 || Math.abs(deltaY) > 8) {
           axisLock.current = Math.abs(deltaX) > Math.abs(deltaY) ? 'x' : 'y'
+          // fall through — emit this event too
+        } else {
+          return
         }
-        return
       }
 
       if (axisLock.current === 'x') {
@@ -81,14 +83,23 @@ export function usePlayerGestures(
       }
     }
 
+    const handleTouchCancel = () => {
+      if (!touchStart.current) return
+      touchStart.current = null
+      axisLock.current = null
+      handlersRef.current.onDragEnd?.()
+    }
+
     el.addEventListener('touchstart', handleTouchStart, { passive: true })
     el.addEventListener('touchmove', handleTouchMove, { passive: true })
     el.addEventListener('touchend', handleTouchEnd, { passive: false })
+    el.addEventListener('touchcancel', handleTouchCancel, { passive: true })
 
     return () => {
       el.removeEventListener('touchstart', handleTouchStart)
       el.removeEventListener('touchmove', handleTouchMove)
       el.removeEventListener('touchend', handleTouchEnd)
+      el.removeEventListener('touchcancel', handleTouchCancel)
     }
   }, [ref, minSwipeDistance])
 }
