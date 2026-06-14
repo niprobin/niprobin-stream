@@ -28,6 +28,35 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
+const ART_SIZE = 'min(312px, 80vw, 45vh)'
+const SWIPE_THRESHOLD = 40
+const SPRING = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+
+function ArtBox({ coverArt, title, size }: { coverArt?: string; title?: string; size: string }) {
+  const [imgFailed, setImgFailed] = useState(false)
+  const showPlaceholder = !coverArt || imgFailed
+  return (
+    <div style={{ width: size, height: size, borderRadius: '20px', overflow: 'hidden', flexShrink: 0 }}>
+      {!showPlaceholder && (
+        <img
+          src={coverArt}
+          alt={title}
+          className="w-full h-full object-cover"
+          onError={() => setImgFailed(true)}
+        />
+      )}
+      {showPlaceholder && (
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, #6c63d9, #2e9e7a)' }}
+        >
+          <Music className="h-16 w-16 text-white/25" />
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerProps) {
   const {
     currentTrack, isPlaying, currentTime, duration,
@@ -41,6 +70,9 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const containerRef = useRef<HTMLDivElement>(null)
   const [showQueue, setShowQueue] = useState(false)
+  const [dragX, setDragX] = useState(0)
+  const [dragY, setDragY] = useState(0)
+  const [isDragging, setIsDragging] = useState(false)
 
   const {
     isLikeModalOpen, likeModalTrack, selectedPlaylist, isSubmittingLike, PLAYLISTS,
@@ -53,19 +85,56 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
   const hasQueue = albumTracks.length > 0 && !!albumInfo
   const queueTitle = albumInfo?.artist === 'Auto-play' ? 'Queue' : (albumInfo?.name ?? 'Queue')
+  const prevTrack = albumTracks[currentTrackIndex - 1] ?? null
+  const nextTrack = albumTracks[currentTrackIndex + 1] ?? null
+  const ghostCover = albumInfo?.cover
 
   usePlayerGestures(containerRef as React.RefObject<HTMLElement>, {
-    onSwipeUp:   () => { if (!showQueue && hasQueue) setShowQueue(true) },
-    onSwipeDown: () => { if (showQueue) setShowQueue(false); else onClose() },
-    onSwipeLeft:  () => { if (!showQueue && canGoToNext) playNextTrack() },
-    onSwipeRight: () => { if (!showQueue && canGoToPrevious) playPreviousTrack() },
+    onSwipeUp: () => {
+      if (!showQueue && hasQueue) {
+        setShowQueue(true)
+        setDragY(0)
+      }
+    },
+    onSwipeDown: () => {
+      if (showQueue) {
+        setShowQueue(false)
+        setDragY(0)
+      } else {
+        onClose()
+      }
+    },
+    onSwipeLeft: () => {
+      if (!showQueue && canGoToNext) playNextTrack()
+    },
+    onSwipeRight: () => {
+      if (!showQueue && canGoToPrevious) playPreviousTrack()
+    },
+    onDragX: (deltaX) => {
+      if (showQueue) return
+      setIsDragging(true)
+      setDragX(Math.max(-window.innerWidth, Math.min(window.innerWidth, deltaX)))
+    },
+    onDragY: (deltaY) => {
+      if (showQueue) return
+      setIsDragging(true)
+      // deltaY positive = finger moving up = queue revealing
+      setDragY(Math.max(0, Math.min(window.innerHeight * 0.85, deltaY)))
+    },
+    onDragEnd: () => {
+      setIsDragging(false)
+      if (dragY > window.innerHeight * 0.3) {
+        setShowQueue(true)
+      }
+      setDragX(0)
+      setDragY(0)
+    },
   })
 
   useEffect(() => {
     if (isOpen) navigator.vibrate?.(30)
   }, [isOpen])
 
-  // Close queue when player closes
   useEffect(() => {
     if (!isOpen) setShowQueue(false)
   }, [isOpen])
@@ -119,9 +188,12 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
 
   const handleLikeQueueTrack = (_track: AlbumTrackItem) => {}
 
+  const artTransition = isDragging ? 'none' : SPRING
+  const queueTranslateY = showQueue ? '0%' : `calc(100% - ${dragY}px)`
+  const queueTransition = isDragging ? 'none' : SPRING
+
   return (
     <>
-      {/* Full-screen player — fixed, no scroll */}
       <div
         ref={containerRef}
         className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
@@ -153,49 +225,57 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
           </button>
         </div>
 
-        {/* Body — album art grows to fill space, controls pinned at bottom */}
-        <div className="flex-1 flex flex-col px-6 min-h-0 overflow-hidden">
-          {/* Album art — fills remaining space, capped at 280px */}
-          <div className="flex-1 flex items-center justify-center min-h-0 py-2">
-            {currentTrack?.coverArt ? (
-              <img
-                src={currentTrack.coverArt}
-                alt={currentTrack.title}
-                className="object-cover"
-                style={{
-                  width: 'min(312px, 80vw, 45vh)',
-                  height: 'min(312px, 80vw, 45vh)',
-                  borderRadius: '20px',
-                  boxShadow: '0 28px 55px rgba(0,0,0,0.55), inset 0 0 0 0.5px rgba(255,255,255,0.08)',
-                }}
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none'
-                  const sib = e.currentTarget.nextElementSibling as HTMLElement
-                  if (sib) sib.style.removeProperty('display')
-                }}
-              />
-            ) : null}
-            <div
-              className={`items-center justify-center ${currentTrack?.coverArt ? 'hidden' : 'flex'}`}
-              style={{
-                width: 'min(312px, 80vw, 45vh)',
-                height: 'min(312px, 80vw, 45vh)',
-                borderRadius: '20px',
-                boxShadow: '0 28px 55px rgba(0,0,0,0.55)',
-                background: 'linear-gradient(135deg, #6c63d9, #2e9e7a)',
-              }}
-            >
-              <Music className="h-16 w-16 text-white/25" />
-            </div>
-          </div>
+        {/* Body */}
+        <div className="flex-1 flex flex-col min-h-0" style={{ overflow: 'visible' }}>
 
-          {/* Controls — always at bottom, never pushed off screen */}
+          {/* Draggable art layer: art strip + track info */}
           <div
-            className="flex-shrink-0 flex flex-col gap-4"
-            style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}
+            className="flex-1 flex flex-col min-h-0 py-2"
+            style={{
+              transform: `translateX(${-dragX}px)`,
+              transition: artTransition,
+              overflow: 'visible',
+            }}
           >
-            {/* Track info */}
-            <div className="flex flex-col gap-1">
+            {/* Art strip: prev ghost | current | next ghost */}
+            <div
+              className="flex-1 flex items-center justify-center min-h-0"
+              style={{ overflow: 'visible' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                {/* Prev ghost */}
+                <div
+                  style={{
+                    opacity: dragX < 0 ? Math.min(1, Math.abs(dragX) / SWIPE_THRESHOLD) : 0,
+                    boxShadow: '0 16px 36px rgba(0,0,0,0.5)',
+                    borderRadius: '20px',
+                    transition: isDragging ? 'none' : 'opacity 0.2s',
+                  }}
+                >
+                  <ArtBox coverArt={ghostCover} title={prevTrack?.track} size={ART_SIZE} />
+                </div>
+
+                {/* Current art */}
+                <div style={{ boxShadow: '0 28px 55px rgba(0,0,0,0.55), inset 0 0 0 0.5px rgba(255,255,255,0.08)', borderRadius: '20px' }}>
+                  <ArtBox coverArt={currentTrack?.coverArt} title={currentTrack?.title} size={ART_SIZE} />
+                </div>
+
+                {/* Next ghost */}
+                <div
+                  style={{
+                    opacity: dragX > 0 ? Math.min(1, dragX / SWIPE_THRESHOLD) : 0,
+                    boxShadow: '0 16px 36px rgba(0,0,0,0.5)',
+                    borderRadius: '20px',
+                    transition: isDragging ? 'none' : 'opacity 0.2s',
+                  }}
+                >
+                  <ArtBox coverArt={ghostCover} title={nextTrack?.track} size={ART_SIZE} />
+                </div>
+              </div>
+            </div>
+
+            {/* Track info — moves with art */}
+            <div className="px-6 flex flex-col gap-1">
               <div className="text-[26px] font-bold text-white leading-snug tracking-tight line-clamp-2">
                 {currentTrack?.title ?? '—'}
               </div>
@@ -224,7 +304,13 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
                 )}
               </div>
             </div>
+          </div>
 
+          {/* Fixed controls layer */}
+          <div
+            className="flex-shrink-0 flex flex-col gap-4 px-6"
+            style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 16px)' }}
+          >
             {/* Progress bar */}
             <div>
               <input
@@ -337,51 +423,57 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
           </div>
         </div>
 
-        {/* Queue panel — slides over the player */}
-        {showQueue && (
-          <div className="absolute inset-0 z-10 flex flex-col bg-slate-950">
-            <div
-              className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-800"
-              style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 16px)' }}
-            >
-              <div className="min-w-0">
-                <h3 className="text-white font-semibold text-sm truncate">{queueTitle}</h3>
-                <p className="text-xs text-slate-400 truncate">
-                  {albumInfo?.artist === 'Auto-play' ? 'Upcoming tracks' : (albumInfo?.artist ?? '')}
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowQueue(false)}
-                className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                aria-label="Close queue"
-              >
-                <X className="h-4 w-4" />
-              </button>
+        {/* Queue panel — always rendered, transform-driven */}
+        <div
+          className="absolute inset-0 z-10 flex flex-col bg-slate-950"
+          style={{
+            transform: `translateY(${queueTranslateY})`,
+            transition: queueTransition,
+          }}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
+        >
+          <div
+            className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-800"
+            style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 16px)' }}
+          >
+            <div className="min-w-0">
+              <h3 className="text-white font-semibold text-sm truncate">{queueTitle}</h3>
+              <p className="text-xs text-slate-400 truncate">
+                {albumInfo?.artist === 'Auto-play' ? 'Upcoming tracks' : (albumInfo?.artist ?? '')}
+              </p>
             </div>
-            <div
-              className="flex-1 overflow-y-auto"
-              onTouchStart={(e) => e.stopPropagation()}
-              onTouchEnd={(e) => e.stopPropagation()}
+            <button
+              type="button"
+              onClick={() => setShowQueue(false)}
+              className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              aria-label="Close queue"
             >
-              <TrackList
-                variant="album"
-                tracks={queueTracks}
-                onSelect={handlePlayQueueTrack}
-                enableLikeButtons={isAuthenticated}
-                onLikeTrack={handleLikeQueueTrack}
-                currentTrackId={currentTrack?.id}
-                loadingTrackId={loadingTrackId}
-                isAuthenticated={isAuthenticated}
-                compactSpacing={true}
-                showColumnHeaders={false}
-              />
-            </div>
+              <X className="h-4 w-4" />
+            </button>
           </div>
-        )}
+          <div
+            className="flex-1 overflow-y-auto"
+            onTouchStart={(e) => e.stopPropagation()}
+            onTouchEnd={(e) => e.stopPropagation()}
+          >
+            <TrackList
+              variant="album"
+              tracks={queueTracks}
+              onSelect={handlePlayQueueTrack}
+              enableLikeButtons={isAuthenticated}
+              onLikeTrack={handleLikeQueueTrack}
+              currentTrackId={currentTrack?.id}
+              loadingTrackId={loadingTrackId}
+              isAuthenticated={isAuthenticated}
+              compactSpacing={true}
+              showColumnHeaders={false}
+            />
+          </div>
+        </div>
       </div>
 
-      {/* Like modal — rendered above the player */}
+      {/* Like modal */}
       {isLikeModalOpen && likeModalTrack && (
         <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] px-4"
