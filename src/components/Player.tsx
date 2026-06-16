@@ -34,9 +34,11 @@ export function Player() {
   const [isQueueOpen, setIsQueueOpen] = useState(false)
   const [showMobileActions, setShowMobileActions] = useState(false)
   const [popoverPosition, setPopoverPosition] = useState<{ bottom: number; right: number } | null>(null)
+  const [isDraggingProgress, setIsDraggingProgress] = useState(false)
   const playerRef = useRef<HTMLDivElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
   const threeDotsRef = useRef<HTMLButtonElement>(null)
+  const progressRef = useRef<HTMLDivElement>(null)
 
   const isCurrentTrackLoading = loadingState.status !== 'idle' && loadingState.trackId === currentTrack?.id
   const hasAlbumContext = albumTracks.length > 0 && albumInfo
@@ -60,9 +62,50 @@ export function Player() {
 
   const handlePlayPause = () => isPlaying ? pause() : resume()
 
-  const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const handleProgressMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect()
     seek((e.clientX - rect.left) / rect.width * duration)
+    setIsDraggingProgress(true)
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      if (!progressRef.current) return
+      const moveRect = progressRef.current.getBoundingClientRect()
+      const pct = Math.max(0, Math.min(1, (moveEvent.clientX - moveRect.left) / moveRect.width))
+      seek(pct * duration)
+    }
+
+    const handleMouseUp = () => {
+      setIsDraggingProgress(false)
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+
+  const handleProgressTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const touch = e.touches[0]
+    seek((touch.clientX - rect.left) / rect.width * duration)
+    setIsDraggingProgress(true)
+
+    const handleTouchMove = (moveEvent: TouchEvent) => {
+      if (!progressRef.current) return
+      const moveRect = progressRef.current.getBoundingClientRect()
+      const moveTouch = moveEvent.touches[0]
+      const pct = Math.max(0, Math.min(1, (moveTouch.clientX - moveRect.left) / moveRect.width))
+      seek(pct * duration)
+    }
+
+    const handleTouchEnd = () => {
+      setIsDraggingProgress(false)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', handleTouchEnd)
+    }
+
+    document.addEventListener('touchmove', handleTouchMove)
+    document.addEventListener('touchend', handleTouchEnd)
   }
 
   const handleDownload = async () => {
@@ -126,12 +169,22 @@ export function Player() {
         ref={playerRef}
         className="fixed bottom-0 left-0 right-0 bg-slate-900 p-4 z-[55]"
       >
-        {/* Progress bar at top edge */}
+        {/* Progress bar at top edge — oversized touch target, thin visual track */}
         <div
-          className="absolute top-0 left-0 right-0 h-0.5 bg-white/10 cursor-pointer group/progress hover:h-2 transition-all duration-100"
-          onClick={handleProgressClick}
+          ref={progressRef}
+          className="absolute top-0 left-0 right-0 h-3 cursor-pointer group/progress touch-none"
+          onMouseDown={handleProgressMouseDown}
+          onTouchStart={handleProgressTouchStart}
         >
-          <div className="h-full bg-white/70 transition-none" style={{ width: `${progress}%` }} />
+          <div className="absolute top-0 left-0 right-0 h-0.5 group-hover/progress:h-2 bg-white/10 transition-all duration-100">
+            <div className="h-full bg-white/70 transition-none" style={{ width: `${progress}%` }} />
+            <div
+              className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-white shadow-md pointer-events-none transition-opacity duration-100 ${
+                isDraggingProgress ? 'opacity-100' : 'opacity-0 group-hover/progress:opacity-100'
+              }`}
+              style={{ left: `${progress}%` }}
+            />
+          </div>
         </div>
 
         {currentTrack ? (
