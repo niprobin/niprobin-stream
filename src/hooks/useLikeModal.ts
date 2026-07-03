@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { likeTrack } from '@/services/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
@@ -38,6 +38,18 @@ export function useLikeModal(token: string | null) {
   const [likeModalTrack, setLikeModalTrack] = useState<LikeModalTrack | null>(null)
   const [selectedPlaylist, setSelectedPlaylist] = useState<string>(PLAYLISTS[0])
   const [isSubmittingLike, setIsSubmittingLike] = useState(false)
+
+  // Lock background scroll while the modal is open
+  useEffect(() => {
+    if (!isLikeModalOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isLikeModalOpen])
 
   // Helper function to check if track is liked
   const isTrackLiked = (title?: string, artist?: string) => {

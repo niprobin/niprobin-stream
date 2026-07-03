@@ -11,8 +11,8 @@ export default defineConfig({
       includeAssets: ['android-chrome-192x192.png', 'android-chrome-512x512.png', 'apple-touch-icon.png'],
       manifest: {
         id: '/',
-        name: 'Niprobin Stream',
-        short_name: 'NiproStream',
+        name: 'nipstream',
+        short_name: 'nipstream',
         description: 'Personal music streaming app',
         theme_color: '#0f172a',
         background_color: '#020617',

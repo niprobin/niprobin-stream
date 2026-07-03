@@ -78,6 +78,9 @@ type AudioContextType = {
   playNextTrack: () => void
   playPreviousTrack: () => void
   currentTrackIndex: number
+  beginTrackRequest: () => number
+  isLatestTrackRequest: (id: number) => boolean
+  isNavInFlight: boolean
 }
 
 // Create the Context - this is our "box" that holds audio state
@@ -96,7 +99,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [albumAutoExpand, setAlbumAutoExpand] = useState(true)
   const [loadingState, setLoadingState] = useState<AudioLoadingState>({ status: 'idle' })
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
-  const [queueProvider, setQueueProvider] = useState<QueueProvider | null>(null)
+  const [, setQueueProvider] = useState<QueueProvider | null>(null)
 
   // Auth token for API requests
   const { token } = useAuth()
@@ -105,8 +108,58 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   // Cache for pre-fetched stream URLs keyed by deezer_id
   const prefetchCacheRef = useRef<Map<string, StreamResponse>>(new Map())
-  // Tracks in-flight prefetch requests to prevent duplicate concurrent calls
-  const prefetchInFlightRef = useRef<Set<string>>(new Set())
+  // In-flight prefetch requests keyed by deezer_id, so a consumer that needs
+  // the same track can await the existing request instead of firing a
+  // duplicate fetch.
+  const prefetchInFlightRef = useRef<Map<string, Promise<StreamResponse>>>(new Map())
+
+  // Monotonic ticket guarding against out-of-order stream responses: two
+  // track loads can be in flight at once (e.g. user clicks track N then N+1
+  // before N's lookup resolves), and lookup latency varies per track, so the
+  // slower response can otherwise arrive last and overwrite newer playback.
+  const trackRequestIdRef = useRef(0)
+  const beginTrackRequest = useCallback(() => {
+    trackRequestIdRef.current += 1
+    return trackRequestIdRef.current
+  }, [])
+  const isLatestTrackRequest = useCallback((id: number) => id === trackRequestIdRef.current, [])
+
+  // Ref mirrors of state that playNextTrack/playPreviousTrack must read and
+  // act on synchronously within a single call. Plain useState values can't
+  // be relied on for this: a setState call earlier in the same function (or
+  // one made by a helper it calls, like the dynamic-queue refresh) isn't
+  // reflected in that function's own closure until the next render — refs
+  // are updated immediately, in place, so they're always current.
+  const albumTracksRef = useRef<AlbumTrackItem[]>([])
+  const currentTrackIndexRef = useRef(0)
+  const albumInfoRef = useRef<AlbumInfo | null>(null)
+  const queueProviderRef = useRef<QueueProvider | null>(null)
+
+  const updateAlbumTracks = useCallback((tracks: AlbumTrackItem[]) => {
+    albumTracksRef.current = tracks
+    setAlbumTracks(tracks)
+  }, [])
+  const updateCurrentTrackIndex = useCallback((index: number) => {
+    currentTrackIndexRef.current = index
+    setCurrentTrackIndex(index)
+  }, [])
+  const updateAlbumInfo = useCallback((info: AlbumInfo | null) => {
+    albumInfoRef.current = info
+    setAlbumInfo(info)
+  }, [])
+  const updateQueueProvider = useCallback((provider: QueueProvider | null) => {
+    queueProviderRef.current = provider
+    setQueueProvider(provider)
+  }, [])
+
+  // True while a Next/Previous navigation is in flight. Next/Previous can be
+  // triggered from four independent places — the player buttons, swipe
+  // gestures, a track ending naturally, and OS/hardware media keys — with no
+  // coordination between them. This lock makes a second call while one is
+  // already running a no-op, instead of both acting on the same
+  // not-yet-advanced position and landing on the same track.
+  const navInFlightRef = useRef(false)
+  const [isNavInFlight, setIsNavInFlight] = useState(false)
 
   const startPlayback = useCallback(
     (track: Track) => {
@@ -171,18 +224,53 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     [volume]
   )
 
-  // Function: Update dynamic queue if provider is available
-  const updateDynamicQueue = useCallback(() => {
-    if (!queueProvider || typeof queueProvider !== 'function' || !albumInfo || albumInfo.artist !== "Auto-play") {
-      return
+  // Function: Load track metadata without playing
+  const loadTrack = useCallback(
+    (track: Track) => {
+      // Set track metadata but don't start playback
+      setCurrentTrack(track)
+      setIsPlaying(false)
+
+
+      // Initialize audio element with source but don't play
+      if (typeof Audio === 'undefined') return
+
+      if (!audioRef.current) {
+        audioRef.current = new Audio()
+      }
+
+      audioRef.current.src = track.streamUrl
+      audioRef.current.volume = volume
+
+      // Set Media Session metadata for lock screen/notification controls
+      if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: track.title,
+          artist: track.artist,
+          album: track.album || '',
+          artwork: track.coverArt
+            ? [{ src: track.coverArt, sizes: '512x512', type: 'image/png' }]
+            : [],
+        })
+      }
+    },
+    [volume]
+  )
+
+  // Pure calculation of the corrected dynamic queue/position for "Auto-play"
+  // contexts (Digging/Search/Home), with no side effects — callers decide
+  // whether to apply it via the update* helpers and/or use it immediately.
+  const computeDynamicQueue = useCallback((): { tracks: AlbumTrackItem[]; index: number } | null => {
+    const provider = queueProviderRef.current
+    const info = albumInfoRef.current
+    if (!provider || typeof provider !== 'function' || !info || info.artist !== "Auto-play") {
+      return null
     }
 
-    const newTracks = queueProvider()
+    const newTracks = provider()
 
     if (!currentTrack) {
-      setAlbumTracks(newTracks)
-      setCurrentTrackIndex(0)
-      return
+      return { tracks: newTracks, index: 0 }
     }
 
     // Find current track in updated list to maintain position
@@ -191,17 +279,21 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       `${track.track}-${track.artist}` === currentTrackKey
     )
 
-    if (newIndex >= 0) {
-      // Current track found in updated list
-      setAlbumTracks(newTracks)
-      setCurrentTrackIndex(newIndex)
-    } else {
-      // Current track not in updated list (e.g., was hidden)
-      // Keep current track playing but update queue for next tracks
-      setAlbumTracks(newTracks)
-      // Keep current index - will naturally advance to new queue on next track
+    // If not found (e.g. it was hidden), keep the current position — it'll
+    // naturally land on the right track once the queue includes it again.
+    return {
+      tracks: newTracks,
+      index: newIndex >= 0 ? newIndex : currentTrackIndexRef.current,
     }
-  }, [queueProvider, albumInfo, currentTrack])
+  }, [currentTrack])
+
+  // Function: Update dynamic queue if provider is available
+  const updateDynamicQueue = useCallback(() => {
+    const result = computeDynamicQueue()
+    if (!result) return
+    updateAlbumTracks(result.tracks)
+    updateCurrentTrackIndex(result.index)
+  }, [computeDynamicQueue, updateAlbumTracks, updateCurrentTrackIndex])
 
   // Silently pre-fetches the stream URL for the track after `fromIndex`.
   // Any failure is swallowed — this must never affect current playback.
@@ -210,9 +302,10 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     if (!next?.deezer_id) return
     if (prefetchCacheRef.current.has(next.deezer_id)) return
     if (prefetchInFlightRef.current.has(next.deezer_id)) return
-    prefetchInFlightRef.current.add(next.deezer_id)
+    const promise = getStreamUrl(next.deezer_id, next.track, next.artist, token, getStreamContext())
+    prefetchInFlightRef.current.set(next.deezer_id, promise)
     try {
-      const res = await getStreamUrl(next.deezer_id, next.track, next.artist, token, getStreamContext())
+      const res = await promise
       prefetchCacheRef.current.set(next.deezer_id, res)
     } catch {
       // intentionally silent
@@ -221,103 +314,151 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [albumTracks, token])
 
+  // Shared "fetch a track's stream URL, then play or load it" logic, used by
+  // playNextTrack, playPreviousTrack, and the first-track preload in
+  // setAlbumContext — previously duplicated three times with near-identical
+  // shape, which is how the stale-response bug slipped into one path first.
+  const loadAndPlayTrack = useCallback(async (opts: {
+    item: AlbumTrackItem
+    albumInfoForFallback: AlbumInfo | null
+    onlyLoad?: boolean
+    useCache?: boolean
+  }): Promise<'played' | 'stale' | 'error'> => {
+    const { item, albumInfoForFallback, onlyLoad = false, useCache = false } = opts
+    const requestId = beginTrackRequest()
+    const id = item.deezer_id || ''
+
+    try {
+      let streamResponse: StreamResponse
+      if (useCache && prefetchCacheRef.current.has(id)) {
+        streamResponse = prefetchCacheRef.current.get(id)!
+        prefetchCacheRef.current.delete(id)
+      } else {
+        const inFlight = prefetchInFlightRef.current.get(id)
+        streamResponse = inFlight
+          ? await inFlight
+          : await getStreamUrl(id || '0', item.track, item.artist, token, getStreamContext())
+      }
+
+      // A newer track change (another click, Next/Prev, etc.) started after
+      // this one — this response is stale, don't let it hijack playback.
+      if (!isLatestTrackRequest(requestId)) return 'stale'
+
+      const track: Track = {
+        id: streamResponse.trackId,
+        hashUrl: streamResponse.hashUrl,
+        title: streamResponse.track,
+        artist: streamResponse.artist,
+        album: streamResponse.album || albumInfoForFallback?.name,
+        albumId: streamResponse['album-id'],
+        streamUrl: streamResponse.streamUrl,
+        coverArt: streamResponse.cover || albumInfoForFallback?.cover,
+        deezer_id: item.deezer_id,
+        curator: item.curator,
+      }
+
+      if (onlyLoad) {
+        loadTrack(track)
+      } else {
+        startPlayback(track)
+      }
+      return 'played'
+    } catch (err) {
+      console.error('Failed to load track:', err)
+      return isLatestTrackRequest(requestId) ? 'error' : 'stale'
+    }
+  }, [token, beginTrackRequest, isLatestTrackRequest, loadTrack, startPlayback])
+
   // Function: Play next track in album or auto-play context
   const playNextTrack = useCallback(async () => {
-    // For dynamic contexts, refresh queue before proceeding
-    if (queueProvider && typeof queueProvider === 'function' && albumInfo?.artist === "Auto-play") {
-      updateDynamicQueue()
-    }
+    if (navInFlightRef.current) return // a navigation is already in flight — ignore
+    navInFlightRef.current = true
+    setIsNavInFlight(true)
 
-    if (!albumTracks || albumTracks.length === 0 || !albumInfo) {
-      console.log('No album tracks available for auto-play')
-      setIsPlaying(false)
-      return
-    }
-
-    const nextIndex = currentTrackIndex + 1
-    if (nextIndex >= albumTracks.length) {
-      console.log('Reached end of auto-play context')
-      setIsPlaying(false)
-      return
-    }
-
-    const nextTrack = albumTracks[nextIndex]
-    if (nextTrack) {
-      try {
-        setCurrentTrackIndex(nextIndex)
-
-        const cached = prefetchCacheRef.current.get(nextTrack.deezer_id || '')
-        prefetchCacheRef.current.delete(nextTrack.deezer_id || '')
-        const streamResponse = cached ?? await getStreamUrl(
-          nextTrack.deezer_id || '0',
-          nextTrack.track,
-          nextTrack.artist,
-          token,
-          getStreamContext()
-        )
-
-        startPlayback({
-          id: streamResponse.trackId,
-          hashUrl: streamResponse.hashUrl,
-          title: streamResponse.track,
-          artist: streamResponse.artist,
-          album: streamResponse.album || albumInfo.name,
-          albumId: streamResponse['album-id'],
-          streamUrl: streamResponse.streamUrl,
-          coverArt: streamResponse.cover || albumInfo.cover,
-          deezer_id: nextTrack.deezer_id,
-          curator: nextTrack.curator,
-        })
-      } catch (err) {
-        console.error('Failed to load next track:', err)
-        setIsPlaying(false)
+    try {
+      // For dynamic contexts, refresh the queue and use the corrected
+      // tracks/index immediately, in this same call — not the stale
+      // pre-refresh values, which is what let auto-play queues desync.
+      const dynamic = computeDynamicQueue()
+      let tracks = albumTracksRef.current
+      let baseIndex = currentTrackIndexRef.current
+      if (dynamic) {
+        updateAlbumTracks(dynamic.tracks)
+        updateCurrentTrackIndex(dynamic.index)
+        tracks = dynamic.tracks
+        baseIndex = dynamic.index
       }
+
+      if (!tracks || tracks.length === 0 || !albumInfoRef.current) {
+        console.log('No album tracks available for auto-play')
+        setIsPlaying(false)
+        return
+      }
+
+      const nextIndex = baseIndex + 1
+      if (nextIndex >= tracks.length) {
+        console.log('Reached end of auto-play context')
+        setIsPlaying(false)
+        return
+      }
+
+      const nextTrack = tracks[nextIndex]
+      updateCurrentTrackIndex(nextIndex)
+
+      const result = await loadAndPlayTrack({
+        item: nextTrack,
+        albumInfoForFallback: albumInfoRef.current,
+        useCache: true,
+      })
+      if (result === 'error') setIsPlaying(false)
+    } finally {
+      navInFlightRef.current = false
+      setIsNavInFlight(false)
     }
-  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback, queueProvider, updateDynamicQueue])
+  }, [computeDynamicQueue, loadAndPlayTrack, updateAlbumTracks, updateCurrentTrackIndex])
 
   // Function: Play previous track in album or auto-play context
   const playPreviousTrack = useCallback(async () => {
-    if (!albumTracks || albumTracks.length === 0 || !albumInfo) {
-      console.log('No album tracks available for previous track')
-      return
-    }
+    if (navInFlightRef.current) return // a navigation is already in flight — ignore
+    navInFlightRef.current = true
+    setIsNavInFlight(true)
 
-    const prevIndex = currentTrackIndex - 1
-    if (prevIndex < 0) {
-      console.log('Already at first track')
-      return
-    }
-
-    const prevTrack = albumTracks[prevIndex]
-    if (prevTrack) {
-      try {
-        setCurrentTrackIndex(prevIndex)
-
-        const streamResponse = await getStreamUrl(
-          prevTrack.deezer_id || '0',
-          prevTrack.track,
-          prevTrack.artist,
-          token,
-          getStreamContext()
-        )
-        startPlayback({
-          id: streamResponse.trackId,
-          hashUrl: streamResponse.hashUrl,
-          title: streamResponse.track,
-          artist: streamResponse.artist,
-          album: streamResponse.album || albumInfo.name,
-          albumId: streamResponse['album-id'],
-          streamUrl: streamResponse.streamUrl,
-          coverArt: streamResponse.cover || albumInfo.cover,
-          deezer_id: prevTrack.deezer_id,
-          curator: prevTrack.curator,
-        })
-      } catch (err) {
-        console.error('Failed to load previous track:', err)
-        setIsPlaying(false)
+    try {
+      // Same dynamic-queue correction as playNextTrack, for symmetry.
+      const dynamic = computeDynamicQueue()
+      let tracks = albumTracksRef.current
+      let baseIndex = currentTrackIndexRef.current
+      if (dynamic) {
+        updateAlbumTracks(dynamic.tracks)
+        updateCurrentTrackIndex(dynamic.index)
+        tracks = dynamic.tracks
+        baseIndex = dynamic.index
       }
+
+      if (!tracks || tracks.length === 0 || !albumInfoRef.current) {
+        console.log('No album tracks available for previous track')
+        return
+      }
+
+      const prevIndex = baseIndex - 1
+      if (prevIndex < 0) {
+        console.log('Already at first track')
+        return
+      }
+
+      const prevTrack = tracks[prevIndex]
+      updateCurrentTrackIndex(prevIndex)
+
+      const result = await loadAndPlayTrack({
+        item: prevTrack,
+        albumInfoForFallback: albumInfoRef.current,
+      })
+      if (result === 'error') setIsPlaying(false)
+    } finally {
+      navInFlightRef.current = false
+      setIsNavInFlight(false)
     }
-  }, [currentTrackIndex, albumTracks, albumInfo, startPlayback])
+  }, [computeDynamicQueue, loadAndPlayTrack, updateAlbumTracks, updateCurrentTrackIndex])
 
   // Initialize audio element and bind lifecycle events once
   useEffect(() => {
@@ -396,13 +537,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
   }, [playPreviousTrack, playNextTrack])
 
-  // Prefetch the next track's stream URL whenever the current track index changes
-  // or playback starts — covers the first track in any new queue.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Prefetch the next track's stream URL whenever the current track index,
+  // playback state, or the track list itself changes — covers the first
+  // track in any new queue and re-targets correctly if the queue shifts.
   useEffect(() => {
     if (!isPlaying || albumTracks.length === 0) return
     void prefetchNext(currentTrackIndex)
-  }, [currentTrackIndex, isPlaying])
+  }, [currentTrackIndex, isPlaying, albumTracks, prefetchNext])
 
   // URL sync removed: tracks are not encoded into the URL anymore.
 
@@ -437,39 +578,6 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setVolumeState(newVolume)
   }
 
-  // Function: Load track metadata without playing
-  const loadTrack = useCallback(
-    (track: Track) => {
-      // Set track metadata but don't start playback
-      setCurrentTrack(track)
-      setIsPlaying(false)
-
-
-      // Initialize audio element with source but don't play
-      if (typeof Audio === 'undefined') return
-
-      if (!audioRef.current) {
-        audioRef.current = new Audio()
-      }
-
-      audioRef.current.src = track.streamUrl
-      audioRef.current.volume = volume
-
-      // Set Media Session metadata for lock screen/notification controls
-      if ('mediaSession' in navigator) {
-        navigator.mediaSession.metadata = new MediaMetadata({
-          title: track.title,
-          artist: track.artist,
-          album: track.album || '',
-          artwork: track.coverArt
-            ? [{ src: track.coverArt, sizes: '512x512', type: 'image/png' }]
-            : [],
-        })
-      }
-    },
-    [volume]
-  )
-
   // Function: Set album context with tracklist
   const setAlbumContext = (
     tracks: AlbumTrackItem[],
@@ -478,32 +586,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   ) => {
     prefetchCacheRef.current.clear()
     prefetchInFlightRef.current.clear()
-    setAlbumTracks(tracks)
-    setAlbumInfo(info)
+    updateAlbumTracks(tracks)
+    updateAlbumInfo(info)
     setAlbumAutoExpand(options?.expand ?? true)
-    setCurrentTrackIndex(0)
+    updateCurrentTrackIndex(0)
 
     if (options?.loadFirst && tracks.length > 0) {
-      ;(async () => {
-        try {
-          const first = tracks[0]
-          const streamResponse = await getStreamUrl(first.deezer_id || '0', first.track, first.artist, token, getStreamContext())
-          loadTrack({
-            id: streamResponse.trackId,
-            hashUrl: streamResponse.hashUrl,
-            title: streamResponse.track,
-            artist: streamResponse.artist,
-            album: streamResponse.album || info.name,
-            albumId: streamResponse['album-id'],
-            streamUrl: streamResponse.streamUrl,
-            coverArt: streamResponse.cover || info.cover,
-            deezer_id: first.deezer_id,
-            curator: first.curator,
-          })
-        } catch (err) {
-          console.error('Failed to preload first album track', err)
-        }
-      })()
+      void loadAndPlayTrack({ item: tracks[0], albumInfoForFallback: info, onlyLoad: true })
     }
   }
 
@@ -511,24 +600,24 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const setAutoPlayContext = (tracks: AlbumTrackItem[], startIndex: number, contextName: string, dynamicQueueProvider?: QueueProvider) => {
     prefetchCacheRef.current.clear()
     prefetchInFlightRef.current.clear()
-    setAlbumTracks(tracks)
-    setAlbumInfo({
+    updateAlbumTracks(tracks)
+    updateAlbumInfo({
       name: contextName,
       artist: "Auto-play",
       cover: tracks[startIndex]?.track ? "" : "", // No cover for auto-play contexts
       id: undefined
     })
-    setCurrentTrackIndex(startIndex)
+    updateCurrentTrackIndex(startIndex)
     setAlbumAutoExpand(false) // Don't auto-expand for auto-play contexts
-    setQueueProvider(dynamicQueueProvider || null)
+    updateQueueProvider(dynamicQueueProvider || null)
   }
 
   // Function: Clear album context
   const clearAlbumContext = () => {
-    setAlbumTracks([])
-    setAlbumInfo(null)
-    setCurrentTrackIndex(0)
-    setQueueProvider(null)
+    updateAlbumTracks([])
+    updateAlbumInfo(null)
+    updateCurrentTrackIndex(0)
+    updateQueueProvider(null)
   }
 
   // Provide all this to children components
@@ -558,6 +647,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         playNextTrack,
         playPreviousTrack,
         currentTrackIndex,
+        beginTrackRequest,
+        isLatestTrackRequest,
+        isNavInFlight,
       }}
     >
       {children}

@@ -63,7 +63,7 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
     currentTrack, isPlaying, currentTime, duration,
     pause, resume, seek, playNextTrack, playPreviousTrack,
     currentTrackIndex, albumTracks, albumInfo, loadingState,
-    setAutoPlayContext,
+    setAutoPlayContext, isNavInFlight,
   } = useAudio()
   const { token } = useAuth()
   const { showNotification } = useNotification()
@@ -107,10 +107,10 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
       }
     },
     onSwipeLeft: () => {
-      if (!showQueue && canGoToNext) playNextTrack()
+      if (!showQueue && canGoToNext && !isNavInFlight) playNextTrack()
     },
     onSwipeRight: () => {
-      if (!showQueue && canGoToPrevious) playPreviousTrack()
+      if (!showQueue && canGoToPrevious && !isNavInFlight) playPreviousTrack()
     },
     onDragX: (deltaX) => {
       if (showQueue) return
@@ -343,7 +343,7 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
               <button
                 type="button"
                 onClick={() => { if (canGoToPrevious) playPreviousTrack() }}
-                disabled={!canGoToPrevious}
+                disabled={!canGoToPrevious || isNavInFlight}
                 className="text-white disabled:opacity-25 active:scale-90 transition-transform"
                 aria-label="Previous track"
               >
@@ -366,7 +366,7 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
               <button
                 type="button"
                 onClick={() => { if (canGoToNext) playNextTrack() }}
-                disabled={!canGoToNext}
+                disabled={!canGoToNext || isNavInFlight}
                 className="text-white disabled:opacity-25 active:scale-90 transition-transform"
                 aria-label="Next track"
               >
@@ -483,13 +483,13 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
       {/* Like modal */}
       {isLikeModalOpen && likeModalTrack && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] px-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4 md:items-stretch md:pt-[var(--navbar-height,4.5rem)] md:pb-24"
           role="dialog"
           aria-modal="true"
         >
           <form
             onSubmit={handleSubmitLike}
-            className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl"
+            className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -502,7 +502,7 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+            <div className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
               {PLAYLISTS.map((playlist) => (
                 <button
                   type="button"

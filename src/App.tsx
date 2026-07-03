@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Player } from './components/Player'
 import { MobileBottomNav } from './components/MobileBottomNav'
 import { MobilePlayer } from './components/MobilePlayer'
@@ -46,6 +46,23 @@ function AppContent() {
   const [diggingPage, setDiggingPage] = useState<number>(1)
   const [searchInitialQuery, setSearchInitialQuery] = useState('')
   const [mobilePlayerOpen, setMobilePlayerOpen] = useState(false)
+  const navRef = useRef<HTMLElement>(null)
+
+  // Publish the navbar's actual (variable) height as a CSS var so overlays
+  // like the Like modal can size themselves between the navbar and the player
+  useEffect(() => {
+    const navEl = navRef.current
+    if (!navEl || typeof ResizeObserver === 'undefined') return
+
+    const updateHeight = () => {
+      document.documentElement.style.setProperty('--navbar-height', `${navEl.offsetHeight}px`)
+    }
+
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(navEl)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -383,7 +400,7 @@ function AppContent() {
       <GlobalLoadingOverlay />
 
       {/* Sticky Navbar */}
-      <nav className="sticky top-0 z-50 bg-slate-950 md:border-b md:border-slate-800">
+      <nav ref={navRef} className="sticky top-0 z-50 bg-slate-950 md:border-b md:border-slate-800">
         <div className="w-full px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between">
           {/* Left: Logo + Tabs */}
           <div className="flex items-center gap-6">
@@ -432,43 +449,6 @@ function AppContent() {
                     Digging
                   </button>
                 </nav>
-
-                {/* Sub-tabs for Digging page */}
-                {activePage === 'digging' && (
-                  <>
-                    <div className="w-px h-6 bg-slate-700" />
-                    <div className="border-b border-slate-700">
-                      <nav className="flex space-x-2 -mb-px" role="tablist" aria-label="Digging sections">
-                        <button
-                          type="button"
-                          role="tab"
-                          aria-selected={diggingTab === 'tracks'}
-                          onClick={() => navigateToDiggingTab('tracks')}
-                          className={`px-3 py-2 text-sm font-medium border-b-2 transition ${
-                            diggingTab === 'tracks'
-                              ? 'border-white text-white'
-                              : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
-                          }`}
-                        >
-                          Tracks
-                        </button>
-                        <button
-                          type="button"
-                          role="tab"
-                          aria-selected={diggingTab === 'albums'}
-                          onClick={() => navigateToDiggingTab('albums')}
-                          className={`px-3 py-2 text-sm font-medium border-b-2 transition ${
-                            diggingTab === 'albums'
-                              ? 'border-white text-white'
-                              : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
-                          }`}
-                        >
-                          Albums
-                        </button>
-                      </nav>
-                    </div>
-                  </>
-                )}
               </div>
             )}
           </div>
@@ -503,7 +483,45 @@ function AppContent() {
             </Button>
           </div>
         </div>
-        
+
+        {/* Sub-tabs for Digging page — desktop, shown below the top nav row */}
+        {isAuthenticated && activePage === 'digging' && (
+          <div className="hidden md:block pb-4">
+            <div className="px-4 sm:px-6 lg:px-10">
+              <div className="max-w-xs border-b border-slate-800">
+                <nav className="flex space-x-2 -mb-px" role="tablist" aria-label="Digging sections">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={diggingTab === 'tracks'}
+                    onClick={() => navigateToDiggingTab('tracks')}
+                    className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition ${
+                      diggingTab === 'tracks'
+                        ? 'border-white text-white'
+                        : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
+                    }`}
+                  >
+                    Tracks
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={diggingTab === 'albums'}
+                    onClick={() => navigateToDiggingTab('albums')}
+                    className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition ${
+                      diggingTab === 'albums'
+                        ? 'border-white text-white'
+                        : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
+                    }`}
+                  >
+                    Albums
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mobile search bar - full width, shown below logo row */}
         {isAuthenticated && (
           <div className="md:hidden px-4 sm:px-6 pb-2">

@@ -5,14 +5,12 @@ import { X, ChevronDown, Music, Heart, Loader2 } from 'lucide-react'
 import { hideTrack, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
-import { TrackList } from '@/components/TrackList'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
 import { albumFilterFunction } from '@/hooks/useDiscoverySearch'
 import { useAudio } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
-import { useIsMobile } from '@/hooks/useIsMobile'
 import { useLikeModal } from '@/hooks/useLikeModal'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
 import { ROUTES, navigateTo } from '@/utils/routes'
@@ -28,8 +26,8 @@ interface AlbumsPageProps {
   onPageChange: (page: number) => void
 }
 
-// Mobile-only track row for the Digging view
-function MobileTrackRow({
+// Track row for the Digging tracks view
+function DiggingTrackRow({
   track,
   isCurrentTrack,
   isLoading,
@@ -118,14 +116,13 @@ function MobileTrackRow({
 export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageProps) {
   const [prevActiveTab, setPrevActiveTab] = useState<DiggingTab>(activeTab)
   const [curatorPickerOpen, setCuratorPickerOpen] = useState(false)
-  const isMobile = useIsMobile()
 
   const { curator, search, updateFilter, updateFilters } = useUrlFilters('digging')
   const pageSize = 10
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setAutoPlayContext, currentTrack } = useAudio()
-  const { isAuthenticated, token } = useAuth()
+  const { token } = useAuth()
   const { showNotification } = useNotification()
 
   const {
@@ -170,10 +167,6 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
   const handleAlbumClick = (album: DiscoverAlbum) => {
     navigateTo(ROUTES.album(album.deezer_id))
-  }
-
-  const handleLikeTrack = (track: any) => {
-    console.log('Track liked successfully:', track.track, track.artist)
   }
 
   useEffect(() => {
@@ -230,71 +223,55 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
       {activeTab === 'tracks' && (
         <div>
-          {isMobile ? (
-            /* ── Mobile: curator chip + queue count ── */
-            <div className="flex items-center justify-between px-[18px] pt-3 pb-[6px]">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setCuratorPickerOpen(prev => !prev)}
-                  className="flex items-center gap-[6px] bg-slate-800 border border-slate-700 rounded-[20px] px-[13px] py-[7px] text-[13px] font-medium text-slate-300 active:bg-slate-700 transition-colors"
-                >
-                  {curator === 'all' ? 'All Curators' : curator}
-                  <ChevronDown className="h-[11px] w-[11px] text-slate-500" />
-                </button>
-
-                {/* Curator picker dropdown */}
-                {curatorPickerOpen && (
-                  <div className="absolute top-full left-0 mt-1 z-20 bg-slate-800 border border-slate-700 rounded-xl shadow-xl min-w-[160px] py-1 overflow-hidden">
-                    {['all', ...availableCurators].map(c => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => {
-                          updateFilter('curator', c)
-                          setCuratorPickerOpen(false)
-                        }}
-                        className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                          curator === c
-                            ? 'text-blue-400 bg-blue-400/10'
-                            : 'text-slate-300 active:bg-slate-700'
-                        }`}
-                      >
-                        {c === 'all' ? 'All Curators' : c}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Queue count */}
-              {(() => {
-                const count = tracks
-                  .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
-                  .filter(t => curator === 'all' || t.curator === curator)
-                  .length
-                return (
-                  <span className="font-mono text-[11px] text-slate-400 tracking-wide">
-                    {count} to listen
-                  </span>
-                )
-              })()}
-            </div>
-          ) : (
-            /* ── Desktop: full-width select ── */
-            <div className="px-2 pt-4 pb-3">
-              <select
-                value={curator}
-                onChange={(e) => updateFilter('curator', e.target.value)}
-                className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600"
+          {/* ── Curator chip + queue count ── */}
+          <div className="flex items-center justify-between px-[18px] pt-3 pb-[6px]">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setCuratorPickerOpen(prev => !prev)}
+                className="flex items-center gap-[6px] bg-slate-800 border border-slate-700 rounded-[20px] px-[13px] py-[7px] text-[13px] font-medium text-slate-300 hover:bg-slate-700 transition-colors"
               >
-                <option value="all">All Curators</option>
-                {availableCurators.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+                {curator === 'all' ? 'All Curators' : curator}
+                <ChevronDown className="h-[11px] w-[11px] text-slate-500" />
+              </button>
+
+              {/* Curator picker dropdown */}
+              {curatorPickerOpen && (
+                <div className="absolute top-full left-0 mt-1 z-20 bg-slate-800 border border-slate-700 rounded-xl shadow-xl min-w-[160px] py-1 overflow-hidden">
+                  {['all', ...availableCurators].map(c => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => {
+                        updateFilter('curator', c)
+                        setCuratorPickerOpen(false)
+                      }}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                        curator === c
+                          ? 'text-blue-400 bg-blue-400/10'
+                          : 'text-slate-300 hover:bg-slate-700'
+                      }`}
+                    >
+                      {c === 'all' ? 'All Curators' : c}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+
+            {/* Queue count */}
+            {(() => {
+              const count = tracks
+                .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
+                .filter(t => curator === 'all' || t.curator === curator)
+                .length
+              return (
+                <span className="font-mono text-[11px] text-slate-400 tracking-wide">
+                  {count} to listen
+                </span>
+              )
+            })()}
+          </div>
 
           {tracks.length === 0 ? (
             <div className="text-center text-slate-400 py-12">
@@ -321,81 +298,46 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
             return (
               <>
-                {isMobile ? (
-                  /* ── Mobile track rows ── */
-                  <div>
-                    {mappedPagedTracks.map((item) => {
-                      const originalTrack = filteredTracks.find(
-                        t => t.track === item.track && t.artist === item.artist
-                      )
-                      const isCurrentTrack = !!(currentTrack &&
-                        currentTrack.title === item.track &&
-                        currentTrack.artist === item.artist)
-                      const isLoading = loadingTrackId === item.deezer_id
-                      const isLiked = isTrackLiked(item.track, item.artist)
-                      const coverArt = originalTrack?.cover_url || (isCurrentTrack ? currentTrack?.coverArt : undefined)
+                <div>
+                  {mappedPagedTracks.map((item) => {
+                    const originalTrack = filteredTracks.find(
+                      t => t.track === item.track && t.artist === item.artist
+                    )
+                    const isCurrentTrack = !!(currentTrack &&
+                      currentTrack.title === item.track &&
+                      currentTrack.artist === item.artist)
+                    const isLoading = loadingTrackId === item.deezer_id
+                    const isLiked = isTrackLiked(item.track, item.artist)
+                    const coverArt = originalTrack?.cover_url || (isCurrentTrack ? currentTrack?.coverArt : undefined)
 
-                      return (
-                        <MobileTrackRow
-                          key={`${item.deezer_id}-${item['track-number']}`}
-                          track={item}
-                          isCurrentTrack={isCurrentTrack}
-                          isLoading={isLoading}
-                          coverArt={coverArt}
-                          onPlay={() => {
-                            if (originalTrack) buildQueueAndPlay(filteredTracks, originalTrack)
-                          }}
-                          onHide={(e) => {
-                            if (originalTrack) hideTrackItem(originalTrack, e)
-                          }}
-                          onLike={(e) => {
-                            e.stopPropagation()
-                            openLikeModal(
-                              item.deezer_id,
-                              item.track,
-                              item.artist,
-                              undefined,
-                              item.deezer_id
-                            )
-                          }}
-                          isLiked={isLiked}
-                        />
-                      )
-                    })}
-                  </div>
-                ) : (
-                  /* ── Desktop TrackList ── */
-                  <TrackList
-                    variant="album"
-                    tracks={mappedPagedTracks}
-                    loadingTrackId={loadingTrackId}
-                    enableLikeButtons={isAuthenticated}
-                    onLikeTrack={handleLikeTrack}
-                    currentTrackId={currentTrack?.id}
-                    isAuthenticated={isAuthenticated}
-                    onSelect={(trackItem) => {
-                      const originalTrack = filteredTracks.find(
-                        t => t.track === trackItem.track && t.artist === trackItem.artist
-                      )
-                      if (originalTrack) buildQueueAndPlay(filteredTracks, originalTrack)
-                    }}
-                    renderAction={(trackItem) => {
-                      const originalTrack = filteredTracks.find(
-                        t => t.track === trackItem.track && t.artist === trackItem.artist
-                      )
-                      if (!originalTrack) return null
-                      return (
-                        <button
-                          onClick={(e) => hideTrackItem(originalTrack, e)}
-                          className="w-8 h-8 flex items-center justify-center hover:bg-slate-700 rounded transition-colors mr-1"
-                          aria-label="Hide track"
-                        >
-                          <X className="h-4 w-4 text-slate-400 hover:text-white" />
-                        </button>
-                      )
-                    }}
-                  />
-                )}
+                    return (
+                      <DiggingTrackRow
+                        key={`${item.deezer_id}-${item['track-number']}`}
+                        track={item}
+                        isCurrentTrack={isCurrentTrack}
+                        isLoading={isLoading}
+                        coverArt={coverArt}
+                        onPlay={() => {
+                          if (originalTrack) buildQueueAndPlay(filteredTracks, originalTrack)
+                        }}
+                        onHide={(e) => {
+                          if (originalTrack) hideTrackItem(originalTrack, e)
+                        }}
+                        onLike={(e) => {
+                          e.stopPropagation()
+                          openLikeModal(
+                            item.deezer_id,
+                            item.track,
+                            item.artist,
+                            undefined,
+                            item.deezer_id
+                          )
+                        }}
+                        isLiked={isLiked}
+                      />
+                    )
+                  })}
+                </div>
 
                 {filteredTracks.length > pageSize && (
                   <Pagination
@@ -492,13 +434,13 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
       {/* Like Modal */}
       {isLikeModalOpen && likeModalTrack && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4 md:items-stretch md:pt-[var(--navbar-height,4.5rem)] md:pb-24"
           role="dialog"
           aria-modal="true"
         >
           <form
             onSubmit={handleSubmitLike}
-            className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl"
+            className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none"
           >
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -517,7 +459,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
               </Button>
             </div>
 
-            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+            <div className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
               {PLAYLISTS.map((playlist) => {
                 const isSelected = selectedPlaylist === playlist
                 return (

@@ -13,7 +13,7 @@ import { useLikeModal } from '@/hooks/useLikeModal'
 import { TrackList } from '@/components/TrackList'
 
 export function Player() {
-  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, setAutoPlayContext, playNextTrack, playPreviousTrack, currentTrackIndex } = useAudio()
+  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, setAutoPlayContext, playNextTrack, playPreviousTrack, currentTrackIndex, isNavInFlight } = useAudio()
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
@@ -224,7 +224,7 @@ export function Player() {
               <div className="flex justify-center items-center gap-2">
                 <Button onClick={() => playPreviousTrack()} size="icon" variant="ghost"
                   className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                  disabled={!canGoToPrevious}>
+                  disabled={!canGoToPrevious || isNavInFlight}>
                   <SkipBack className="h-4 w-4" />
                 </Button>
                 <Button onClick={handlePlayPause} size="icon" variant="ghost"
@@ -236,7 +236,7 @@ export function Player() {
                 </Button>
                 <Button onClick={() => playNextTrack()} size="icon" variant="ghost"
                   className="text-white/70 hover:text-white hover:bg-slate-800 disabled:opacity-30"
-                  disabled={!canGoToNext}>
+                  disabled={!canGoToNext || isNavInFlight}>
                   <SkipForward className="h-4 w-4" />
                 </Button>
               </div>
@@ -441,10 +441,10 @@ export function Player() {
 
       {/* ── Like modal ─────────────────────────────────────────────── */}
       {isLikeModalOpen && likeModalTrack && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] px-4"
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4 md:items-stretch md:pt-[var(--navbar-height,4.5rem)] md:pb-24"
           role="dialog" aria-modal="true">
           <form onSubmit={handleSubmitLike}
-            className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl">
+            className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs uppercase text-slate-400 tracking-wide">Add to playlist</p>
@@ -456,7 +456,7 @@ export function Player() {
                 <X className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+            <div className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
               {PLAYLISTS.map((playlist) => (
                 <button type="button" key={playlist} onClick={() => setSelectedPlaylist(playlist)}
                   className={`text-left text-sm px-3 py-2 rounded-lg border transition-colors ${

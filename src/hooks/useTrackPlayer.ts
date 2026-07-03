@@ -19,7 +19,7 @@ export type TrackPlayerOptions = {
  */
 export function useTrackPlayer() {
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
-  const { play, clearAlbumContext, loadingState, setLoadingState } = useAudio()
+  const { play, clearAlbumContext, loadingState, setLoadingState, beginTrackRequest, isLatestTrackRequest } = useAudio()
   const { showNotification } = useNotification()
   const { token } = useAuth()
 
@@ -43,6 +43,10 @@ export function useTrackPlayer() {
     // Set loading state for API fetch
     setLoadingState({ status: 'fetching-stream', trackId: loadingKey })
 
+    // Ticket for this load — if another track is requested before this one's
+    // fetch resolves, this response must not be allowed to hijack playback.
+    const requestId = beginTrackRequest()
+
     try {
       // Clear album context if requested (for standalone tracks)
       if (clearAlbum) {
@@ -58,6 +62,7 @@ export function useTrackPlayer() {
         getStreamContext()
       )
 
+      if (!isLatestTrackRequest(requestId)) return
 
       // Play the track with all metadata
       play({
@@ -76,10 +81,12 @@ export function useTrackPlayer() {
       // API fetch completed - loading state will be managed by AudioContext
     } catch (err) {
       console.error('Failed to load track:', err)
-      showNotification('Failed to load track. Please try again.', 'error')
-      setLoadingState({ status: 'idle' })
+      if (isLatestTrackRequest(requestId)) {
+        showNotification('Failed to load track. Please try again.', 'error')
+        setLoadingState({ status: 'idle' })
+      }
     } finally {
-      setLoadingTrackId(null)
+      if (isLatestTrackRequest(requestId)) setLoadingTrackId(null)
     }
   }
 
