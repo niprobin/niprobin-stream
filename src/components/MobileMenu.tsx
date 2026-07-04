@@ -9,7 +9,7 @@ interface MobileMenuProps {
 }
 
 /**
- * Mobile "Menu" page content (< lg), reachable via MobileBottomNav.
+ * Mobile "Menu" page content (< lg), reachable via the PlayerBar nav tabs.
  * Extracted from App.tsx's inline `mobileMenuContent`.
  */
 export function MobileMenu({

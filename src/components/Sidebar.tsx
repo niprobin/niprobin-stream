@@ -1,6 +1,6 @@
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Home, Compass } from 'lucide-react'
 import { SearchBar } from './SearchBar'
-import { Button } from './ui/button'
+import { Logo } from './ui/Logo'
 
 interface SidebarProps {
   isAuthenticated: boolean
@@ -16,8 +16,8 @@ interface SidebarProps {
 }
 
 /**
- * Desktop sidebar (>= lg). Placeholder structure — full visual restyle is Task 4.
- * Always mounted; visibility handled by `hidden lg:flex`.
+ * Desktop sidebar (>= lg), Crate design system. 232px vertical nav + account
+ * card. Always mounted; visibility handled by `hidden lg:flex`.
  */
 export function Sidebar({
   isAuthenticated,
@@ -31,16 +31,24 @@ export function Sidebar({
   onRefresh,
   onLogout,
 }: SidebarProps) {
+  const navItemClass = (active: boolean) =>
+    `flex items-center gap-3 w-full px-3 py-2.5 text-sm font-medium rounded-sm-crate transition-colors ${
+      active
+        ? 'bg-accent/12 text-accent'
+        : 'text-text-2 hover:text-text-1 hover:bg-bg-2/50'
+    }`
+
   return (
-    <aside className="hidden lg:flex flex-col flex-shrink-0 w-[232px] h-full bg-slate-950 border-r border-slate-800">
-      {/* Logo */}
+    <aside className="hidden lg:flex flex-col flex-shrink-0 w-[232px] h-full bg-bg-0-deep border-r border-border">
+      {/* Logo + wordmark */}
       <div className="px-5 py-5">
         <button
           type="button"
           onClick={onNavigateHome}
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
-          <img src="/android-chrome-192x192.png" alt="nipstream logo" className="w-8 h-8" />
+          <Logo size={34} />
+          <span className="font-serif-display italic text-2xl text-text-1">nipstream</span>
         </button>
       </div>
 
@@ -59,12 +67,9 @@ export function Sidebar({
             role="tab"
             aria-selected={activePage === 'home'}
             onClick={onNavigateHome}
-            className={`w-full text-left px-3 py-2 text-sm font-medium rounded-md transition ${
-              activePage === 'home'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-            }`}
+            className={navItemClass(activePage === 'home')}
           >
+            <Home className="h-[18px] w-[18px]" />
             Home
           </button>
           <button
@@ -72,25 +77,22 @@ export function Sidebar({
             role="tab"
             aria-selected={activePage === 'digging'}
             onClick={onNavigateDigging}
-            className={`w-full text-left px-3 py-2 text-sm font-medium rounded-md transition ${
-              activePage === 'digging'
-                ? 'bg-slate-800 text-white'
-                : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-            }`}
+            className={navItemClass(activePage === 'digging')}
           >
+            <Compass className="h-[18px] w-[18px]" />
             Digging
           </button>
 
           {/* Digging sub-tabs */}
           {activePage === 'digging' && (
-            <div className="pl-3 pt-1 space-y-1" role="tablist" aria-label="Digging sections">
+            <div className="pl-6 pt-1 space-y-1" role="tablist" aria-label="Digging sections">
               <button
                 type="button"
                 role="tab"
                 aria-selected={diggingTab === 'tracks'}
                 onClick={() => onNavigateDiggingTab('tracks')}
-                className={`w-full text-left px-3 py-1.5 text-sm rounded-md transition ${
-                  diggingTab === 'tracks' ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+                className={`w-full text-left px-3 py-1.5 text-sm rounded-sm-crate transition-colors ${
+                  diggingTab === 'tracks' ? 'text-text-1' : 'text-text-3 hover:text-text-2'
                 }`}
               >
                 Tracks
@@ -100,8 +102,8 @@ export function Sidebar({
                 role="tab"
                 aria-selected={diggingTab === 'albums'}
                 onClick={() => onNavigateDiggingTab('albums')}
-                className={`w-full text-left px-3 py-1.5 text-sm rounded-md transition ${
-                  diggingTab === 'albums' ? 'text-white' : 'text-slate-500 hover:text-slate-300'
+                className={`w-full text-left px-3 py-1.5 text-sm rounded-sm-crate transition-colors ${
+                  diggingTab === 'albums' ? 'text-text-1' : 'text-text-3 hover:text-text-2'
                 }`}
               >
                 Albums
@@ -120,9 +122,9 @@ export function Sidebar({
             type="button"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded-md text-slate-400 hover:text-white hover:bg-slate-800/50 disabled:opacity-40 transition-colors"
+            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-sm-crate text-text-2 hover:text-text-1 hover:bg-bg-2/50 disabled:opacity-40 transition-colors"
           >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-[18px] w-[18px] ${isRefreshing ? 'animate-spin' : ''}`} />
             <span className="text-sm font-medium">
               {isRefreshing ? 'Refreshing…' : 'Refresh discovery'}
             </span>
@@ -132,19 +134,18 @@ export function Sidebar({
 
       {/* Account card */}
       <div className="px-3 pb-5">
-        <div className="px-3 py-3 rounded-xl bg-slate-900 flex items-center justify-between gap-2">
+        <div className="px-3 py-3 rounded-md-crate bg-bg-1 flex items-center justify-between gap-2">
           <div className="min-w-0">
-            <p className="text-sm font-medium text-white truncate">{username ?? 'User'}</p>
-            <p className="text-xs text-slate-500">Signed in</p>
+            <p className="text-sm font-medium text-text-1 truncate">{username ?? 'User'}</p>
+            <p className="text-xs text-text-3">Signed in</p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
+            type="button"
             onClick={onLogout}
-            className="text-slate-400 hover:text-white hover:bg-slate-800 flex-shrink-0"
+            className="text-sm text-text-2 hover:text-text-1 transition-colors flex-shrink-0"
           >
-            Logout
-          </Button>
+            Sign out
+          </button>
         </div>
       </div>
     </aside>

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { MobileBottomNav } from './components/MobileBottomNav'
 import { MobileFullPlayer } from './components/MobileFullPlayer'
 import { Sidebar } from './components/Sidebar'
 import { MobileHeader } from './components/MobileHeader'
@@ -331,8 +330,9 @@ function AppContent() {
             </div>
           )}
 
-          {/* Scrollable page content */}
-          <div className="flex-1 overflow-y-auto pb-[104px] lg:pb-28">
+          {/* Scrollable page content — mobile padding clears the floating
+              player+nav card; desktop docked bar is in-flow (no padding). */}
+          <div className="flex-1 overflow-y-auto pb-[140px] lg:pb-0">
             {activePage === 'menu' ? (
               <MobileMenu
                 isAuthenticated={isAuthenticated}
@@ -346,16 +346,15 @@ function AppContent() {
             )}
           </div>
 
-          {/* Desktop docked player bar (>= lg) */}
-          <PlayerBar />
+          {/* Player+nav surface: floating single card (< lg), docked bar (>= lg) */}
+          <PlayerBar
+            currentPage={mobileCurrentPage}
+            onPageChange={handleMobilePageChange}
+            onNowPlayingClick={() => setMobilePlayerOpen(true)}
+          />
         </div>
 
-        {/* Mobile-only nav + full-screen player (< lg) */}
-        <MobileBottomNav
-          currentPage={mobileCurrentPage}
-          onPageChange={handleMobilePageChange}
-          onNowPlayingClick={() => setMobilePlayerOpen(true)}
-        />
+        {/* Mobile-only full-screen player (< lg) */}
         <div className="lg:hidden">
           <MobileFullPlayer
             isOpen={mobilePlayerOpen}
