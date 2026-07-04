@@ -2,7 +2,7 @@ import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
-import { Play, Pause, Download, ListMusic, Heart, Loader2, Share2, X, SkipBack, SkipForward } from 'lucide-react'
+import { Play, Pause, Download, ListMusic, Heart, Loader2, Share2, SkipBack, SkipForward } from 'lucide-react'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { downloadTrack } from '@/services/api'
 import { shareTrack } from '@/utils/urlBuilder'
@@ -11,7 +11,8 @@ import { useState, useRef } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useLikeModal } from '@/hooks/useLikeModal'
-import { TrackList } from '@/components/TrackList'
+import { Queue } from '@/components/Queue'
+import { LikeModal } from '@/components/LikeModal'
 
 export function Player() {
   const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, setAutoPlayContext, playNextTrack, playPreviousTrack, currentTrackIndex, isNavInFlight } = useAudio()
@@ -268,94 +269,32 @@ export function Player() {
         )}
       </div>
 
-      {/* ── Queue drawer ───────────────────────────────────────────── */}
-      {/* Mobile backdrop */}
-      {isQueueOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-30 md:hidden"
-          onClick={() => setIsQueueOpen(false)}
-        />
-      )}
-
-      {/* Drawer panel */}
-      <div className={`
-        fixed z-50 flex flex-col bg-bg-0-deep border-border shadow-2xl
-        transition-transform duration-300 ease-in-out
-        bottom-20 left-0 right-0 top-[40%] rounded-t-2xl border-t
-        md:top-0 md:left-auto md:right-0 md:w-80 md:rounded-none md:border-t-0 md:border-l
-        ${isQueueOpen ? 'translate-y-0 md:translate-x-0' : 'translate-y-full md:translate-y-0 md:translate-x-full'}
-      `}>
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-border flex-shrink-0">
-          <div className="min-w-0">
-            <h3 className="text-text-1 font-semibold text-sm truncate">{queueTitle}</h3>
-            <p className="text-xs text-text-2 truncate">{queueSubtitle}</p>
-          </div>
-          <Button onClick={() => setIsQueueOpen(false)} size="icon" variant="ghost"
-            className="text-text-2 hover:text-text-1 flex-shrink-0">
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-
-        {/* Tracklist */}
-        <div className="flex-1 overflow-y-auto min-h-0">
-          <TrackList
-            variant="album"
-            tracks={albumTracks.slice(currentTrackIndex)}
-            onSelect={handlePlayAlbumTrack}
-            enableLikeButtons={isAuthenticated}
-            onLikeTrack={handleLikeTrack}
-            currentTrackId={currentTrack?.id}
-            loadingTrackId={loadingTrackId}
-            isAuthenticated={isAuthenticated}
-            compactSpacing={true}
-            showColumnHeaders={false}
-          />
-        </div>
-      </div>
+      {/* ── Queue (desktop slide-in panel) ─────────────────────────── */}
+      <Queue
+        variant="panel"
+        isOpen={isQueueOpen}
+        onClose={() => setIsQueueOpen(false)}
+        title={queueTitle}
+        subtitle={queueSubtitle}
+        tracks={albumTracks.slice(currentTrackIndex)}
+        onSelectTrack={handlePlayAlbumTrack}
+        onLikeTrack={handleLikeTrack}
+        currentTrackId={currentTrack?.id}
+        loadingTrackId={loadingTrackId}
+        isAuthenticated={isAuthenticated}
+      />
 
       {/* ── Like modal ─────────────────────────────────────────────── */}
-      {isLikeModalOpen && likeModalTrack && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4"
-          role="dialog" aria-modal="true">
-          <form onSubmit={handleSubmitLike}
-            className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-bg-1 border border-border rounded-lg-crate p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase text-text-3 tracking-wide font-mono-label">Add to playlist</p>
-                <p className="text-text-1 text-lg font-semibold truncate">{likeModalTrack.title}</p>
-                <p className="text-text-2 text-sm truncate">{likeModalTrack.artist}</p>
-              </div>
-              <Button type="button" variant="ghost" size="icon"
-                className="text-text-2 hover:text-text-1" onClick={closeLikeModal}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
-              {PLAYLISTS.map((playlist) => (
-                <button type="button" key={playlist} onClick={() => setSelectedPlaylist(playlist)}
-                  className={`text-left text-sm px-3 py-2 rounded-sm-crate border transition-colors ${
-                    selectedPlaylist === playlist
-                      ? 'border-accent bg-accent/12 text-text-1'
-                      : 'border-border text-text-2 hover:border-text-3'
-                  }`}>
-                  {playlist}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center justify-end gap-3">
-              <Button type="button" variant="ghost" className="text-text-2 hover:text-text-1"
-                onClick={closeLikeModal} disabled={isSubmittingLike}>
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-accent text-accent-ink hover:bg-accent/90"
-                disabled={isSubmittingLike || !selectedPlaylist}>
-                {isSubmittingLike ? 'Saving...' : 'Add'}
-              </Button>
-            </div>
-          </form>
-        </div>
-      )}
+      <LikeModal
+        isOpen={isLikeModalOpen}
+        track={likeModalTrack}
+        playlists={PLAYLISTS}
+        selectedPlaylist={selectedPlaylist}
+        isSubmitting={isSubmittingLike}
+        onSelectPlaylist={setSelectedPlaylist}
+        onSubmit={handleSubmitLike}
+        onClose={closeLikeModal}
+      />
     </>
   )
 }

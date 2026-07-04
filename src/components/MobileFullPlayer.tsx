@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react'
 import {
   ChevronDown, Heart, Share2, Download, ListMusic,
-  Play, Pause, SkipBack, SkipForward, Music, Loader2, X, MoreHorizontal,
+  Play, Pause, SkipBack, SkipForward, Music, Loader2, MoreHorizontal,
 } from 'lucide-react'
 import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
@@ -12,8 +12,8 @@ import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { usePlayerGestures } from '@/hooks/usePlayerGestures'
 import { shareTrack } from '@/utils/urlBuilder'
 import { downloadTrack } from '@/services/api'
-import { TrackList } from '@/components/TrackList'
-import { Button } from '@/components/ui/button'
+import { Queue } from '@/components/Queue'
+import { LikeModal } from '@/components/LikeModal'
 
 interface MobileFullPlayerProps {
   isOpen: boolean
@@ -87,6 +87,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
   const hasQueue = albumTracks.length > 0 && !!albumInfo
   const queueTitle = albumInfo?.artist === 'Auto-play' ? 'Queue' : (albumInfo?.name ?? 'Queue')
+  const queueSubtitle = albumInfo?.artist === 'Auto-play' ? 'Upcoming tracks' : (albumInfo?.artist ?? '')
   const prevTrack = albumTracks[currentTrackIndex - 1] ?? null
   const nextTrack = albumTracks[currentTrackIndex + 1] ?? null
   const ghostCover = albumInfo?.cover
@@ -194,8 +195,6 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
   const handleLikeQueueTrack = (_track: AlbumTrackItem) => {}
 
   const artTransition = isDragging ? 'none' : SPRING
-  const queueTranslateY = showQueue ? '0%' : `calc(100% - ${dragY}px)`
-  const queueTransition = isDragging ? 'none' : SPRING
 
   return (
     <>
@@ -428,109 +427,35 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
           </div>
         </div>
 
-        {/* Queue panel — always rendered, transform-driven */}
-        <div
-          className="absolute inset-0 z-10 flex flex-col bg-slate-950"
-          style={{
-            transform: `translateY(${queueTranslateY})`,
-            transition: queueTransition,
-          }}
-          aria-hidden={!showQueue}
-          ref={el => { if (el) el.inert = !showQueue }}
-          onTouchStart={(e) => e.stopPropagation()}
-          onTouchEnd={(e) => e.stopPropagation()}
-        >
-          <div
-            className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-slate-800"
-            style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 16px)' }}
-          >
-            <div className="min-w-0">
-              <h3 className="text-white font-semibold text-sm truncate">{queueTitle}</h3>
-              <p className="text-xs text-slate-400 truncate">
-                {albumInfo?.artist === 'Auto-play' ? 'Upcoming tracks' : (albumInfo?.artist ?? '')}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowQueue(false)}
-              className="flex-shrink-0 flex items-center justify-center w-9 h-9 rounded-full text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-              aria-label="Close queue"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div
-            className="flex-1 overflow-y-auto"
-            onTouchStart={(e) => e.stopPropagation()}
-            onTouchEnd={(e) => e.stopPropagation()}
-          >
-            <TrackList
-              variant="album"
-              tracks={queueTracks}
-              onSelect={handlePlayQueueTrack}
-              enableLikeButtons={isAuthenticated}
-              onLikeTrack={handleLikeQueueTrack}
-              currentTrackId={currentTrack?.id}
-              loadingTrackId={loadingTrackId}
-              isAuthenticated={isAuthenticated}
-              compactSpacing={true}
-              showColumnHeaders={false}
-            />
-          </div>
-        </div>
+        {/* Queue sheet — always rendered, transform-driven by the gesture handler */}
+        <Queue
+          variant="sheet"
+          isOpen={showQueue}
+          onClose={() => setShowQueue(false)}
+          title={queueTitle}
+          subtitle={queueSubtitle}
+          tracks={queueTracks}
+          onSelectTrack={handlePlayQueueTrack}
+          onLikeTrack={handleLikeQueueTrack}
+          currentTrackId={currentTrack?.id}
+          loadingTrackId={loadingTrackId}
+          isAuthenticated={isAuthenticated}
+          dragOffset={dragY}
+          isDragging={isDragging}
+        />
       </div>
 
       {/* Like modal */}
-      {isLikeModalOpen && likeModalTrack && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4"
-          role="dialog"
-          aria-modal="true"
-        >
-          <form
-            onSubmit={handleSubmitLike}
-            className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase text-slate-400 tracking-wide">Add to playlist</p>
-                <p className="text-white text-lg font-semibold truncate">{likeModalTrack.title}</p>
-                <p className="text-slate-400 text-sm truncate">{likeModalTrack.artist}</p>
-              </div>
-              <Button type="button" variant="ghost" size="icon"
-                className="text-slate-400 hover:text-white flex-shrink-0" onClick={closeLikeModal}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
-              {PLAYLISTS.map((playlist) => (
-                <button
-                  type="button"
-                  key={playlist}
-                  onClick={() => setSelectedPlaylist(playlist)}
-                  className={`text-left text-sm px-3 py-2 rounded-lg border transition-colors ${
-                    selectedPlaylist === playlist
-                      ? 'border-white bg-white/10 text-white'
-                      : 'border-slate-800 text-slate-300 hover:border-slate-600'
-                  }`}
-                >
-                  {playlist}
-                </button>
-              ))}
-            </div>
-            <div className="flex items-center justify-end gap-3">
-              <Button type="button" variant="ghost" className="text-slate-300 hover:text-white"
-                onClick={closeLikeModal} disabled={isSubmittingLike}>
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-white text-black hover:bg-white/90"
-                disabled={isSubmittingLike || !selectedPlaylist}>
-                {isSubmittingLike ? 'Saving...' : 'Add'}
-              </Button>
-            </div>
-          </form>
-        </div>
-      )}
+      <LikeModal
+        isOpen={isLikeModalOpen}
+        track={likeModalTrack}
+        playlists={PLAYLISTS}
+        selectedPlaylist={selectedPlaylist}
+        isSubmitting={isSubmittingLike}
+        onSelectPlaylist={setSelectedPlaylist}
+        onSubmit={handleSubmitLike}
+        onClose={closeLikeModal}
+      />
     </>
   )
 }
