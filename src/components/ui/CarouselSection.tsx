@@ -5,37 +5,6 @@ function navigateTo(path: string) {
   window.dispatchEvent(new PopStateEvent('popstate'))
 }
 
-/**
- * Section heading: Instrument Serif italic title + optional accent "See all"
- * link. Reused standalone (e.g. above non-carousel lists) as well as inside
- * CarouselSection below.
- */
-export function SectionHeader({
-  title,
-  seeAllHref,
-  onSeeAll,
-  className = '',
-}: {
-  title: string
-  seeAllHref?: string
-  onSeeAll?: () => void
-  className?: string
-}) {
-  return (
-    <div className={`flex items-baseline justify-between ${className}`}>
-      <h2 className="font-serif-display italic text-2xl text-text-1">{title}</h2>
-      {(seeAllHref || onSeeAll) && (
-        <button
-          onClick={onSeeAll ?? (() => navigateTo(seeAllHref!))}
-          className="ml-2.5 shrink-0 text-[11.5px] text-accent hover:opacity-80 transition-opacity"
-        >
-          See all
-        </button>
-      )}
-    </div>
-  )
-}
-
 export function CarouselSection({
   title,
   seeAllHref,
@@ -47,7 +16,17 @@ export function CarouselSection({
 }) {
   return (
     <section className="space-y-3">
-      <SectionHeader title={title} seeAllHref={seeAllHref} />
+      <div className="flex items-center justify-between">
+        <h2 className="text-white font-semibold text-lg">{title}</h2>
+        {seeAllHref && (
+          <button
+            onClick={() => navigateTo(seeAllHref)}
+            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            See all →
+          </button>
+        )}
+      </div>
       <div className="flex gap-3 overflow-x-auto pb-3 snap-x snap-mandatory scrollbar-hide">
         {children}
       </div>
