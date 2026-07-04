@@ -1,5 +1,4 @@
-import { RefreshCw, Home, Compass } from 'lucide-react'
-import { SearchBar } from './SearchBar'
+import { RefreshCw, Home, Compass, Search } from 'lucide-react'
 import { Logo } from './ui/Logo'
 
 interface SidebarProps {
@@ -11,6 +10,7 @@ interface SidebarProps {
   onNavigateHome: () => void
   onNavigateDigging: () => void
   onNavigateDiggingTab: (tab: 'tracks' | 'albums') => void
+  onNavigateSearch: () => void
   onRefresh: () => void
   onLogout: () => void
 }
@@ -28,6 +28,7 @@ export function Sidebar({
   onNavigateHome,
   onNavigateDigging,
   onNavigateDiggingTab,
+  onNavigateSearch,
   onRefresh,
   onLogout,
 }: SidebarProps) {
@@ -51,13 +52,6 @@ export function Sidebar({
           <span className="font-serif-display italic text-2xl text-text-1">nipstream</span>
         </button>
       </div>
-
-      {/* Search */}
-      {isAuthenticated && (
-        <div className="px-4 pb-4">
-          <SearchBar />
-        </div>
-      )}
 
       {/* Primary nav */}
       {isAuthenticated && (
@@ -110,6 +104,17 @@ export function Sidebar({
               </button>
             </div>
           )}
+
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activePage === 'search'}
+            onClick={onNavigateSearch}
+            className={navItemClass(activePage === 'search')}
+          >
+            <Search className="h-[18px] w-[18px]" />
+            Search
+          </button>
         </nav>
       )}
 

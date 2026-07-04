@@ -182,7 +182,7 @@ export function Player() {
                   <img
                     src={currentTrack.coverArt}
                     alt={`${currentTrack.title} cover`}
-                    className={`w-11 h-11 rounded-[10px] object-cover bg-bg-2 ${currentTrack.albumId ? 'hover:opacity-80 transition-opacity' : ''}`}
+                    className={`w-11 h-11 rounded-sm-crate object-cover bg-bg-2 ${currentTrack.albumId ? 'hover:opacity-80 transition-opacity' : ''}`}
                     onError={(e) => {
                       e.currentTarget.style.display = 'none'
                       const next = e.currentTarget.nextElementSibling as HTMLElement

@@ -277,6 +277,7 @@ function AppContent() {
           onNavigateHome={() => navigate('home')}
           onNavigateDigging={() => navigate('digging')}
           onNavigateDiggingTab={navigateToDiggingTab}
+          onNavigateSearch={() => navigate('search')}
           onRefresh={handleRefresh}
           onLogout={logout}
         />

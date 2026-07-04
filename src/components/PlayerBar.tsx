@@ -52,7 +52,8 @@ export function PlayerBar({ currentPage, onPageChange, onNowPlayingClick }: Play
                 role="button"
                 aria-label="Open full player"
               >
-                {/* Art */}
+                {/* Art: 11px matches design HTML exactly at this size; off-scale from the
+                    10/16/22 token ramp but kept for fidelity to the mini-player reference. */}
                 {currentTrack.coverArt ? (
                   <img
                     src={currentTrack.coverArt}
