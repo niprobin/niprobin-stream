@@ -272,6 +272,7 @@ function AppContent() {
           isAuthenticated={isAuthenticated}
           activePage={activePage}
           diggingTab={diggingTab}
+          diggingCount={discoverTracks.length}
           username={username}
           isRefreshing={isRefreshing}
           onNavigateHome={() => navigate('home')}

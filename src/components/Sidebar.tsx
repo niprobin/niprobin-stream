@@ -5,6 +5,7 @@ interface SidebarProps {
   isAuthenticated: boolean
   activePage: 'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'
   diggingTab: 'tracks' | 'albums'
+  diggingCount?: number
   username?: string | null
   isRefreshing: boolean
   onNavigateHome: () => void
@@ -23,6 +24,7 @@ export function Sidebar({
   isAuthenticated,
   activePage,
   diggingTab,
+  diggingCount,
   username,
   isRefreshing,
   onNavigateHome,
@@ -74,7 +76,10 @@ export function Sidebar({
             className={navItemClass(activePage === 'digging')}
           >
             <Compass className="h-[18px] w-[18px]" />
-            Digging
+            <span className="flex-1 text-left">Digging</span>
+            {typeof diggingCount === 'number' && diggingCount > 0 && (
+              <span className="text-xs font-mono text-text-3">{diggingCount}</span>
+            )}
           </button>
 
           {/* Digging sub-tabs */}
