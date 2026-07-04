@@ -1,18 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
-import { Player } from './components/Player'
+import { useEffect, useState } from 'react'
 import { MobileBottomNav } from './components/MobileBottomNav'
-import { MobilePlayer } from './components/MobilePlayer'
+import { MobileFullPlayer } from './components/MobileFullPlayer'
+import { Sidebar } from './components/Sidebar'
+import { MobileHeader } from './components/MobileHeader'
+import { PlayerBar } from './components/PlayerBar'
+import { MobileMenu } from './components/MobileMenu'
 import { useAuth } from './contexts/AuthContext'
 import { NotificationBanner } from './components/NotificationBanner'
 import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
-import { Button } from './components/ui/button'
-import { RefreshCw } from 'lucide-react'
 import { AlbumsPage } from './pages/Digging'
 import { useAudio } from './contexts/AudioContext'
 import { useDiscovery } from './contexts/DiscoveryContext'
-import { useIsMobile } from './hooks/useIsMobile'
 import { Search } from './components/Search'
-import { SearchBar } from './components/SearchBar'
 import {
   buildDiggingUrl,
   buildDiggingUrlWithFilters,
@@ -38,7 +37,6 @@ function AppContent() {
   const { loadTrack } = useAudio()
   const { setMetaTags, resetToDefault } = useMetaTags()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, discoverTracks, discoverAlbums } = useDiscovery()
-  const isMobile = useIsMobile()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [currentArtistId, setCurrentArtistId] = useState<string | null>(null)
@@ -46,23 +44,6 @@ function AppContent() {
   const [diggingPage, setDiggingPage] = useState<number>(1)
   const [searchInitialQuery, setSearchInitialQuery] = useState('')
   const [mobilePlayerOpen, setMobilePlayerOpen] = useState(false)
-  const navRef = useRef<HTMLElement>(null)
-
-  // Publish the navbar's actual (variable) height as a CSS var so overlays
-  // like the Like modal can size themselves between the navbar and the player
-  useEffect(() => {
-    const navEl = navRef.current
-    if (!navEl || typeof ResizeObserver === 'undefined') return
-
-    const updateHeight = () => {
-      document.documentElement.style.setProperty('--navbar-height', `${navEl.offsetHeight}px`)
-    }
-
-    updateHeight()
-    const observer = new ResizeObserver(updateHeight)
-    observer.observe(navEl)
-    return () => observer.disconnect()
-  }, [])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -273,70 +254,46 @@ function AppContent() {
     </div>
   )
 
-  if (isMobile) {
-    const mobileCurrentPage: 'home' | 'digging' | 'menu' =
-      activePage === 'digging' || activePage === 'album' ? 'digging'
-      : activePage === 'menu' ? 'menu'
-      : 'home'
+  const mobileCurrentPage: 'home' | 'digging' | 'menu' =
+    activePage === 'digging' || activePage === 'album' ? 'digging'
+    : activePage === 'menu' ? 'menu'
+    : 'home'
 
-    const mobileMenuContent = (
-      <div className="py-8 px-6 space-y-6">
-        <h2 className="text-white text-xl font-semibold">Menu</h2>
+  const isRefreshing = isLoadingTracks || isLoadingAlbums
+  const handleRefresh = () => { refreshTracks(); refreshAlbums() }
 
-        {isAuthenticated && (
-          <div className="space-y-2">
-            <p className="text-xs text-slate-500 uppercase tracking-wider">Discovery</p>
-            <button
-              type="button"
-              onClick={() => { refreshTracks(); refreshAlbums() }}
-              disabled={isLoadingTracks || isLoadingAlbums}
-              className="flex items-center gap-3 w-full px-4 py-3 rounded-xl bg-slate-900 text-white disabled:opacity-40 active:bg-slate-800 transition-colors"
-            >
-              <RefreshCw className={`h-5 w-5 text-slate-400 ${isLoadingTracks || isLoadingAlbums ? 'animate-spin' : ''}`} />
-              <span className="text-sm font-medium">
-                {isLoadingTracks || isLoadingAlbums ? 'Refreshing…' : 'Refresh discovery'}
-              </span>
-            </button>
-          </div>
-        )}
+  return (
+    <>
+      <NotificationBanner />
+      <GlobalLoadingOverlay />
 
-        <div className="space-y-2">
-          <p className="text-xs text-slate-500 uppercase tracking-wider">Account</p>
-          <div className="px-4 py-3 rounded-xl bg-slate-900 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-white">{username ?? 'User'}</p>
-              <p className="text-xs text-slate-500">Signed in</p>
-            </div>
-            <button
-              type="button"
-              onClick={logout}
-              className="text-sm text-slate-400 hover:text-white transition-colors"
-            >
-              Sign out
-            </button>
-          </div>
-        </div>
-      </div>
-    )
+      <div className="flex h-[100dvh] bg-slate-950 overflow-hidden">
+        {/* Desktop sidebar (>= lg) */}
+        <Sidebar
+          isAuthenticated={isAuthenticated}
+          activePage={activePage}
+          diggingTab={diggingTab}
+          username={username}
+          isRefreshing={isRefreshing}
+          onNavigateHome={() => navigate('home')}
+          onNavigateDigging={() => navigate('digging')}
+          onNavigateDiggingTab={navigateToDiggingTab}
+          onRefresh={handleRefresh}
+          onLogout={logout}
+        />
 
-    return (
-      <>
-        <NotificationBanner />
-        <GlobalLoadingOverlay />
-        <div
-          className="flex flex-col bg-slate-950"
-          style={{ height: '100dvh', paddingTop: 'env(safe-area-inset-top, 0px)' }}
-        >
-          {/* Search bar — shown on all pages except menu */}
-          {activePage !== 'menu' && (
-            <div className="flex-shrink-0 px-[18px] py-[10px]">
-              <SearchBar containerClassName="h-[42px] !rounded-[12px]" />
-            </div>
-          )}
+        {/* Main column */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Mobile header (< lg) */}
+          <MobileHeader
+            isAuthenticated={isAuthenticated}
+            showSearch={activePage !== 'menu'}
+            onLogoClick={() => navigate('home')}
+          />
 
-          {/* Digging segmented control — only shown when on digging page */}
+          {/* Mobile digging segmented control (< lg) */}
           {isAuthenticated && activePage === 'digging' && (
-            <div className="flex-shrink-0 px-[18px] py-3 border-b border-slate-800">
+            <div className="lg:hidden flex-shrink-0 px-[18px] py-3 border-b border-slate-800">
               <div className="flex bg-slate-800 rounded-[11px] p-[3px] gap-[3px]">
                 <button
                   type="button"
@@ -375,234 +332,37 @@ function AppContent() {
           )}
 
           {/* Scrollable page content */}
-          <div className="flex-1 overflow-y-auto pb-[104px]">
-            {activePage === 'menu' ? mobileMenuContent : pageContent}
+          <div className="flex-1 overflow-y-auto pb-[104px] lg:pb-28">
+            {activePage === 'menu' ? (
+              <MobileMenu
+                isAuthenticated={isAuthenticated}
+                username={username}
+                isRefreshing={isRefreshing}
+                onRefresh={handleRefresh}
+                onLogout={logout}
+              />
+            ) : (
+              pageContent
+            )}
           </div>
 
-          <MobileBottomNav
-            currentPage={mobileCurrentPage}
-            onPageChange={handleMobilePageChange}
-            onNowPlayingClick={() => setMobilePlayerOpen(true)}
-          />
-          <MobilePlayer
+          {/* Desktop docked player bar (>= lg) */}
+          <PlayerBar />
+        </div>
+
+        {/* Mobile-only nav + full-screen player (< lg) */}
+        <MobileBottomNav
+          currentPage={mobileCurrentPage}
+          onPageChange={handleMobilePageChange}
+          onNowPlayingClick={() => setMobilePlayerOpen(true)}
+        />
+        <div className="lg:hidden">
+          <MobileFullPlayer
             isOpen={mobilePlayerOpen}
             onClose={() => setMobilePlayerOpen(false)}
             isAuthenticated={isAuthenticated}
           />
         </div>
-      </>
-    )
-  }
-
-  return (
-    <>
-      <NotificationBanner />
-      <GlobalLoadingOverlay />
-
-      {/* Sticky Navbar */}
-      <nav ref={navRef} className="sticky top-0 z-50 bg-slate-950 md:border-b md:border-slate-800">
-        <div className="w-full px-4 sm:px-6 lg:px-10 py-4 flex items-center justify-between">
-          {/* Left: Logo + Tabs */}
-          <div className="flex items-center gap-6">
-            <div
-              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
-              onClick={() => navigate('home')}
-            >
-              <img
-                src="/android-chrome-192x192.png"
-                alt="nipstream logo"
-                className="w-8 h-8"
-              />
-            </div>
-            
-            {isAuthenticated && (
-              <div className="hidden md:flex items-center gap-4">
-                <nav
-                  className="flex space-x-2"
-                  role="tablist"
-                  aria-label="Primary pages"
-                >
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={activePage === 'home'}
-                    onClick={() => navigate('home')}
-                    className={`px-3 py-2 text-sm font-medium rounded-md transition ${
-                      activePage === 'home'
-                        ? 'bg-slate-800 text-white'
-                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-                    }`}
-                  >
-                    Home
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={activePage === 'digging'}
-                    onClick={() => navigate('digging')}
-                    className={`px-3 py-2 text-sm font-medium rounded-md transition ${
-                      activePage === 'digging'
-                        ? 'bg-slate-800 text-white'
-                        : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-                    }`}
-                  >
-                    Digging
-                  </button>
-                </nav>
-              </div>
-            )}
-          </div>
-          
-          {/* Center: SearchBar on desktop */}
-          {isAuthenticated && (
-            <div className="hidden md:flex flex-1 max-w-2xl mx-6">
-              <SearchBar />
-            </div>
-          )}
-
-          {/* Right: Refresh + Logout */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => { refreshTracks(); refreshAlbums() }}
-              disabled={isLoadingTracks || isLoadingAlbums}
-              className="p-2 text-slate-400 hover:text-white disabled:opacity-40 transition-colors"
-              aria-label="Refresh discovery data"
-            >
-              <RefreshCw className={`h-4 w-4 ${isLoadingTracks || isLoadingAlbums ? 'animate-spin' : ''}`} />
-            </button>
-            {username && (
-              <span className="hidden md:block text-sm text-slate-400">{username}</span>
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={logout}
-              className="text-slate-300 hover:text-white hover:bg-slate-800"
-            >
-              Logout
-            </Button>
-          </div>
-        </div>
-
-        {/* Sub-tabs for Digging page — desktop, shown below the top nav row */}
-        {isAuthenticated && activePage === 'digging' && (
-          <div className="hidden md:block pb-4">
-            <div className="px-4 sm:px-6 lg:px-10">
-              <div className="max-w-xs border-b border-slate-800">
-                <nav className="flex space-x-2 -mb-px" role="tablist" aria-label="Digging sections">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={diggingTab === 'tracks'}
-                    onClick={() => navigateToDiggingTab('tracks')}
-                    className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition ${
-                      diggingTab === 'tracks'
-                        ? 'border-white text-white'
-                        : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
-                    }`}
-                  >
-                    Tracks
-                  </button>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={diggingTab === 'albums'}
-                    onClick={() => navigateToDiggingTab('albums')}
-                    className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition ${
-                      diggingTab === 'albums'
-                        ? 'border-white text-white'
-                        : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
-                    }`}
-                  >
-                    Albums
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Mobile search bar - full width, shown below logo row */}
-        {isAuthenticated && (
-          <div className="md:hidden px-4 sm:px-6 pb-2">
-            <SearchBar />
-          </div>
-        )}
-
-        {/* Mobile tabs - shown only on small screens when authenticated */}
-        {isAuthenticated && (
-          <div className="md:hidden pb-4">
-            <nav className="flex space-x-2 px-4 sm:px-6 lg:px-10">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activePage === 'home'}
-                onClick={() => navigate('home')}
-                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition ${
-                  activePage === 'home'
-                    ? 'bg-slate-800 text-white'
-                    : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-                }`}
-              >
-                Home
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={activePage === 'digging'}
-                onClick={() => navigate('digging')}
-                className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition ${
-                  activePage === 'digging'
-                    ? 'bg-slate-800 text-white'
-                    : 'text-slate-400 hover:text-slate-300 hover:bg-slate-800/50'
-                }`}
-              >
-                Digging
-              </button>
-            </nav>
-
-            {/* Sub-tabs for Digging page on mobile */}
-            {activePage === 'digging' && (
-              <>
-                <div className="mt-3 border-b border-slate-800 px-4 sm:px-6 lg:px-10">
-                  <nav className="flex space-x-2 -mb-px" role="tablist" aria-label="Digging sections">
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={diggingTab === 'tracks'}
-                      onClick={() => navigateToDiggingTab('tracks')}
-                      className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition ${
-                        diggingTab === 'tracks'
-                          ? 'border-white text-white'
-                          : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
-                      }`}
-                    >
-                      Tracks
-                    </button>
-                    <button
-                      type="button"
-                      role="tab"
-                      aria-selected={diggingTab === 'albums'}
-                      onClick={() => navigateToDiggingTab('albums')}
-                      className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition ${
-                        diggingTab === 'albums'
-                          ? 'border-white text-white'
-                          : 'border-transparent text-slate-400 hover:text-slate-300 hover:border-slate-600'
-                      }`}
-                    >
-                      Albums
-                    </button>
-                  </nav>
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </nav>
-
-      <div className="min-h-screen bg-slate-950 pb-32 md:pb-24">
-        {pageContent}
-        <Player />
       </div>
     </>
   )

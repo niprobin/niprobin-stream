@@ -2,11 +2,11 @@ import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { Button } from '@/components/ui/button'
-import { Play, Pause, Download, ListMusic, Heart, Loader2, Share2, X, SkipBack, SkipForward, Music, MoreHorizontal } from 'lucide-react'
+import { Play, Pause, Download, ListMusic, Heart, Loader2, Share2, X, SkipBack, SkipForward, Music } from 'lucide-react'
 import { downloadTrack } from '@/services/api'
 import { shareTrack } from '@/utils/urlBuilder'
 import { ROUTES } from '@/utils/routes'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useRef } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useLikeModal } from '@/hooks/useLikeModal'
@@ -32,31 +32,12 @@ export function Player() {
   } = useLikeModal(token)
 
   const [isQueueOpen, setIsQueueOpen] = useState(false)
-  const [showMobileActions, setShowMobileActions] = useState(false)
-  const [popoverPosition, setPopoverPosition] = useState<{ bottom: number; right: number } | null>(null)
   const [isDraggingProgress, setIsDraggingProgress] = useState(false)
   const playerRef = useRef<HTMLDivElement>(null)
-  const popoverRef = useRef<HTMLDivElement>(null)
-  const threeDotsRef = useRef<HTMLButtonElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
 
   const isCurrentTrackLoading = loadingState.status !== 'idle' && loadingState.trackId === currentTrack?.id
   const hasAlbumContext = albumTracks.length > 0 && albumInfo
-
-  // Close queue when clicking outside on mobile (backdrop handles desktop)
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showMobileActions &&
-          threeDotsRef.current && !threeDotsRef.current.contains(event.target as Node) &&
-          (!popoverRef.current || !popoverRef.current.contains(event.target as Node))) {
-        setShowMobileActions(false)
-      }
-    }
-    if (showMobileActions) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [showMobileActions])
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
@@ -275,74 +256,6 @@ export function Player() {
                 )}
               </div>
             </div>
-
-            {/* Mobile layout */}
-            <div className="md:hidden">
-              <div className="flex items-center gap-3">
-                {/* Cover */}
-                <div
-                  className={`flex-shrink-0 ${currentTrack.albumId ? 'cursor-pointer' : ''}`}
-                  onClick={currentTrack.albumId ? handleAlbumClick : undefined}
-                >
-                  {currentTrack.coverArt ? (
-                    <img
-                      src={currentTrack.coverArt}
-                      alt={`${currentTrack.title} cover`}
-                      className={`w-12 h-12 rounded-sm object-cover bg-slate-800 ${currentTrack.albumId ? 'active:opacity-70' : ''}`}
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none'
-                        const next = e.currentTarget.nextElementSibling as HTMLElement
-                        if (next) next.style.display = 'flex'
-                      }}
-                    />
-                  ) : null}
-                  <div className={`w-12 h-12 rounded-sm bg-slate-800 flex items-center justify-center ${currentTrack.coverArt ? 'hidden' : 'flex'}`}>
-                    <Music className="h-4 w-4 text-slate-400" />
-                  </div>
-                </div>
-
-                {/* Track info + three-dots */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="font-semibold text-white truncate text-sm">{currentTrack.title}</div>
-                      <div className="text-sm text-slate-400 truncate">{currentTrack.artist}</div>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <Button
-                        ref={threeDotsRef}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (!showMobileActions && threeDotsRef.current) {
-                            const rect = threeDotsRef.current.getBoundingClientRect()
-                            setPopoverPosition({
-                              bottom: window.innerHeight - rect.top + 8,
-                              right: window.innerWidth - rect.right,
-                            })
-                          }
-                          setShowMobileActions(!showMobileActions)
-                        }}
-                        size="icon-sm" variant="ghost"
-                        className="text-slate-400 hover:text-white hover:bg-slate-800/50"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Play/Pause */}
-                <div className="flex-shrink-0">
-                  <Button onClick={handlePlayPause} size="icon-lg" variant="ghost"
-                    className="bg-white rounded-full text-black disabled:opacity-50"
-                    disabled={isCurrentTrackLoading}>
-                    {isCurrentTrackLoading ? <Loader2 className="h-4 w-4 animate-spin" />
-                      : isPlaying ? <Pause className="h-4 w-4" />
-                      : <Play className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-            </div>
           </>
         ) : (
           <div className="flex items-center justify-center gap-2 py-2">
@@ -356,42 +269,6 @@ export function Player() {
           </div>
         )}
       </div>
-
-      {/* ── Mobile actions popover ─────────────────────────────────── */}
-      {showMobileActions && popoverPosition && (
-        <div
-          ref={popoverRef}
-          style={{ bottom: popoverPosition.bottom, right: popoverPosition.right }}
-          className="fixed z-[9999] md:hidden flex items-center gap-0.5 bg-slate-800 border border-slate-700 rounded-xl px-1.5 py-1.5 shadow-2xl"
-        >
-          {isAuthenticated && currentTrack && (
-            <Button
-              onClick={() => { openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id); setShowMobileActions(false) }}
-              size="icon" variant="ghost"
-              className={`text-white hover:text-red-400 hover:bg-slate-700 ${isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-red-400' : ''}`}
-            >
-              <Heart className="h-4 w-4" fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'} />
-            </Button>
-          )}
-          <Button onClick={() => { handleShareStream(); setShowMobileActions(false) }}
-            size="icon" variant="ghost" className="text-white hover:text-blue-400 hover:bg-slate-700">
-            <Share2 className="h-4 w-4" />
-          </Button>
-          <Button onClick={() => { handleDownload(); setShowMobileActions(false) }}
-            size="icon" variant="ghost" disabled={isGlobalLoading} className="text-white hover:bg-slate-700">
-            <Download className={`h-4 w-4 ${isGlobalLoading ? 'animate-pulse' : ''}`} />
-          </Button>
-          {hasAlbumContext && (
-            <Button
-              onClick={() => { setIsQueueOpen(true); setShowMobileActions(false) }}
-              size="icon" variant="ghost"
-              className={`text-white hover:bg-slate-700 ${isQueueOpen ? 'text-white' : 'text-slate-300'}`}
-            >
-              <ListMusic className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
-      )}
 
       {/* ── Queue drawer ───────────────────────────────────────────── */}
       {/* Mobile backdrop */}
@@ -441,7 +318,7 @@ export function Player() {
 
       {/* ── Like modal ─────────────────────────────────────────────── */}
       {isLikeModalOpen && likeModalTrack && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4 md:items-stretch md:pt-[var(--navbar-height,4.5rem)] md:pb-24"
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4"
           role="dialog" aria-modal="true">
           <form onSubmit={handleSubmitLike}
             className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none">

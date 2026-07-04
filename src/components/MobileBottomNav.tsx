@@ -19,7 +19,7 @@ export function MobileBottomNav({ currentPage, onPageChange, onNowPlayingClick }
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
+    <div className="fixed bottom-0 left-0 right-0 z-50 lg:hidden">
       {/* Mini-player card — docked above the nav */}
       {currentTrack && (
         <div

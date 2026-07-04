@@ -15,7 +15,7 @@ import { downloadTrack } from '@/services/api'
 import { TrackList } from '@/components/TrackList'
 import { Button } from '@/components/ui/button'
 
-interface MobilePlayerProps {
+interface MobileFullPlayerProps {
   isOpen: boolean
   onClose: () => void
   isAuthenticated: boolean
@@ -58,7 +58,7 @@ function ArtBox({ coverArt, title, size }: { coverArt?: string; title?: string; 
   )
 }
 
-export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerProps) {
+export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFullPlayerProps) {
   const {
     currentTrack, isPlaying, currentTime, duration,
     pause, resume, seek, playNextTrack, playPreviousTrack,
@@ -483,7 +483,7 @@ export function MobilePlayer({ isOpen, onClose, isAuthenticated }: MobilePlayerP
       {/* Like modal */}
       {isLikeModalOpen && likeModalTrack && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4 md:items-stretch md:pt-[var(--navbar-height,4.5rem)] md:pb-24"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4"
           role="dialog"
           aria-modal="true"
         >

@@ -205,7 +205,7 @@ export function TrackList(props: TrackListProps) {
     {/* Like Modal (moved from Player) */}
     {isLikeModalOpen && likeModalTrack && (
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4 md:items-stretch md:pt-[var(--navbar-height,4.5rem)] md:pb-24"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4"
         role="dialog"
         aria-modal="true"
       >
