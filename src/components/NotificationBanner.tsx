@@ -48,7 +48,7 @@ export function NotificationBanner() {
       <p className={`flex-1 text-sm font-medium ${styles.text}`}>{notification.message}</p>
       <button
         onClick={dismissNotification}
-        className={`flex-shrink-0 rounded-full p-1 transition-colors hover:bg-white/10 ${styles.text}`}
+        className={`flex-shrink-0 rounded-full p-1 transition-colors hover:bg-text-1/10 ${styles.text}`}
         aria-label="Dismiss notification"
       >
         <X className="h-4 w-4" />
