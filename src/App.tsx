@@ -231,9 +231,11 @@ function AppContent() {
     navigate('digging', undefined, diggingTab, validPage, true)
   }
 
+  const isDiggingDesktopFixed = activePage === 'digging'
+
   const pageContent = (
-    <div className="w-full px-4 sm:px-6 lg:px-10">
-      <div className="w-full">
+    <div className={`w-full px-4 sm:px-6 lg:px-10 ${isDiggingDesktopFixed ? 'lg:h-full lg:flex lg:flex-col lg:min-h-0' : ''}`}>
+      <div className={`w-full ${isDiggingDesktopFixed ? 'lg:h-full lg:flex lg:flex-col lg:min-h-0' : ''}`}>
         {activePage === 'artist' && currentArtistId ? (
           <ArtistPage key={currentArtistId} artistId={currentArtistId} />
         ) : activePage === 'album' && currentAlbumId ? (
@@ -333,8 +335,11 @@ function AppContent() {
           )}
 
           {/* Scrollable page content — mobile padding clears the floating
-              player+nav card; desktop docked bar is in-flow (no padding). */}
-          <div className="flex-1 overflow-y-auto pb-[140px] lg:pb-0">
+              player+nav card; desktop docked bar is in-flow (no padding).
+              Digging gets a fixed-height, non-scrolling pane on desktop
+              instead (see AlbumsPage) so its pagination stays pinned
+              above the docked player bar without page-level scrolling. */}
+          <div className={`flex-1 overflow-y-auto pb-[140px] lg:pb-0 ${isDiggingDesktopFixed ? 'lg:overflow-hidden lg:flex lg:flex-col lg:min-h-0' : ''}`}>
             {activePage === 'menu' ? (
               <MobileMenu
                 isAuthenticated={isAuthenticated}

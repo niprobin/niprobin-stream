@@ -14,6 +14,7 @@ import { albumFilterFunction } from '@/hooks/useDiscoverySearch'
 import { useAudio } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { useLikeModal } from '@/hooks/useLikeModal'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import type { AlbumTrackItem } from '@/contexts/AudioContext'
@@ -116,7 +117,20 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const [curatorPickerOpen, setCuratorPickerOpen] = useState(false)
 
   const { curator, search, updateFilter, updateFilters } = useUrlFilters('digging')
-  const pageSize = 10
+
+  // Album grid columns match the `grid-cols-3 sm:grid-cols-4 lg:grid-cols-5`
+  // classes below — page size is a multiple of the current column count so
+  // the last row of a page is never partially filled.
+  const isTablet = useMediaQuery('(min-width: 640px)')
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
+  const albumColumns = isDesktop ? 5 : isTablet ? 4 : 3
+  const albumRows = isDesktop ? 1 : 3
+  const albumPageSize = albumColumns * albumRows
+  // Desktop has a fixed-height, non-scrolling content pane between the
+  // header and the docked player bar — fewer rows keeps everything
+  // (list + pagination) visible without scrolling. Mobile/tablet keep the
+  // original page size since that layout scrolls normally.
+  const trackPageSize = isDesktop ? 6 : 10
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setAutoPlayContext, currentTrack } = useAudio()
@@ -175,6 +189,20 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     }
   }, [activeTab, prevActiveTab, onPageChange, updateFilters])
 
+  // Page size depends on breakpoint (desktop shows fewer rows to fit
+  // without scrolling) — jump back to page 1 when the breakpoint actually
+  // changes (not on initial mount) so the current page can't land past the
+  // new last page, without clobbering the preserved page on remount.
+  const [prevIsDesktop, setPrevIsDesktop] = useState(isDesktop)
+  const [prevIsTablet, setPrevIsTablet] = useState(isTablet)
+  useEffect(() => {
+    if (isDesktop !== prevIsDesktop || isTablet !== prevIsTablet) {
+      onPageChange(1)
+      setPrevIsDesktop(isDesktop)
+      setPrevIsTablet(isTablet)
+    }
+  }, [isDesktop, isTablet, prevIsDesktop, prevIsTablet, onPageChange])
+
   const buildQueueAndPlay = (filteredTracks: DiscoverTrack[], selectedTrack: DiscoverTrack) => {
     const allQueue = filteredTracks.map((t, index) => ({
       track: t.track,
@@ -217,12 +245,12 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   ).sort()
 
   return (
-    <div className="w-full space-y-0">
+    <div className="w-full space-y-0 lg:h-full lg:flex lg:flex-col lg:min-h-0">
 
       {activeTab === 'tracks' && (
-        <div>
+        <div className="lg:flex-1 lg:flex lg:flex-col lg:min-h-0">
           {/* ── Curator chip + queue count ── */}
-          <div className="flex items-center justify-between px-[18px] pt-3 pb-[6px]">
+          <div className="flex items-center justify-between px-[18px] pt-3 pb-[6px] lg:flex-shrink-0">
             <div className="relative">
               <button
                 type="button"
@@ -272,7 +300,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
           </div>
 
           {tracks.length === 0 ? (
-            <div className="text-center text-text-2 py-12">
+            <div className="text-center text-text-2 py-12 lg:flex-1">
               No tracks available yet. Check back soon.
             </div>
           ) : (() => {
@@ -281,22 +309,22 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
               .filter(t => curator === 'all' || t.curator === curator)
 
             const pagedTracks = filteredTracks.slice(
-              (currentPage - 1) * pageSize,
-              currentPage * pageSize
+              (currentPage - 1) * trackPageSize,
+              currentPage * trackPageSize
             )
 
             const mappedPagedTracks: AlbumTrackItem[] = pagedTracks.map((t, i) => ({
               track: t.track,
               deezer_id: t.deezer_id,
               artist: t.artist,
-              'track-number': (currentPage - 1) * pageSize + i + 1,
+              'track-number': (currentPage - 1) * trackPageSize + i + 1,
               date: t.date,
               curator: t.curator,
             }))
 
             return (
               <>
-                <div>
+                <div className="lg:flex-1 lg:overflow-y-auto lg:min-h-0">
                   {mappedPagedTracks.map((item) => {
                     const originalTrack = filteredTracks.find(
                       t => t.track === item.track && t.artist === item.artist
@@ -337,13 +365,13 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                   })}
                 </div>
 
-                {filteredTracks.length > pageSize && (
+                {filteredTracks.length > trackPageSize && (
                   <Pagination
                     currentPage={currentPage}
                     totalItems={filteredTracks.length}
-                    pageSize={pageSize}
+                    pageSize={trackPageSize}
                     onPageChange={onPageChange}
-                    className="pt-2 pb-12"
+                    className="pt-2 pb-12 lg:pb-4 lg:flex-shrink-0"
                   />
                 )}
               </>
@@ -353,9 +381,9 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
       )}
 
       {activeTab === 'albums' && (
-        <div>
+        <div className="lg:flex-1 lg:flex lg:flex-col lg:min-h-0">
           {/* Album search — desktop style, same on both */}
-          <div className="px-2 pt-4 pb-3">
+          <div className="px-2 pt-4 pb-3 lg:flex-shrink-0">
             <div className="relative">
               <input
                 type="text"
@@ -377,7 +405,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
           </div>
 
           {albums.length === 0 ? (
-            <div className="text-center text-text-2 py-12">
+            <div className="text-center text-text-2 py-12 lg:flex-1">
               No albums available yet. Check back soon.
             </div>
           ) : (() => {
@@ -386,7 +414,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
             if (search && filteredAlbums.length === 0) {
               return (
-                <div className="text-center text-text-2 py-12">
+                <div className="text-center text-text-2 py-12 lg:flex-1">
                   No albums found matching "{search}".
                 </div>
               )
@@ -394,33 +422,35 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
             return (
               <>
-                <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4 [&>*]:max-w-[320px] [&>*]:mx-auto">
-                  {filteredAlbums
-                    .slice((currentPage - 1) * pageSize, currentPage * pageSize)
-                    .map((album, index) => (
-                      <AlbumCard
-                        key={`${album.album}-${(currentPage - 1) * pageSize + index}`}
-                        album={album}
-                        onClick={() => handleAlbumClick(album)}
-                        actionButton={
-                          <button
-                            onClick={(e) => hideAlbumItem(album, e)}
-                            className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                            aria-label="Hide album"
-                          >
-                            <X className="h-5 w-5 md:h-4 md:w-4 text-white" />
-                          </button>
-                        }
-                      />
-                    ))}
+                <div className="lg:flex-1 lg:overflow-y-auto lg:min-h-0">
+                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4 [&>*]:max-w-[320px] [&>*]:mx-auto">
+                    {filteredAlbums
+                      .slice((currentPage - 1) * albumPageSize, currentPage * albumPageSize)
+                      .map((album, index) => (
+                        <AlbumCard
+                          key={`${album.album}-${(currentPage - 1) * albumPageSize + index}`}
+                          album={album}
+                          onClick={() => handleAlbumClick(album)}
+                          actionButton={
+                            <button
+                              onClick={(e) => hideAlbumItem(album, e)}
+                              className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                              aria-label="Hide album"
+                            >
+                              <X className="h-5 w-5 md:h-4 md:w-4 text-white" />
+                            </button>
+                          }
+                        />
+                      ))}
+                  </div>
                 </div>
-                {filteredAlbums.length > pageSize && (
+                {filteredAlbums.length > albumPageSize && (
                   <Pagination
                     currentPage={currentPage}
                     totalItems={filteredAlbums.length}
-                    pageSize={pageSize}
+                    pageSize={albumPageSize}
                     onPageChange={onPageChange}
-                    className="pt-4 pb-12"
+                    className="pt-4 pb-12 lg:pb-4 lg:flex-shrink-0"
                   />
                 )}
               </>
