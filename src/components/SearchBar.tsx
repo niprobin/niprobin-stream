@@ -25,7 +25,7 @@ function TrackRow({ track, artist, cover, onClick }: { track: string; artist: st
       {cover ? (
         <img src={cover} alt={track} className="w-8 h-8 rounded-sm-crate object-cover flex-shrink-0" />
       ) : (
-        <CoverArtPlaceholder size={32} radius={8} showLabel={false} className="flex-shrink-0" />
+        <CoverArtPlaceholder size={32} radius={10} showLabel={false} className="flex-shrink-0" />
       )}
       <div className="min-w-0">
         <p className="text-sm text-text-1 truncate">{track}</p>
@@ -60,7 +60,7 @@ function AlbumRow({ album, artist, cover, onClick }: { album: string; artist: st
       {cover ? (
         <img src={cover} alt={album} className="w-8 h-8 rounded-sm-crate object-cover flex-shrink-0" />
       ) : (
-        <CoverArtPlaceholder size={32} radius={8} showLabel={false} className="flex-shrink-0" />
+        <CoverArtPlaceholder size={32} radius={10} showLabel={false} className="flex-shrink-0" />
       )}
       <div className="min-w-0">
         <p className="text-sm text-text-1 truncate">{album}</p>
