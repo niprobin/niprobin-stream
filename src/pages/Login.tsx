@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Loader2 } from 'lucide-react'
+import { Logo } from '@/components/ui/Logo'
 
 export function LoginPage() {
   const { login } = useAuth()
@@ -32,23 +33,19 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-0-deep flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
-          <img
-            src="/android-chrome-192x192.png"
-            alt="nipstream"
-            className="w-14 h-14"
-          />
-          <h1 className="text-white text-2xl font-semibold tracking-tight">nipstream</h1>
-          <p className="text-slate-400 text-sm">Sign in to continue</p>
+          <Logo size={56} />
+          <h1 className="font-serif-display italic text-2xl text-1">nipstream</h1>
+          <p className="text-2 text-sm">Sign in to continue</p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label htmlFor="username" className="block text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label htmlFor="username" className="block text-xs font-mono-label text-3 uppercase tracking-wider">
               Username
             </label>
             <input
@@ -60,13 +57,13 @@ export function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your username"
-              className="w-full rounded-xl bg-slate-900 border border-slate-800 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
+              className="w-full rounded-md-crate bg-1 border border-border px-4 py-3 text-sm text-1 placeholder-text-3 focus:outline-none focus:border-accent transition"
               disabled={isLoading}
             />
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="access-code" className="block text-xs font-medium text-slate-400 uppercase tracking-wider">
+            <label htmlFor="access-code" className="block text-xs font-mono-label text-3 uppercase tracking-wider">
               Access code
             </label>
             <input
@@ -77,19 +74,19 @@ export function LoginPage() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="Enter your access code"
-              className="w-full rounded-xl bg-slate-900 border border-slate-800 px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition"
+              className="w-full rounded-md-crate bg-1 border border-border px-4 py-3 text-sm text-1 placeholder-text-3 focus:outline-none focus:border-accent transition"
               disabled={isLoading}
             />
           </div>
 
           {error && (
-            <p className="text-red-400 text-sm">{error}</p>
+            <p className="text-error-dot text-sm">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 text-sm font-semibold text-white transition"
+            className="w-full flex items-center justify-center gap-2 rounded-md-crate bg-accent text-accent-ink hover:bg-accent/85 disabled:opacity-50 disabled:cursor-not-allowed px-4 py-3 text-sm font-semibold transition"
           >
             {isLoading ? (
               <>
