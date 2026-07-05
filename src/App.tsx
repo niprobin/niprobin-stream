@@ -266,7 +266,7 @@ function AppContent() {
       <NotificationBanner />
       <GlobalLoadingOverlay />
 
-      <div className="flex h-[100dvh] bg-slate-950 overflow-hidden">
+      <div className="flex h-[100dvh] bg-bg-0 overflow-hidden">
         {/* Desktop sidebar (>= lg) */}
         <Sidebar
           isAuthenticated={isAuthenticated}
@@ -294,20 +294,20 @@ function AppContent() {
 
           {/* Mobile digging segmented control (< lg) */}
           {isAuthenticated && activePage === 'digging' && (
-            <div className="lg:hidden flex-shrink-0 px-[18px] py-3 border-b border-slate-800">
-              <div className="flex bg-slate-800 rounded-[11px] p-[3px] gap-[3px]">
+            <div className="lg:hidden flex-shrink-0 px-[18px] py-3 border-b border-border">
+              <div className="flex bg-bg-1 rounded-md-crate p-[3px] gap-[3px]">
                 <button
                   type="button"
                   onClick={() => navigateToDiggingTab('tracks')}
-                  className={`flex-1 flex items-center justify-center gap-[5px] py-2 text-sm font-semibold rounded-[8px] transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-[5px] py-2 text-sm font-semibold rounded-sm-crate transition-all ${
                     diggingTab === 'tracks'
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-400'
+                      ? 'bg-accent text-accent-ink'
+                      : 'text-text-2'
                   }`}
                 >
                   Tracks
                   {discoverTracks.length > 0 && (
-                    <span className={`text-[11px] font-mono ${diggingTab === 'tracks' ? 'text-blue-500' : 'text-blue-400'}`}>
+                    <span className={`text-[11px] font-mono-label ${diggingTab === 'tracks' ? 'text-accent-ink/70' : 'text-text-3'}`}>
                       {discoverTracks.length}
                     </span>
                   )}
@@ -315,15 +315,15 @@ function AppContent() {
                 <button
                   type="button"
                   onClick={() => navigateToDiggingTab('albums')}
-                  className={`flex-1 flex items-center justify-center gap-[5px] py-2 text-sm font-semibold rounded-[8px] transition-all ${
+                  className={`flex-1 flex items-center justify-center gap-[5px] py-2 text-sm font-semibold rounded-sm-crate transition-all ${
                     diggingTab === 'albums'
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-400'
+                      ? 'bg-accent text-accent-ink'
+                      : 'text-text-2'
                   }`}
                 >
                   Albums
                   {discoverAlbums.length > 0 && (
-                    <span className={`text-[11px] font-mono ${diggingTab === 'albums' ? 'text-blue-500' : 'text-blue-400'}`}>
+                    <span className={`text-[11px] font-mono-label ${diggingTab === 'albums' ? 'text-accent-ink/70' : 'text-text-3'}`}>
                       {discoverAlbums.length}
                     </span>
                   )}

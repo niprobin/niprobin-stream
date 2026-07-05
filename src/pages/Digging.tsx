@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Pagination } from '@/components/ui/Pagination'
 import { AlbumCard } from '@/components/ui/AlbumCard'
-import { X, ChevronDown, Music, Heart, Loader2 } from 'lucide-react'
+import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
+import { EyebrowLabel } from '@/components/ui/EyebrowLabel'
+import { X, ChevronDown, Heart, Loader2 } from 'lucide-react'
 import { hideTrack, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
@@ -48,36 +50,32 @@ function DiggingTrackRow({
 }) {
   return (
     <div
-      className={`flex items-center gap-[13px] px-[18px] py-[13px] border-b border-slate-800 cursor-pointer active:bg-white/5 transition-colors ${
-        isCurrentTrack ? 'bg-blue-400/[0.06]' : ''
+      className={`flex items-center gap-[13px] px-[18px] py-[13px] border-b border-border cursor-pointer active:bg-white/5 transition-colors ${
+        isCurrentTrack ? 'bg-accent/[0.08]' : ''
       }`}
       onClick={onPlay}
     >
       {/* Album art */}
-      <div className="flex-shrink-0 w-[46px] h-[46px] rounded-[7px] overflow-hidden">
-        {coverArt ? (
+      {coverArt ? (
+        <div className="flex-shrink-0 w-[46px] h-[46px] rounded-sm-crate overflow-hidden">
           <img src={coverArt} alt="" className="w-full h-full object-cover" />
-        ) : (
-          <div
-            className="w-full h-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #534AB7 0%, #1D9E75 100%)' }}
-          >
-            {isLoading
-              ? <Loader2 className="h-4 w-4 text-white/70 animate-spin" />
-              : <Music className="h-4 w-4 text-white/50" />
-            }
-          </div>
-        )}
-      </div>
+        </div>
+      ) : isLoading ? (
+        <div className="flex-shrink-0 w-[46px] h-[46px] rounded-sm-crate bg-bg-2 flex items-center justify-center">
+          <Loader2 className="h-4 w-4 text-text-3 animate-spin" />
+        </div>
+      ) : (
+        <CoverArtPlaceholder size={46} radius={10} showLabel={false} className="flex-shrink-0" />
+      )}
 
       {/* Title / Artist */}
       <div className="flex-1 min-w-0">
         <div className={`text-[15px] font-semibold truncate leading-snug ${
-          isCurrentTrack ? 'text-blue-400' : 'text-white'
+          isCurrentTrack ? 'text-accent' : 'text-text-1'
         }`}>
           {track.track}
         </div>
-        <div className="text-[13px] text-slate-400 truncate mt-0.5">
+        <div className="text-[13px] text-text-2 truncate mt-0.5">
           {track.artist}
         </div>
       </div>
@@ -90,7 +88,7 @@ function DiggingTrackRow({
           className="w-[44px] h-[44px] flex items-center justify-center"
           aria-label="Dismiss track"
         >
-          <span className="w-[38px] h-[38px] flex items-center justify-center rounded-full border border-slate-700 text-slate-400 active:bg-slate-700 transition-colors">
+          <span className="w-[38px] h-[38px] flex items-center justify-center rounded-full border border-border text-text-2 active:bg-bg-2 transition-colors">
             <X className="h-4 w-4" />
           </span>
         </button>
@@ -102,8 +100,8 @@ function DiggingTrackRow({
         >
           <span className={`w-[38px] h-[38px] flex items-center justify-center rounded-full border transition-colors ${
             isLiked
-              ? 'border-red-400/50 text-red-400'
-              : 'border-slate-700 text-slate-400 active:bg-slate-700'
+              ? 'border-accent/50 text-accent'
+              : 'border-border text-text-2 active:bg-bg-2'
           }`}>
             <Heart className="h-4 w-4" fill={isLiked ? 'currentColor' : 'none'} />
           </span>
@@ -229,15 +227,15 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
               <button
                 type="button"
                 onClick={() => setCuratorPickerOpen(prev => !prev)}
-                className="flex items-center gap-[6px] bg-slate-800 border border-slate-700 rounded-[20px] px-[13px] py-[7px] text-[13px] font-medium text-slate-300 hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-[6px] bg-bg-1 border border-border rounded-sm-crate px-[13px] py-[7px] text-[13px] font-medium text-text-2 hover:bg-bg-2 transition-colors"
               >
-                {curator === 'all' ? 'All Curators' : curator}
-                <ChevronDown className="h-[11px] w-[11px] text-slate-500" />
+                {curator === 'all' ? 'All curators' : curator}
+                <ChevronDown className="h-[11px] w-[11px] text-text-3" />
               </button>
 
               {/* Curator picker dropdown */}
               {curatorPickerOpen && (
-                <div className="absolute top-full left-0 mt-1 z-20 bg-slate-800 border border-slate-700 rounded-xl shadow-xl min-w-[160px] py-1 overflow-hidden">
+                <div className="absolute top-full left-0 mt-1 z-20 bg-bg-1 border border-border rounded-md-crate shadow-xl min-w-[160px] py-1 overflow-hidden">
                   {['all', ...availableCurators].map(c => (
                     <button
                       key={c}
@@ -248,11 +246,11 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                       }}
                       className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                         curator === c
-                          ? 'text-blue-400 bg-blue-400/10'
-                          : 'text-slate-300 hover:bg-slate-700'
+                          ? 'text-accent bg-accent/10'
+                          : 'text-text-2 hover:bg-bg-2'
                       }`}
                     >
-                      {c === 'all' ? 'All Curators' : c}
+                      {c === 'all' ? 'All curators' : c}
                     </button>
                   ))}
                 </div>
@@ -266,15 +264,15 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                 .filter(t => curator === 'all' || t.curator === curator)
                 .length
               return (
-                <span className="font-mono text-[11px] text-slate-400 tracking-wide">
+                <EyebrowLabel className="text-[11px]">
                   {count} to listen
-                </span>
+                </EyebrowLabel>
               )
             })()}
           </div>
 
           {tracks.length === 0 ? (
-            <div className="text-center text-slate-400 py-12">
+            <div className="text-center text-text-2 py-12">
               No tracks available yet. Check back soon.
             </div>
           ) : (() => {
@@ -364,12 +362,12 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                 placeholder="Search albums..."
                 value={search}
                 onChange={(e) => updateFilter('search', e.target.value)}
-                className="w-full bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 pl-4 pr-10 py-2 focus:outline-none focus:ring-2 focus:ring-slate-600 focus:border-transparent"
+                className="w-full bg-bg-1 text-text-1 text-sm border border-border rounded-md-crate h-10 pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
               />
               {search && (
                 <button
                   onClick={() => updateFilter('search', '')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-2 hover:text-text-1"
                   aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
@@ -379,7 +377,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
           </div>
 
           {albums.length === 0 ? (
-            <div className="text-center text-slate-400 py-12">
+            <div className="text-center text-text-2 py-12">
               No albums available yet. Check back soon.
             </div>
           ) : (() => {
@@ -388,7 +386,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
             if (search && filteredAlbums.length === 0) {
               return (
-                <div className="text-center text-slate-400 py-12">
+                <div className="text-center text-text-2 py-12">
                   No albums found matching "{search}".
                 </div>
               )
@@ -440,19 +438,19 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
         >
           <form
             onSubmit={handleSubmitLike}
-            className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none"
+            className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-bg-1 border border-border rounded-lg-crate p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none"
           >
             <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs uppercase text-slate-400 tracking-wide">Add to playlist</p>
-                <p className="text-white text-lg font-semibold truncate">{likeModalTrack.title}</p>
-                <p className="text-slate-400 text-sm truncate">{likeModalTrack.artist}</p>
+              <div className="min-w-0">
+                <EyebrowLabel>Add to playlist</EyebrowLabel>
+                <p className="text-text-1 text-lg font-semibold truncate mt-1">{likeModalTrack.title}</p>
+                <p className="text-text-2 text-sm truncate">{likeModalTrack.artist}</p>
               </div>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="text-slate-400 hover:text-white"
+                className="text-text-2 hover:text-text-1 flex-shrink-0"
                 onClick={closeLikeModal}
               >
                 <X className="h-4 w-4" />
@@ -467,10 +465,10 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                     type="button"
                     key={playlist}
                     onClick={() => setSelectedPlaylist(playlist)}
-                    className={`text-left text-sm px-3 py-2 rounded-lg border transition-colors ${
+                    className={`text-left text-sm px-3 py-2.5 rounded-md-crate border transition-colors ${
                       isSelected
-                        ? 'border-white bg-white/10 text-white'
-                        : 'border-slate-800 text-slate-300 hover:border-slate-600'
+                        ? 'border-accent bg-accent/12 text-text-1 font-medium'
+                        : 'border-border text-text-2 hover:border-text-3'
                     }`}
                   >
                     {playlist}
@@ -483,7 +481,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
               <Button
                 type="button"
                 variant="ghost"
-                className="text-slate-300 hover:text-white"
+                className="text-text-2 hover:text-text-1"
                 onClick={closeLikeModal}
                 disabled={isSubmittingLike}
               >
@@ -491,7 +489,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
               </Button>
               <Button
                 type="submit"
-                className="bg-white text-black hover:bg-white/90"
+                className="bg-accent text-accent-ink hover:bg-accent/90"
                 disabled={isSubmittingLike || !selectedPlaylist}
               >
                 {isSubmittingLike ? 'Saving...' : 'Add'}
