@@ -41,7 +41,6 @@ export default {
         sans: ['Inter', 'sans-serif'],
         'serif-display': ['"Instrument Serif"', 'serif'],
         'mono-label': ['"JetBrains Mono"', 'monospace'],
-        'bebas': ['Bebas Neue', 'sans-serif'],
       },
     },
   },
