@@ -125,7 +125,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange, onTabChange }
   const isTablet = useMediaQuery('(min-width: 640px)')
   const isDesktop = useMediaQuery('(min-width: 1024px)')
   const albumColumns = isDesktop ? 5 : isTablet ? 4 : 3
-  const albumRows = isDesktop ? 1 : 3
+  const albumRows = isDesktop ? 2 : 3
   const albumPageSize = albumColumns * albumRows
   const trackPageSize = 10
 
