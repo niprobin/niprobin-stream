@@ -27,6 +27,7 @@ interface AlbumsPageProps {
   activeTab: DiggingTab
   currentPage: number
   onPageChange: (page: number) => void
+  onTabChange: (tab: DiggingTab) => void
 }
 
 // Track row for the Digging tracks view
@@ -112,7 +113,7 @@ function DiggingTrackRow({
   )
 }
 
-export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageProps) {
+export function AlbumsPage({ activeTab, currentPage, onPageChange, onTabChange }: AlbumsPageProps) {
   const [prevActiveTab, setPrevActiveTab] = useState<DiggingTab>(activeTab)
   const [curatorPickerOpen, setCuratorPickerOpen] = useState(false)
 
@@ -126,11 +127,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const albumColumns = isDesktop ? 5 : isTablet ? 4 : 3
   const albumRows = isDesktop ? 1 : 3
   const albumPageSize = albumColumns * albumRows
-  // Desktop has a fixed-height, non-scrolling content pane between the
-  // header and the docked player bar — fewer rows keeps everything
-  // (list + pagination) visible without scrolling. Mobile/tablet keep the
-  // original page size since that layout scrolls normally.
-  const trackPageSize = isDesktop ? 6 : 10
+  const trackPageSize = 10
 
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setAutoPlayContext, currentTrack } = useAudio()
@@ -189,10 +186,10 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     }
   }, [activeTab, prevActiveTab, onPageChange, updateFilters])
 
-  // Page size depends on breakpoint (desktop shows fewer rows to fit
-  // without scrolling) — jump back to page 1 when the breakpoint actually
-  // changes (not on initial mount) so the current page can't land past the
-  // new last page, without clobbering the preserved page on remount.
+  // Album page size depends on the grid's column count, which changes at
+  // breakpoints — jump back to page 1 when the breakpoint actually changes
+  // (not on initial mount) so the current page can't land past the new
+  // last page, without clobbering the preserved page on remount.
   const [prevIsDesktop, setPrevIsDesktop] = useState(isDesktop)
   const [prevIsTablet, setPrevIsTablet] = useState(isTablet)
   useEffect(() => {
@@ -244,70 +241,142 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
     new Set(tracks.map(t => t.curator).filter(Boolean))
   ).sort()
 
+  // Hoisted so both the sticky desktop header (pagination totals) and the
+  // tab body below can share the same filtered lists.
+  const filteredTracks = tracks
+    .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
+    .filter(t => curator === 'all' || t.curator === curator)
+  const filteredAlbums = albumFilterFunction(albums, search)
+    .filter(a => !hiddenAlbums.has(`${a.album}-${a.artist}`))
+
+  const queueCount = filteredTracks.length
+
+  const curatorFilterControl = (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setCuratorPickerOpen(prev => !prev)}
+        className="flex items-center gap-[6px] bg-bg-1 border border-border rounded-sm-crate px-[13px] py-[7px] text-[13px] font-medium text-text-2 hover:bg-bg-2 transition-colors"
+      >
+        {curator === 'all' ? 'All curators' : curator}
+        <ChevronDown className="h-[11px] w-[11px] text-text-3" />
+      </button>
+
+      {/* Curator picker dropdown */}
+      {curatorPickerOpen && (
+        <div className="absolute top-full left-0 mt-1 z-20 bg-bg-1 border border-border rounded-md-crate shadow-xl min-w-[160px] py-1 overflow-hidden">
+          {['all', ...availableCurators].map(c => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => {
+                updateFilter('curator', c)
+                setCuratorPickerOpen(false)
+              }}
+              className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
+                curator === c
+                  ? 'text-accent bg-accent/10'
+                  : 'text-text-2 hover:bg-bg-2'
+              }`}
+            >
+              {c === 'all' ? 'All curators' : c}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+
+  const albumSearchControl = (
+    <div className="relative">
+      <input
+        type="text"
+        placeholder="Search albums..."
+        value={search}
+        onChange={(e) => updateFilter('search', e.target.value)}
+        className="w-full bg-bg-1 text-text-1 text-sm border border-border rounded-md-crate h-10 pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
+      />
+      {search && (
+        <button
+          onClick={() => updateFilter('search', '')}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-text-2 hover:text-text-1"
+          aria-label="Clear search"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      )}
+    </div>
+  )
+
+  const tabPillClass = (tab: DiggingTab) =>
+    `px-4 py-2 rounded-sm-crate text-sm font-semibold transition-colors flex-shrink-0 ${
+      activeTab === tab ? 'bg-accent text-accent-ink' : 'bg-bg-1 text-text-2 hover:text-text-1'
+    }`
+
   return (
-    <div className="w-full space-y-0 lg:h-full lg:flex lg:flex-col lg:min-h-0">
+    <div className="w-full space-y-0">
+
+      {/* Desktop header row: title + tabs + tab-specific filter + pagination,
+          sticky so pagination is always reachable without scrolling. */}
+      <div className="hidden lg:flex lg:items-center lg:gap-4 lg:sticky lg:top-0 lg:z-10 lg:bg-bg-0 lg:py-4">
+        <h1 className="font-serif-display italic text-2xl text-text-1 flex-shrink-0">Digging</h1>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button type="button" onClick={() => onTabChange('tracks')} className={tabPillClass('tracks')}>
+            Tracks
+          </button>
+          <button type="button" onClick={() => onTabChange('albums')} className={tabPillClass('albums')}>
+            Albums
+          </button>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          {activeTab === 'albums' ? albumSearchControl : (
+            <div className="flex items-center justify-between gap-4">
+              {curatorFilterControl}
+              <EyebrowLabel className="text-[11px] flex-shrink-0">
+                {queueCount} to listen
+              </EyebrowLabel>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-shrink-0">
+          {activeTab === 'tracks' && filteredTracks.length > trackPageSize && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredTracks.length}
+              pageSize={trackPageSize}
+              onPageChange={onPageChange}
+            />
+          )}
+          {activeTab === 'albums' && filteredAlbums.length > albumPageSize && (
+            <Pagination
+              currentPage={currentPage}
+              totalItems={filteredAlbums.length}
+              pageSize={albumPageSize}
+              onPageChange={onPageChange}
+            />
+          )}
+        </div>
+      </div>
 
       {activeTab === 'tracks' && (
-        <div className="lg:flex-1 lg:flex lg:flex-col lg:min-h-0">
-          {/* ── Curator chip + queue count ── */}
-          <div className="flex items-center justify-between px-[18px] pt-3 pb-[6px] lg:flex-shrink-0">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setCuratorPickerOpen(prev => !prev)}
-                className="flex items-center gap-[6px] bg-bg-1 border border-border rounded-sm-crate px-[13px] py-[7px] text-[13px] font-medium text-text-2 hover:bg-bg-2 transition-colors"
-              >
-                {curator === 'all' ? 'All curators' : curator}
-                <ChevronDown className="h-[11px] w-[11px] text-text-3" />
-              </button>
-
-              {/* Curator picker dropdown */}
-              {curatorPickerOpen && (
-                <div className="absolute top-full left-0 mt-1 z-20 bg-bg-1 border border-border rounded-md-crate shadow-xl min-w-[160px] py-1 overflow-hidden">
-                  {['all', ...availableCurators].map(c => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => {
-                        updateFilter('curator', c)
-                        setCuratorPickerOpen(false)
-                      }}
-                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
-                        curator === c
-                          ? 'text-accent bg-accent/10'
-                          : 'text-text-2 hover:bg-bg-2'
-                      }`}
-                    >
-                      {c === 'all' ? 'All curators' : c}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Queue count */}
-            {(() => {
-              const count = tracks
-                .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
-                .filter(t => curator === 'all' || t.curator === curator)
-                .length
-              return (
-                <EyebrowLabel className="text-[11px]">
-                  {count} to listen
-                </EyebrowLabel>
-              )
-            })()}
+        <div>
+          {/* ── Curator chip + queue count (mobile/tablet only — desktop
+                uses the sticky header above) ── */}
+          <div className="flex items-center justify-between px-[18px] pt-3 pb-[6px] lg:hidden">
+            {curatorFilterControl}
+            <EyebrowLabel className="text-[11px]">
+              {queueCount} to listen
+            </EyebrowLabel>
           </div>
 
           {tracks.length === 0 ? (
-            <div className="text-center text-text-2 py-12 lg:flex-1">
+            <div className="text-center text-text-2 py-12">
               No tracks available yet. Check back soon.
             </div>
           ) : (() => {
-            const filteredTracks = tracks
-              .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
-              .filter(t => curator === 'all' || t.curator === curator)
-
             const pagedTracks = filteredTracks.slice(
               (currentPage - 1) * trackPageSize,
               currentPage * trackPageSize
@@ -324,7 +393,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
 
             return (
               <>
-                <div className="lg:flex-1 lg:overflow-y-auto lg:min-h-0">
+                <div>
                   {mappedPagedTracks.map((item) => {
                     const originalTrack = filteredTracks.find(
                       t => t.track === item.track && t.artist === item.artist
@@ -371,7 +440,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
                     totalItems={filteredTracks.length}
                     pageSize={trackPageSize}
                     onPageChange={onPageChange}
-                    className="pt-2 pb-12 lg:pb-4 lg:flex-shrink-0"
+                    className="pt-2 pb-12 lg:hidden"
                   />
                 )}
               </>
@@ -381,81 +450,54 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
       )}
 
       {activeTab === 'albums' && (
-        <div className="lg:flex-1 lg:flex lg:flex-col lg:min-h-0">
-          {/* Album search — desktop style, same on both */}
-          <div className="px-2 pt-4 pb-3 lg:flex-shrink-0">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search albums..."
-                value={search}
-                onChange={(e) => updateFilter('search', e.target.value)}
-                className="w-full bg-bg-1 text-text-1 text-sm border border-border rounded-md-crate h-10 pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-              />
-              {search && (
-                <button
-                  onClick={() => updateFilter('search', '')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-2 hover:text-text-1"
-                  aria-label="Clear search"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
+        <div>
+          {/* Album search — mobile/tablet only, desktop uses the sticky
+              header above */}
+          <div className="px-2 pt-4 pb-3 lg:hidden">
+            {albumSearchControl}
           </div>
 
           {albums.length === 0 ? (
-            <div className="text-center text-text-2 py-12 lg:flex-1">
+            <div className="text-center text-text-2 py-12">
               No albums available yet. Check back soon.
             </div>
-          ) : (() => {
-            const filteredAlbums = albumFilterFunction(albums, search)
-              .filter(a => !hiddenAlbums.has(`${a.album}-${a.artist}`))
-
-            if (search && filteredAlbums.length === 0) {
-              return (
-                <div className="text-center text-text-2 py-12 lg:flex-1">
-                  No albums found matching "{search}".
-                </div>
-              )
-            }
-
-            return (
-              <>
-                <div className="lg:flex-1 lg:overflow-y-auto lg:min-h-0">
-                  <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4 [&>*]:max-w-[320px] [&>*]:mx-auto">
-                    {filteredAlbums
-                      .slice((currentPage - 1) * albumPageSize, currentPage * albumPageSize)
-                      .map((album, index) => (
-                        <AlbumCard
-                          key={`${album.album}-${(currentPage - 1) * albumPageSize + index}`}
-                          album={album}
-                          onClick={() => handleAlbumClick(album)}
-                          actionButton={
-                            <button
-                              onClick={(e) => hideAlbumItem(album, e)}
-                              className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                              aria-label="Hide album"
-                            >
-                              <X className="h-5 w-5 md:h-4 md:w-4 text-white" />
-                            </button>
-                          }
-                        />
-                      ))}
-                  </div>
-                </div>
-                {filteredAlbums.length > albumPageSize && (
-                  <Pagination
-                    currentPage={currentPage}
-                    totalItems={filteredAlbums.length}
-                    pageSize={albumPageSize}
-                    onPageChange={onPageChange}
-                    className="pt-4 pb-12 lg:pb-4 lg:flex-shrink-0"
-                  />
-                )}
-              </>
-            )
-          })()}
+          ) : search && filteredAlbums.length === 0 ? (
+            <div className="text-center text-text-2 py-12">
+              No albums found matching "{search}".
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4 [&>*]:max-w-[320px] [&>*]:mx-auto">
+                {filteredAlbums
+                  .slice((currentPage - 1) * albumPageSize, currentPage * albumPageSize)
+                  .map((album, index) => (
+                    <AlbumCard
+                      key={`${album.album}-${(currentPage - 1) * albumPageSize + index}`}
+                      album={album}
+                      onClick={() => handleAlbumClick(album)}
+                      actionButton={
+                        <button
+                          onClick={(e) => hideAlbumItem(album, e)}
+                          className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                          aria-label="Hide album"
+                        >
+                          <X className="h-5 w-5 md:h-4 md:w-4 text-white" />
+                        </button>
+                      }
+                    />
+                  ))}
+              </div>
+              {filteredAlbums.length > albumPageSize && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalItems={filteredAlbums.length}
+                  pageSize={albumPageSize}
+                  onPageChange={onPageChange}
+                  className="pt-4 pb-12 lg:hidden"
+                />
+              )}
+            </>
+          )}
         </div>
       )}
 
