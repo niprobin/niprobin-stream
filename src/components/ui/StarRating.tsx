@@ -35,7 +35,7 @@ export function StarRating({ rating, onRatingChange, disabled, className, inline
 
   const containerClasses = inline
     ? "flex gap-1"
-    : cn("flex gap-1 px-2 py-1 rounded-lg bg-slate-800/30", className)
+    : cn("flex gap-1 px-2 py-1 rounded-lg bg-bg-1", className)
 
   const starSize = compact ? 15 : 16
   const buttonClasses = compact
@@ -52,8 +52,8 @@ export function StarRating({ rating, onRatingChange, disabled, className, inline
               key={value}
               type="button"
               className={`cursor-pointer transition-all duration-150 ${
-                isActive ? 'text-yellow-300' : 'text-white/20'
-              } hover:text-yellow-300 hover:scale-110`}
+                isActive ? 'text-accent' : 'text-text-3'
+              } hover:text-accent hover:scale-110`}
               disabled={disabled}
               aria-pressed={isActive}
               aria-label={`${value} star${value === 1 ? '' : 's'}`}
@@ -80,7 +80,7 @@ export function StarRating({ rating, onRatingChange, disabled, className, inline
             type="button"
             variant="ghost"
             size="icon"
-            className={`${buttonClasses} transition-all duration-150 ${isActive ? 'text-yellow-300' : 'text-slate-500'} hover:text-yellow-300 hover:scale-110`}
+            className={`${buttonClasses} transition-all duration-150 ${isActive ? 'text-accent' : 'text-text-3'} hover:text-accent hover:scale-110`}
             disabled={disabled}
             aria-pressed={isActive}
             aria-label={`${value} star${value === 1 ? '' : 's'}`}

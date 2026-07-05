@@ -81,10 +81,10 @@ export function TrackList(props: TrackListProps) {
   return (
     <>
     {showColumnHeaders && (
-      <div className={`grid ${gridCols} ${horizontalPadding} py-3 border-b border-white/5`}>
-        <span className="text-xs uppercase tracking-wider text-white/20">#</span>
-        <span className="text-xs uppercase tracking-wider text-white/20">Title</span>
-        <span className="hidden md:block text-xs uppercase tracking-wider text-white/20 text-center px-2">Date</span>
+      <div className={`grid ${gridCols} ${horizontalPadding} py-3 border-b border-border`}>
+        <span className="text-xs uppercase tracking-wider text-text-3">#</span>
+        <span className="text-xs uppercase tracking-wider text-text-3">Title</span>
+        <span className="hidden md:block text-xs uppercase tracking-wider text-text-3 text-center px-2">Date</span>
         <span className="hidden md:block"></span>
       </div>
     )}
@@ -104,33 +104,33 @@ export function TrackList(props: TrackListProps) {
           return (
             <div
               key={key}
-              className={`grid ${gridCols} items-center ${horizontalPadding} h-14 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group`}
+              className={`grid ${gridCols} items-center ${horizontalPadding} h-14 border-b border-border hover:bg-bg-2/50 cursor-pointer transition-colors group`}
               onClick={() => props.onSelect(item, index)}
             >
               {/* Track Number / Play Button Column */}
               <div className="relative">
                 <span className={`text-xs font-normal text-center transition-colors group-hover:hidden ${
-                  isCurrentTrack ? 'text-white' : 'text-white/20'
+                  isCurrentTrack ? 'text-text-1' : 'text-text-3'
                 }`}>
                   {item['track-number']}
                 </span>
                 <div className="absolute inset-0 hidden group-hover:flex items-center justify-center">
                   {loading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-white/50" />
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-text-2" />
                   ) : (
-                    <Play className="h-3.5 w-3.5 text-white/50 fill-current" />
+                    <Play className="h-3.5 w-3.5 text-text-2 fill-current" />
                   )}
                 </div>
               </div>
 
               {/* Title / Artist Column */}
               <div className="flex flex-col gap-1 min-w-0">
-                <div className="text-sm font-normal text-white truncate">{item.track}</div>
-                <div className="text-xs text-white/30 font-light truncate">{item.artist}</div>
+                <div className="text-sm font-normal text-text-1 truncate">{item.track}</div>
+                <div className="text-xs text-text-2 font-light truncate">{item.artist}</div>
               </div>
 
               {/* Date Column */}
-              <div className={`${compactSpacing ? 'hidden' : 'hidden md:block'} text-xs text-white/40 text-center px-2`}>
+              <div className={`${compactSpacing ? 'hidden' : 'hidden md:block'} text-xs text-text-3 text-center px-2`}>
                 {item.date || ''}
               </div>
 
@@ -141,8 +141,8 @@ export function TrackList(props: TrackListProps) {
                   <button
                     type="button"
                     className={`transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 ${
-                      liked ? 'text-red-400' : 'text-white/25'
-                    } hover:text-red-400`}
+                      liked ? 'text-accent' : 'text-text-3'
+                    } hover:text-accent`}
                     onClick={(event) => {
                       event.stopPropagation()
                       openLikeModal(trackId, item.track, item.artist, undefined, 'deezer_id' in item ? item.deezer_id : undefined)
@@ -165,33 +165,33 @@ export function TrackList(props: TrackListProps) {
         return (
           <div
             key={key}
-            className={`grid ${gridCols} items-center ${horizontalPadding} h-14 border-b border-white/5 hover:bg-white/5 cursor-pointer transition-colors group`}
+            className={`grid ${gridCols} items-center ${horizontalPadding} h-14 border-b border-border hover:bg-bg-2/50 cursor-pointer transition-colors group`}
             onClick={() => props.onSelect(obj, index)}
           >
             {/* Track Number / Play Button Column */}
             <div className="relative">
-              <span className="text-sm font-normal text-center transition-colors group-hover:hidden text-white/20">
+              <span className="text-sm font-normal text-center transition-colors group-hover:hidden text-text-3">
                 {trackNumber}
               </span>
               <div className="absolute inset-0 hidden group-hover:flex items-center justify-center">
                 {loading ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin text-white/50" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-text-2" />
                 ) : (
-                  <Play className="h-3.5 w-3.5 text-white/50 fill-current" />
+                  <Play className="h-3.5 w-3.5 text-text-2 fill-current" />
                 )}
               </div>
             </div>
 
             {/* Title / Artist / Album Column */}
             <div className="flex flex-col gap-1 min-w-0">
-              <div className="text-sm font-normal text-white truncate">{obj.title}</div>
-              <div className="text-xs text-white/30 font-light truncate">
+              <div className="text-sm font-normal text-text-1 truncate">{obj.title}</div>
+              <div className="text-xs text-text-2 font-light truncate">
                 {obj.artist} • {obj.album}
               </div>
             </div>
 
             {/* Date Column */}
-            <div className="hidden md:block text-xs text-white/40 text-center px-2">
+            <div className="hidden md:block text-xs text-text-3 text-center px-2">
               {obj.date || ''}
             </div>
 
@@ -211,19 +211,19 @@ export function TrackList(props: TrackListProps) {
       >
         <form
           onSubmit={handleSubmitLike}
-          className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none"
+          className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-bg-0-deep border border-border rounded-lg-crate p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none"
         >
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs uppercase text-slate-400 tracking-wide">Add to playlist</p>
-              <p className="text-white text-lg font-semibold truncate">{likeModalTrack.title}</p>
-              <p className="text-slate-400 text-sm truncate">{likeModalTrack.artist}</p>
+              <p className="text-xs uppercase text-text-3 tracking-wide">Add to playlist</p>
+              <p className="text-text-1 text-lg font-semibold truncate">{likeModalTrack.title}</p>
+              <p className="text-text-2 text-sm truncate">{likeModalTrack.artist}</p>
             </div>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="text-slate-400 hover:text-white"
+              className="text-text-2 hover:text-text-1"
               onClick={closeLikeModal}
             >
               <X className="h-4 w-4" />
@@ -238,10 +238,10 @@ export function TrackList(props: TrackListProps) {
                   type="button"
                   key={playlist}
                   onClick={() => setSelectedPlaylist(playlist)}
-                  className={`text-left text-sm px-3 py-2 rounded-lg border transition-colors ${
+                  className={`text-left text-sm px-3 py-2 rounded-sm-crate border transition-colors ${
                     isSelected
-                      ? 'border-white bg-white/10 text-white'
-                      : 'border-slate-800 text-slate-300 hover:border-slate-600'
+                      ? 'border-accent bg-accent/10 text-text-1'
+                      : 'border-border text-text-2 hover:border-text-3'
                   }`}
                 >
                   {playlist}
@@ -254,7 +254,7 @@ export function TrackList(props: TrackListProps) {
             <Button
               type="button"
               variant="ghost"
-              className="text-slate-300 hover:text-white"
+              className="text-text-2 hover:text-text-1"
               onClick={closeLikeModal}
               disabled={isSubmittingLike}
             >
@@ -262,7 +262,7 @@ export function TrackList(props: TrackListProps) {
             </Button>
             <Button
               type="submit"
-              className="bg-white text-black hover:bg-white/90"
+              className="bg-accent text-accent-ink hover:bg-accent/85"
               disabled={isSubmittingLike || !selectedPlaylist}
             >
               {isSubmittingLike ? 'Saving...' : 'Add'}

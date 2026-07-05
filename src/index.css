@@ -11,13 +11,13 @@
 @layer components {
   .ap-action-btn {
     @apply flex items-center justify-center gap-3 px-4 py-3
-           border border-white/10 bg-white/5 hover:border-white
-           text-white text-xs font-medium uppercase tracking-wider
-           rounded-sm transition-colors cursor-pointer w-full;
+           border border-border bg-bg-1 hover:bg-bg-2 hover:border-accent/50
+           text-text-1 text-xs font-medium uppercase tracking-wider
+           rounded-sm-crate transition-colors cursor-pointer w-full;
   }
 
   .ap-action-btn-primary {
-    @apply bg-white/90 text-black border-transparent hover:bg-green-300/80 hover:border-transparent hover:text-white;
+    @apply bg-accent text-accent-ink border-transparent hover:bg-accent/85 hover:border-transparent hover:text-accent-ink;
   }
 
   /* Mobile responsive layout for action buttons */

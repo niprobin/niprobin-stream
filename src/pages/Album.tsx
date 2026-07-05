@@ -6,6 +6,7 @@ import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, downloadAlbum, type AlbumTrack } from '@/services/api'
 import { StarRating } from '@/components/ui/StarRating'
+import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
 import { Share2, X, Loader2, Music4, Download } from 'lucide-react'
@@ -257,7 +258,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <p className="text-slate-400">{error}</p>
+        <p className="text-text-2">{error}</p>
       </div>
     )
   }
@@ -265,7 +266,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   if (!albumName && tracks.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
-        <p className="text-slate-400">Loading album...</p>
+        <p className="text-text-2">Loading album...</p>
       </div>
     )
   }
@@ -276,28 +277,30 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-6 lg:gap-10 mb-4 px-6 lg:px-10 pt-28 lg:pt-10 pb-4">
         {/* Left: Album Cover + Metadata */}
         <div className="flex flex-col gap-0">
-          <div className="w-full lg:w-64 h-64 rounded-sm overflow-hidden bg-slate-800 flex-shrink-0 mx-auto lg:mx-0 border border-slate-700">
-            {coverUrl && (
+          <div className="w-[184px] h-[184px] lg:w-64 lg:h-64 rounded-md-crate overflow-hidden bg-bg-1 flex-shrink-0 mx-auto lg:mx-0 border border-border">
+            {coverUrl ? (
               <img
                 src={coverUrl}
                 alt={`${albumName} cover`}
                 className="w-full h-full object-cover"
               />
+            ) : (
+              <CoverArtPlaceholder size={184} className="!w-full !h-full" />
             )}
           </div>
           <div className="mt-4 flex flex-col gap-1 text-center lg:text-left">
-            <h1 className="font-bebas text-4xl lg:text-5xl xl:text-6xl leading-none text-white mb-2">
+            <h1 className="font-serif-display italic text-4xl lg:text-5xl xl:text-6xl leading-none text-text-1 mb-2">
               {albumName}
             </h1>
             {artistId ? (
               <button
                 onClick={() => { window.history.pushState({}, '', ROUTES.artist(artistId)); window.dispatchEvent(new PopStateEvent('popstate')) }}
-                className="text-xs text-slate-400 uppercase tracking-widest font-light hover:text-white transition-colors text-center lg:text-left"
+                className="text-xs text-text-2 uppercase tracking-widest font-light underline decoration-dotted underline-offset-4 hover:text-text-1 transition-colors text-center lg:text-left"
               >
                 {artistName}
               </button>
             ) : (
-              <p className="text-xs text-slate-400 uppercase tracking-widest font-light">{artistName}</p>
+              <p className="text-xs text-text-2 uppercase tracking-widest font-light">{artistName}</p>
             )}
           </div>
         </div>
@@ -365,18 +368,18 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
               {showShareTooltip && (
                 <div
                   ref={shareTooltipRef}
-                  className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 z-50 w-48"
+                  className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-bg-1 border border-border rounded-md-crate shadow-lg py-1 z-50 w-48"
                 >
                   <button
                     onClick={handleShareAlbum}
-                    className="w-full px-3 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2 text-sm"
+                    className="w-full px-3 py-2 text-left text-text-1 hover:bg-bg-2 flex items-center gap-2 text-sm"
                   >
                     <Share2 className="h-4 w-4" />
                     Copy stream link
                   </button>
                   <button
                     onClick={handleShareDeezer}
-                    className="w-full px-3 py-2 text-left text-white hover:bg-slate-700 flex items-center gap-2 text-sm"
+                    className="w-full px-3 py-2 text-left text-text-1 hover:bg-bg-2 flex items-center gap-2 text-sm"
                   >
                     <Music4 className="h-4 w-4" />
                     Copy deezer link
