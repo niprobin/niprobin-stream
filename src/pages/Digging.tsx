@@ -467,7 +467,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange, onTabChange }
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4 [&>*]:max-w-[320px] [&>*]:mx-auto">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4 pt-[13px] [&>*]:max-w-[320px] [&>*]:mx-auto">
                 {filteredAlbums
                   .slice((currentPage - 1) * albumPageSize, currentPage * albumPageSize)
                   .map((album, index) => (
