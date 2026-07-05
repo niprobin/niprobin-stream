@@ -4,13 +4,11 @@ import { Logo } from './ui/Logo'
 interface SidebarProps {
   isAuthenticated: boolean
   activePage: 'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'
-  diggingTab: 'tracks' | 'albums'
   diggingCount?: number
   username?: string | null
   isRefreshing: boolean
   onNavigateHome: () => void
   onNavigateDigging: () => void
-  onNavigateDiggingTab: (tab: 'tracks' | 'albums') => void
   onNavigateSearch: () => void
   onRefresh: () => void
   onLogout: () => void
@@ -23,13 +21,11 @@ interface SidebarProps {
 export function Sidebar({
   isAuthenticated,
   activePage,
-  diggingTab,
   diggingCount,
   username,
   isRefreshing,
   onNavigateHome,
   onNavigateDigging,
-  onNavigateDiggingTab,
   onNavigateSearch,
   onRefresh,
   onLogout,
@@ -81,34 +77,6 @@ export function Sidebar({
               <span className="text-xs font-mono text-text-3">{diggingCount}</span>
             )}
           </button>
-
-          {/* Digging sub-tabs */}
-          {activePage === 'digging' && (
-            <div className="pl-6 pt-1 space-y-1" role="tablist" aria-label="Digging sections">
-              <button
-                type="button"
-                role="tab"
-                aria-selected={diggingTab === 'tracks'}
-                onClick={() => onNavigateDiggingTab('tracks')}
-                className={`w-full text-left px-3 py-1.5 text-sm rounded-sm-crate transition-colors ${
-                  diggingTab === 'tracks' ? 'text-text-1' : 'text-text-3 hover:text-text-2'
-                }`}
-              >
-                Tracks
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={diggingTab === 'albums'}
-                onClick={() => onNavigateDiggingTab('albums')}
-                className={`w-full text-left px-3 py-1.5 text-sm rounded-sm-crate transition-colors ${
-                  diggingTab === 'albums' ? 'text-text-1' : 'text-text-3 hover:text-text-2'
-                }`}
-              >
-                Albums
-              </button>
-            </div>
-          )}
 
           <button
             type="button"

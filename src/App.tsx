@@ -272,13 +272,11 @@ function AppContent() {
         <Sidebar
           isAuthenticated={isAuthenticated}
           activePage={activePage}
-          diggingTab={diggingTab}
           diggingCount={discoverTracks.length}
           username={username}
           isRefreshing={isRefreshing}
           onNavigateHome={() => navigate('home')}
           onNavigateDigging={() => navigate('digging')}
-          onNavigateDiggingTab={navigateToDiggingTab}
           onNavigateSearch={() => navigate('search')}
           onRefresh={handleRefresh}
           onLogout={logout}

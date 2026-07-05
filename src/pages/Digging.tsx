@@ -256,7 +256,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange, onTabChange }
       <button
         type="button"
         onClick={() => setCuratorPickerOpen(prev => !prev)}
-        className="flex items-center gap-[6px] bg-bg-1 border border-border rounded-sm-crate px-[13px] py-[7px] text-[13px] font-medium text-text-2 hover:bg-bg-2 transition-colors"
+        className="h-10 flex items-center gap-[6px] bg-bg-1 border border-border rounded-sm-crate px-[13px] text-[13px] font-medium text-text-2 hover:bg-bg-2 transition-colors"
       >
         {curator === 'all' ? 'All curators' : curator}
         <ChevronDown className="h-[11px] w-[11px] text-text-3" />
