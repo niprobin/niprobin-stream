@@ -10,22 +10,40 @@ import { useAudio } from '@/contexts/AudioContext'
 import { Search as SearchIcon, BookmarkPlus, Loader2 } from 'lucide-react'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { CarouselSection } from '@/components/ui/CarouselSection'
+import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
+import { SectionHeader } from '@/components/ui/SectionHeader'
 
 function CarouselSkeleton() {
   return (
     <div className="flex gap-3 overflow-hidden pb-3">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="flex-shrink-0 w-40 space-y-2">
-          <div className="w-40 h-40 bg-slate-800 rounded-lg animate-pulse" />
-          <div className="h-3 bg-slate-800 rounded animate-pulse w-36" />
-          <div className="h-3 bg-slate-800 rounded animate-pulse w-28" />
+          <div className="w-40 h-40 bg-bg-2 rounded-md-crate animate-pulse" />
+          <div className="h-3 bg-bg-2 rounded animate-pulse w-36" />
+          <div className="h-3 bg-bg-2 rounded animate-pulse w-28" />
         </div>
       ))}
     </div>
   )
 }
 
-function SearchTrackCard({
+function TrackListSkeleton() {
+  return (
+    <div className="space-y-1">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-[13px] px-[18px] py-[13px]">
+          <div className="flex-shrink-0 w-[46px] h-[46px] rounded-sm-crate bg-bg-2 animate-pulse" />
+          <div className="flex-1 space-y-1.5">
+            <div className="h-3 bg-bg-2 rounded animate-pulse w-40" />
+            <div className="h-2.5 bg-bg-2 rounded animate-pulse w-28" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function SearchTrackRow({
   result,
   onPlay,
   isLoading,
@@ -34,26 +52,27 @@ function SearchTrackCard({
   onPlay: () => void
   isLoading: boolean
 }) {
+  const cover = result.cover_url || result.cover
   return (
     <button
       onClick={onPlay}
       disabled={isLoading}
-      className="flex-shrink-0 w-40 snap-start text-left space-y-2 group disabled:opacity-50"
+      className="w-full flex items-center gap-[13px] px-[18px] py-[13px] border-b border-border text-left transition-colors active:bg-white/5 disabled:opacity-50"
     >
-      {(result.cover_url || result.cover) ? (
-        <img
-          src={result.cover_url || result.cover}
-          alt={result.track}
-          className="w-40 h-40 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
-        />
-      ) : (
-        <div className="w-40 h-40 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
-          <span className="text-4xl">🎵</span>
+      {cover ? (
+        <div className="flex-shrink-0 w-[46px] h-[46px] rounded-sm-crate overflow-hidden">
+          <img src={cover} alt={result.track} className="w-full h-full object-cover" />
         </div>
+      ) : isLoading ? (
+        <div className="flex-shrink-0 w-[46px] h-[46px] rounded-sm-crate bg-bg-2 flex items-center justify-center">
+          <Loader2 className="h-4 w-4 text-text-3 animate-spin" />
+        </div>
+      ) : (
+        <CoverArtPlaceholder size={46} radius={10} showLabel={false} className="flex-shrink-0" />
       )}
-      <div>
-        <p className="text-sm text-white truncate w-40">{result.track}</p>
-        <p className="text-xs text-slate-400 truncate w-40">{result.artist}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-semibold text-text-1 truncate leading-snug">{result.track}</p>
+        <p className="text-[13px] text-text-2 truncate mt-0.5">{result.artist}</p>
       </div>
     </button>
   )
@@ -79,22 +98,20 @@ function SearchAlbumCard({
           <img
             src={album.cover}
             alt={album.album}
-            className="w-60 h-60 rounded-lg object-cover group-hover:opacity-90 transition-opacity"
+            className="w-60 h-60 rounded-md-crate object-cover group-hover:opacity-90 transition-opacity"
           />
         ) : (
-          <div className="w-60 h-60 bg-slate-800 rounded-lg flex items-center justify-center group-hover:bg-slate-700 transition-colors">
-            <span className="text-4xl">💿</span>
-          </div>
+          <CoverArtPlaceholder size={240} className="group-hover:opacity-90 transition-opacity" />
         )}
         <div className="mt-2">
-          <p className="text-sm text-white truncate w-60">{album.album}</p>
-          <p className="text-xs text-slate-400 truncate w-60">{album.artist}</p>
+          <p className="text-sm text-text-1 truncate w-60">{album.album}</p>
+          <p className="text-xs text-text-2 truncate w-60">{album.artist}</p>
         </div>
       </button>
       <button
         onClick={onSave}
         disabled={isSaving}
-        className="w-full h-7 text-xs flex items-center justify-center gap-1 text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 rounded-md transition-colors disabled:opacity-50"
+        className="w-full h-7 text-xs flex items-center justify-center gap-1 text-text-2 hover:text-text-1 border border-border hover:border-text-3 rounded-sm-crate transition-colors disabled:opacity-50"
       >
         {isSaving ? (
           <Loader2 className="h-3 w-3 animate-spin" />
@@ -113,20 +130,18 @@ function SearchArtistCard({ result }: { result: ArtistSearchResult }) {
       onClick={() => navigateTo(ROUTES.artist(result.deezer_id))}
       className="flex-shrink-0 w-36 snap-start text-left space-y-2 group"
     >
-      <div className="w-36 h-36 rounded-full overflow-hidden bg-slate-800 group-hover:opacity-90 transition-opacity">
-        {result.cover_url ? (
+      {result.cover_url ? (
+        <div className="w-36 h-36 rounded-full overflow-hidden group-hover:opacity-90 transition-opacity">
           <img
             src={result.cover_url}
             alt={result.artist}
             className="w-full h-full object-cover"
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <span className="text-3xl">🎤</span>
-          </div>
-        )}
-      </div>
-      <p className="text-sm text-white truncate w-36 text-center">{result.artist}</p>
+        </div>
+      ) : (
+        <CoverArtPlaceholder size={144} circular showLabel={false} className="group-hover:opacity-90 transition-opacity" />
+      )}
+      <p className="text-sm text-text-1 truncate w-36 text-center">{result.artist}</p>
     </button>
   )
 }
@@ -198,12 +213,14 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
           placeholder="Search tracks and albums..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="flex-1 bg-slate-800 text-white text-sm border border-slate-700 rounded-lg h-10 px-4 focus:outline-none focus:ring-2 focus:ring-slate-600"
+          className={`flex-1 bg-bg-1 text-text-1 text-sm border rounded-md-crate h-10 px-4 outline-none transition-colors ${
+            query ? 'border-accent' : 'border-border focus:border-accent'
+          }`}
         />
         <Button
           type="submit"
           disabled={isLoading}
-          className="bg-white text-black h-10 px-5 rounded-lg hover:bg-white/90"
+          className="bg-text-1 text-bg-0 h-10 px-5 rounded-md-crate hover:opacity-90"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -220,8 +237,8 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
             <div className="flex gap-4 overflow-hidden pb-3">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex-shrink-0 w-36 space-y-2">
-                  <div className="w-36 h-36 bg-slate-800 rounded-full animate-pulse" />
-                  <div className="h-3 bg-slate-800 rounded animate-pulse w-28 mx-auto" />
+                  <div className="w-36 h-36 bg-bg-2 rounded-full animate-pulse" />
+                  <div className="h-3 bg-bg-2 rounded animate-pulse w-28 mx-auto" />
                 </div>
               ))}
             </div>
@@ -235,34 +252,37 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
 
       {/* Track Results */}
       {(isLoading || trackResults.length > 0) && (
-        <CarouselSection title="Tracks">
+        <section className="space-y-3">
+          <SectionHeader title="Tracks" />
           {isLoading ? (
-            <CarouselSkeleton />
+            <TrackListSkeleton />
           ) : (
-            trackResults.map((result, i) => (
-              <SearchTrackCard
-                key={`${result['track-id']}-${i}`}
-                result={result}
-                isLoading={loadingTrackId === result.deezer_id}
-                onPlay={() => {
-                  const queue = trackResults.map((r, idx) => ({
-                    track: r.track,
-                    deezer_id: r.deezer_id,
-                    artist: r.artist,
-                    'track-number': idx + 1,
-                  }))
-                  setAutoPlayContext(queue, i, 'Search Results', () => queue)
-                  playTrack(result.track, result.artist, {
-                    clearAlbum: false,
-                    albumName: result.album,
-                    coverArt: result.cover_url || result.cover,
-                    deezer_id: result.deezer_id,
-                  })
-                }}
-              />
-            ))
+            <div>
+              {trackResults.map((result, i) => (
+                <SearchTrackRow
+                  key={`${result['track-id']}-${i}`}
+                  result={result}
+                  isLoading={loadingTrackId === result.deezer_id}
+                  onPlay={() => {
+                    const queue = trackResults.map((r, idx) => ({
+                      track: r.track,
+                      deezer_id: r.deezer_id,
+                      artist: r.artist,
+                      'track-number': idx + 1,
+                    }))
+                    setAutoPlayContext(queue, i, 'Search Results', () => queue)
+                    playTrack(result.track, result.artist, {
+                      clearAlbum: false,
+                      albumName: result.album,
+                      coverArt: result.cover_url || result.cover,
+                      deezer_id: result.deezer_id,
+                    })
+                  }}
+                />
+              ))}
+            </div>
           )}
-        </CarouselSection>
+        </section>
       )}
 
       {/* Album Results */}
@@ -285,7 +305,7 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
 
       {/* No Results */}
       {!isLoading && hasSearched && trackResults.length === 0 && albumResults.length === 0 && artistResults.length === 0 && (
-        <p className="text-slate-400 text-center py-8">No results found for "{query}".</p>
+        <p className="text-text-2 text-center py-8">No results found for "{query}".</p>
       )}
     </div>
   )

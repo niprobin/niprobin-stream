@@ -6,10 +6,11 @@ import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { searchTracks, searchAlbums, searchArtists } from '@/services/api'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import type { SearchResult, AlbumResult, ArtistSearchResult, DiscoverTrack, DiscoverAlbum } from '@/types/api'
+import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 
 function SectionLabel({ label }: { label: string }) {
   return (
-    <p className="px-3 pt-2 pb-1 text-xs uppercase tracking-wider text-slate-500 font-medium">
+    <p className="px-3 pt-2 pb-1 text-xs uppercase tracking-wider text-text-3 font-mono-label">
       {label}
     </p>
   )
@@ -19,16 +20,16 @@ function TrackRow({ track, artist, cover, onClick }: { track: string; artist: st
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-800 text-left transition-colors"
+      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-2 text-left transition-colors"
     >
       {cover ? (
-        <img src={cover} alt={track} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+        <img src={cover} alt={track} className="w-8 h-8 rounded-sm-crate object-cover flex-shrink-0" />
       ) : (
-        <div className="w-8 h-8 bg-slate-800 rounded flex items-center justify-center flex-shrink-0 text-sm">🎵</div>
+        <CoverArtPlaceholder size={32} radius={8} showLabel={false} className="flex-shrink-0" />
       )}
       <div className="min-w-0">
-        <p className="text-sm text-white truncate">{track}</p>
-        <p className="text-xs text-slate-400 truncate">{artist}</p>
+        <p className="text-sm text-text-1 truncate">{track}</p>
+        <p className="text-xs text-text-2 truncate">{artist}</p>
       </div>
     </button>
   )
@@ -38,14 +39,14 @@ function ArtistRow({ artist, cover_url, onClick }: { artist: string; cover_url: 
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-800 text-left transition-colors"
+      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-2 text-left transition-colors"
     >
       {cover_url ? (
         <img src={cover_url} alt={artist} className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
       ) : (
-        <div className="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center flex-shrink-0 text-sm">🎤</div>
+        <CoverArtPlaceholder size={32} circular showLabel={false} className="flex-shrink-0" />
       )}
-      <p className="text-sm text-white truncate">{artist}</p>
+      <p className="text-sm text-text-1 truncate">{artist}</p>
     </button>
   )
 }
@@ -54,16 +55,16 @@ function AlbumRow({ album, artist, cover, onClick }: { album: string; artist: st
   return (
     <button
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-800 text-left transition-colors"
+      className="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-2 text-left transition-colors"
     >
       {cover ? (
-        <img src={cover} alt={album} className="w-8 h-8 rounded object-cover flex-shrink-0" />
+        <img src={cover} alt={album} className="w-8 h-8 rounded-sm-crate object-cover flex-shrink-0" />
       ) : (
-        <div className="w-8 h-8 bg-slate-800 rounded flex items-center justify-center flex-shrink-0 text-sm">💿</div>
+        <CoverArtPlaceholder size={32} radius={8} showLabel={false} className="flex-shrink-0" />
       )}
       <div className="min-w-0">
-        <p className="text-sm text-white truncate">{album}</p>
-        <p className="text-xs text-slate-400 truncate">{artist}</p>
+        <p className="text-sm text-text-1 truncate">{album}</p>
+        <p className="text-xs text-text-2 truncate">{artist}</p>
       </div>
     </button>
   )
@@ -183,20 +184,20 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
   return (
     <div ref={containerRef} className="relative flex-1">
       <form onSubmit={handleSubmit}>
-        <div className={`flex items-center gap-2 bg-slate-900 border border-slate-700 focus-within:border-slate-500 rounded-lg px-3 py-1.5 transition-colors ${containerClassName ?? ''}`}>
-          <Search className="h-4 w-4 text-slate-400 flex-shrink-0" />
+        <div className={`flex items-center gap-2 bg-bg-1 border rounded-md-crate px-3 py-1.5 transition-colors ${query ? 'border-accent' : 'border-border focus-within:border-accent'} ${containerClassName ?? ''}`}>
+          <Search className="h-4 w-4 text-text-2 flex-shrink-0" />
           <input
             type="text"
             value={query}
             onChange={handleChange}
             onFocus={() => hasSearched && query === searchedQuery && setIsOpen(true)}
             placeholder="Search…"
-            className="bg-transparent text-sm text-white placeholder:text-slate-500 outline-none flex-1 min-w-0"
+            className="bg-transparent text-sm text-text-1 placeholder:text-text-3 outline-none flex-1 min-w-0"
           />
           {query.trim() && (
             <button
               type="submit"
-              className="flex-shrink-0 px-3 py-1 text-sm font-medium text-white bg-slate-800 hover:bg-slate-700 rounded-md transition"
+              className="flex-shrink-0 px-3 py-1 text-sm font-medium text-text-1 bg-bg-2 hover:opacity-90 rounded-sm-crate transition"
             >
               Search
             </button>
@@ -205,10 +206,10 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
       </form>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 overflow-y-auto max-h-[70vh]">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-bg-0-deep border border-border rounded-md-crate shadow-2xl z-50 overflow-y-auto max-h-[70vh]">
           {isLoading ? (
             <div className="flex items-center justify-center py-10">
-              <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+              <Loader2 className="h-5 w-5 animate-spin text-text-2" />
             </div>
           ) : hasResults ? (
             <div className="py-1">
@@ -238,7 +239,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                         navigateTo(`/search?q=${encodeURIComponent(query)}`)
                         setIsOpen(false)
                       }}
-                      className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                      className="text-xs text-accent hover:opacity-80 transition-colors"
                     >
                       See all →
                     </button>
@@ -310,7 +311,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
               )}
             </div>
           ) : (
-            <p className="px-4 py-6 text-sm text-slate-500 text-center">No results found</p>
+            <p className="px-4 py-6 text-sm text-text-3 text-center">No results found</p>
           )}
         </div>
       )}
