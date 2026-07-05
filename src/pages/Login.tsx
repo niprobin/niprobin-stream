@@ -33,19 +33,19 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-0-deep flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-bg-0-deep flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-8">
         {/* Logo */}
         <div className="flex flex-col items-center gap-3">
           <Logo size={56} />
-          <h1 className="font-serif-display italic text-2xl text-1">nipstream</h1>
-          <p className="text-2 text-sm">Sign in to continue</p>
+          <h1 className="font-serif-display italic text-2xl text-text-1">nipstream</h1>
+          <p className="text-text-2 text-sm">Sign in to continue</p>
         </div>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
-            <label htmlFor="username" className="block text-xs font-mono-label text-3 uppercase tracking-wider">
+            <label htmlFor="username" className="block text-xs font-mono-label text-text-3 uppercase tracking-wider">
               Username
             </label>
             <input
@@ -57,13 +57,13 @@ export function LoginPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="Enter your username"
-              className="w-full rounded-md-crate bg-1 border border-border px-4 py-3 text-sm text-1 placeholder-text-3 focus:outline-none focus:border-accent transition"
+              className="w-full rounded-md-crate bg-bg-1 border border-border px-4 py-3 text-sm text-text-1 placeholder-text-3 focus:outline-none focus:border-accent transition"
               disabled={isLoading}
             />
           </div>
 
           <div className="space-y-1">
-            <label htmlFor="access-code" className="block text-xs font-mono-label text-3 uppercase tracking-wider">
+            <label htmlFor="access-code" className="block text-xs font-mono-label text-text-3 uppercase tracking-wider">
               Access code
             </label>
             <input
@@ -74,7 +74,7 @@ export function LoginPage() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="Enter your access code"
-              className="w-full rounded-md-crate bg-1 border border-border px-4 py-3 text-sm text-1 placeholder-text-3 focus:outline-none focus:border-accent transition"
+              className="w-full rounded-md-crate bg-bg-1 border border-border px-4 py-3 text-sm text-text-1 placeholder-text-3 focus:outline-none focus:border-accent transition"
               disabled={isLoading}
             />
           </div>
