@@ -8,7 +8,7 @@ export function NotificationBanner() {
     return null
   }
 
-  const styles = {
+  const styleMap = {
     success: {
       bg: 'bg-success-bg',
       border: 'border-success-border',
@@ -27,7 +27,13 @@ export function NotificationBanner() {
       dot: 'bg-accent',
       text: 'text-text-1',
     },
-  }[notification.type]
+  }
+  // Fall back to the neutral "info" look for any type value that doesn't
+  // match a known key — API responses aren't guaranteed to send exactly
+  // 'success'/'error' at runtime even though the type says so, and this
+  // must never throw (an uncaught error here takes down the whole app,
+  // with no error boundary to catch it).
+  const styles = styleMap[notification.type] ?? styleMap.info
 
   return (
     <div
