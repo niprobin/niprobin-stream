@@ -1,7 +1,4 @@
-function navigateTo(path: string) {
-  window.history.pushState({}, '', path)
-  window.dispatchEvent(new PopStateEvent('popstate'))
-}
+import { navigateTo } from '@/utils/routes'
 
 /**
  * Crate-styled section heading: Instrument Serif italic title + optional
