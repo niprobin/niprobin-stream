@@ -1,8 +1,9 @@
 import { useRef, useEffect, useState } from 'react'
 import {
   ChevronDown, Heart, Share2, Download, ListMusic,
-  Play, Pause, SkipBack, SkipForward, Music, Loader2, MoreHorizontal,
+  Play, Pause, SkipBack, SkipForward, Loader2, MoreHorizontal,
 } from 'lucide-react'
+import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
@@ -28,7 +29,7 @@ function formatTime(seconds: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`
 }
 
-const ART_SIZE = 'min(312px, 80vw, 45vh)'
+const ART_SIZE = 'min(250px, 80vw, 45vh)'
 const SWIPE_THRESHOLD = 40
 const SPRING = 'transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
 
@@ -37,7 +38,7 @@ function ArtBox({ coverArt, title, size }: { coverArt?: string; title?: string; 
   useEffect(() => { setImgFailed(false) }, [coverArt])
   const showPlaceholder = !coverArt || imgFailed
   return (
-    <div style={{ width: size, height: size, borderRadius: '20px', overflow: 'hidden', flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: '16px', overflow: 'hidden', flexShrink: 0 }}>
       {!showPlaceholder && (
         <img
           src={coverArt}
@@ -47,12 +48,7 @@ function ArtBox({ coverArt, title, size }: { coverArt?: string; title?: string; 
         />
       )}
       {showPlaceholder && (
-        <div
-          className="w-full h-full flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #6c63d9, #2e9e7a)' }}
-        >
-          <Music className="h-16 w-16 text-white/25" />
-        </div>
+        <CoverArtPlaceholder className="!w-full !h-full" radius={16} showLabel={false} />
       )}
     </div>
   )
@@ -200,8 +196,8 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
     <>
       <div
         ref={containerRef}
-        className="fixed inset-0 z-[100] flex flex-col overflow-hidden"
-        style={{ background: 'linear-gradient(to top, #000000, #152331)', display: isOpen ? 'flex' : 'none' }}
+        className="fixed inset-0 z-[100] flex flex-col overflow-hidden bg-gradient-to-t from-bg-0-deep to-bg-0"
+        style={{ display: isOpen ? 'flex' : 'none' }}
         role="dialog"
         aria-modal="true"
         aria-label="Full player"
@@ -214,15 +210,15 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center justify-center w-11 h-11 rounded-full text-white/70 hover:text-white active:bg-white/20 transition-colors"
+            className="flex items-center justify-center w-11 h-11 rounded-full text-text-2 hover:text-text-1 active:bg-bg-2 transition-colors"
             aria-label="Close player"
           >
             <ChevronDown className="h-6 w-6" />
           </button>
-          <span className="text-[11px] font-semibold text-white/40 uppercase tracking-[0.22em]">Now Playing</span>
+          <span className="font-mono-label text-text-3 uppercase">Now Playing</span>
           <button
             type="button"
-            className="flex items-center justify-center w-11 h-11 rounded-full text-white/70 hover:text-white active:bg-white/20 transition-colors"
+            className="flex items-center justify-center w-11 h-11 rounded-full text-text-2 hover:text-text-1 active:bg-bg-2 transition-colors"
             aria-label="More options"
           >
             <MoreHorizontal className="h-5 w-5" />
@@ -252,7 +248,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
                   style={{
                     opacity: dragX < 0 ? Math.min(1, Math.abs(dragX) / SWIPE_THRESHOLD) : 0,
                     boxShadow: '0 16px 36px rgba(0,0,0,0.5)',
-                    borderRadius: '20px',
+                    borderRadius: '16px',
                     transition: isDragging ? 'none' : 'opacity 0.2s',
                   }}
                 >
@@ -260,7 +256,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
                 </div>
 
                 {/* Current art */}
-                <div style={{ boxShadow: '0 28px 55px rgba(0,0,0,0.55), inset 0 0 0 0.5px rgba(255,255,255,0.08)', borderRadius: '20px' }}>
+                <div style={{ boxShadow: '0 28px 55px rgba(0,0,0,0.55), inset 0 0 0 0.5px rgba(255,255,255,0.08)', borderRadius: '16px' }}>
                   <ArtBox coverArt={currentTrack?.coverArt} title={currentTrack?.title} size={ART_SIZE} />
                 </div>
 
@@ -269,7 +265,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
                   style={{
                     opacity: dragX > 0 ? Math.min(1, dragX / SWIPE_THRESHOLD) : 0,
                     boxShadow: '0 16px 36px rgba(0,0,0,0.5)',
-                    borderRadius: '20px',
+                    borderRadius: '16px',
                     transition: isDragging ? 'none' : 'opacity 0.2s',
                   }}
                 >
@@ -280,11 +276,11 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
 
             {/* Track info — moves with art */}
             <div className="px-6 flex flex-col gap-1">
-              <div className="text-[26px] font-bold text-white leading-snug tracking-tight line-clamp-2">
+              <div className="text-[26px] font-serif-display italic text-text-1 leading-snug tracking-tight line-clamp-2">
                 {currentTrack?.title ?? '—'}
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-[15px] text-white/55 truncate flex-1">
+                <span className="text-[15px] text-text-2 truncate flex-1">
                   {currentTrack?.artist ?? ''}
                 </span>
                 {currentTrack && (
@@ -296,13 +292,12 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
                     }
                     className={`flex-shrink-0 transition-opacity active:scale-90 ${
                       !isAuthenticated ? 'opacity-30 pointer-events-none' : ''
-                    }`}
+                    } ${isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-accent' : 'text-text-2'}`}
                     aria-label="Like track"
                   >
                     <Heart
                       className="h-6 w-6"
-                      style={{ color: isTrackLiked(currentTrack.title, currentTrack.artist) ? '#e8743c' : 'rgba(255,255,255,0.65)' }}
-                      fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? '#e8743c' : 'none'}
+                      fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
                     />
                   </button>
                 )}
@@ -326,14 +321,14 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
                 onChange={handleSeek}
                 className="w-full h-1 rounded-full cursor-pointer appearance-none"
                 style={{
-                  background: `linear-gradient(to right, #e8743c ${progress}%, rgba(255,255,255,0.16) ${progress}%)`,
-                  accentColor: '#e8743c',
+                  background: `linear-gradient(to right, #E8542E ${progress}%, rgba(255,255,255,0.16) ${progress}%)`,
+                  accentColor: '#E8542E',
                 }}
                 aria-label="Playback progress"
               />
               <div className="flex justify-between mt-1.5">
-                <span className="text-[12px] text-white/45 tabular-nums">{formatTime(currentTime)}</span>
-                <span className="text-[12px] text-white/45 tabular-nums">-{formatTime(Math.max(0, duration - currentTime))}</span>
+                <span className="text-[12px] text-text-3 tabular-nums">{formatTime(currentTime)}</span>
+                <span className="text-[12px] text-text-3 tabular-nums">-{formatTime(Math.max(0, duration - currentTime))}</span>
               </div>
             </div>
 
@@ -343,7 +338,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
                 type="button"
                 onClick={() => { if (canGoToPrevious) playPreviousTrack() }}
                 disabled={!canGoToPrevious || isNavInFlight}
-                className="text-white disabled:opacity-25 active:scale-90 transition-transform"
+                className="text-text-1 disabled:opacity-25 active:scale-90 transition-transform"
                 aria-label="Previous track"
               >
                 <SkipBack className="h-7 w-7" />
@@ -352,7 +347,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
                 type="button"
                 onClick={handlePlayPause}
                 disabled={isCurrentTrackLoading}
-                className="flex items-center justify-center w-[74px] h-[74px] rounded-full bg-white text-black disabled:opacity-50 active:scale-95 transition-transform"
+                className="flex items-center justify-center w-16 h-16 rounded-full bg-accent text-accent-ink disabled:opacity-50 active:scale-95 transition-transform"
                 style={{ boxShadow: '0 10px 26px rgba(0,0,0,0.4)' }}
                 aria-label={isPlaying ? 'Pause' : 'Play'}
               >
@@ -366,7 +361,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
                 type="button"
                 onClick={() => { if (canGoToNext) playNextTrack() }}
                 disabled={!canGoToNext || isNavInFlight}
-                className="text-white disabled:opacity-25 active:scale-90 transition-transform"
+                className="text-text-1 disabled:opacity-25 active:scale-90 transition-transform"
                 aria-label="Next track"
               >
                 <SkipForward className="h-7 w-7" />
@@ -374,7 +369,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
             </div>
 
             {/* Quick actions */}
-            <div className="grid grid-cols-4 border-t border-white/10">
+            <div className="grid grid-cols-4 border-t border-border">
               <button
                 type="button"
                 onClick={() => currentTrack && isAuthenticated
@@ -383,45 +378,44 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
                 }
                 className={`flex flex-col items-center gap-1.5 py-2 justify-center transition-opacity active:opacity-50 ${
                   !isAuthenticated || !currentTrack ? 'opacity-30 pointer-events-none' : ''
-                }`}
+                } ${currentTrack && isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-accent' : 'text-text-2'}`}
                 aria-label="Like track"
               >
                 <Heart
                   className="h-[22px] w-[22px]"
-                  style={{ color: currentTrack && isTrackLiked(currentTrack.title, currentTrack.artist) ? '#e8743c' : 'rgba(255,255,255,0.65)' }}
-                  fill={currentTrack && isTrackLiked(currentTrack.title, currentTrack.artist) ? '#e8743c' : 'none'}
+                  fill={currentTrack && isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
                 />
-                <span className="text-[11.5px] text-white/55">Like</span>
+                <span className="text-[11.5px] text-text-3">Like</span>
               </button>
               <button
                 type="button"
                 onClick={handleShare}
-                className="flex flex-col items-center gap-1.5 py-2 justify-center text-white/65 active:opacity-50 transition-opacity"
+                className="flex flex-col items-center gap-1.5 py-2 justify-center text-text-2 active:opacity-50 transition-opacity"
                 aria-label="Share track"
               >
                 <Share2 className="h-[22px] w-[22px]" />
-                <span className="text-[11.5px] text-white/55">Share</span>
+                <span className="text-[11.5px] text-text-3">Share</span>
               </button>
               <button
                 type="button"
                 onClick={handleDownload}
                 disabled={isGlobalLoading}
-                className="flex flex-col items-center gap-1.5 py-2 justify-center text-white/65 disabled:opacity-30 active:opacity-50 transition-opacity"
+                className="flex flex-col items-center gap-1.5 py-2 justify-center text-text-2 disabled:opacity-30 active:opacity-50 transition-opacity"
                 aria-label="Download track"
               >
                 <Download className={`h-[22px] w-[22px] ${isGlobalLoading ? 'animate-pulse' : ''}`} />
-                <span className="text-[11.5px] text-white/55">Download</span>
+                <span className="text-[11.5px] text-text-3">Download</span>
               </button>
               <button
                 type="button"
                 onClick={() => hasQueue ? setShowQueue(true) : undefined}
                 className={`flex flex-col items-center gap-1.5 py-2 justify-center transition-opacity active:opacity-50 ${
-                  !hasQueue ? 'opacity-30 pointer-events-none' : 'text-white/65'
+                  !hasQueue ? 'opacity-30 pointer-events-none' : 'text-text-2'
                 }`}
                 aria-label="View queue"
               >
                 <ListMusic className="h-[22px] w-[22px]" />
-                <span className="text-[11.5px] text-white/55">Queue</span>
+                <span className="text-[11.5px] text-text-3">Queue</span>
               </button>
             </div>
           </div>
