@@ -41,7 +41,7 @@ export function LikeModal({
     >
       <form
         onSubmit={onSubmit}
-        className="w-full md:max-w-sm h-[90vh] max-h-[720px] flex flex-col bg-bg-1 border border-border rounded-lg-crate p-5 space-y-4 shadow-2xl md:h-auto md:max-h-none"
+        className="w-full md:max-w-lg h-[90vh] max-h-[720px] flex flex-col bg-bg-1 border border-border rounded-lg-crate p-5 space-y-4 shadow-2xl md:h-auto md:max-h-[85vh]"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -60,7 +60,7 @@ export function LikeModal({
           </Button>
         </div>
 
-        <div className="flex flex-col gap-2 flex-1 overflow-y-auto pr-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 flex-1 min-h-0 overflow-y-auto pr-1">
           {playlists.map((playlist) => (
             <button
               type="button"
