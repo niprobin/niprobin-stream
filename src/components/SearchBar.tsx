@@ -154,11 +154,20 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
     }
   }
 
+  // Records a query to history — called on every real search commitment
+  // (submit, "See all", or picking a result), not just form submit: most
+  // searches end with the user clicking a result directly, without ever
+  // submitting the form.
+  const commitSearch = (q: string) => {
+    if (!q.trim()) return
+    setHistory(addSearchQuery(q))
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!query.trim()) return
     if (debounceRef.current) clearTimeout(debounceRef.current)
-    setHistory(addSearchQuery(query.trim()))
+    commitSearch(query)
     setIsOpen(false)
     navigateTo(`/search?q=${encodeURIComponent(query)}`)
   }
@@ -283,6 +292,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       artist={a.artist}
                       cover_url={a.cover_url}
                       onClick={() => {
+                        commitSearch(query)
                         navigateTo(ROUTES.artist(a.deezer_id))
                         setIsOpen(false)
                       }}
@@ -297,6 +307,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                     <SectionLabel label="Tracks" />
                     <button
                       onClick={() => {
+                        commitSearch(query)
                         navigateTo(`/search?q=${encodeURIComponent(query)}`)
                         setIsOpen(false)
                       }}
@@ -312,6 +323,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       artist={r.artist}
                       cover={r.cover_url || r.cover}
                       onClick={() => {
+                        commitSearch(query)
                         playTrack(r.track, r.artist, { clearAlbum: false, deezer_id: r.deezer_id, coverArt: r.cover_url || r.cover })
                         setIsOpen(false)
                       }}
@@ -329,7 +341,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       album={r.album}
                       artist={r.artist}
                       cover={r.cover}
-                      onClick={() => { setIsOpen(false); navigateTo(ROUTES.album(r.deezer_id)) }}
+                      onClick={() => { commitSearch(query); setIsOpen(false); navigateTo(ROUTES.album(r.deezer_id)) }}
                     />
                   ))}
                 </div>
@@ -344,6 +356,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       track={t.track}
                       artist={t.artist}
                       onClick={() => {
+                        commitSearch(query)
                         playTrack(t.track, t.artist, {
                           clearAlbum: false,
                           deezer_id: t.deezer_id,
@@ -365,7 +378,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       album={a.album}
                       artist={a.artist}
                       cover={a.cover_url}
-                      onClick={() => { setIsOpen(false); navigateTo(ROUTES.album(a.deezer_id)) }}
+                      onClick={() => { commitSearch(query); setIsOpen(false); navigateTo(ROUTES.album(a.deezer_id)) }}
                     />
                   ))}
                 </div>
