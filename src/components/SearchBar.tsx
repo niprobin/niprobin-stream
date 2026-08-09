@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, Loader2 } from 'lucide-react'
+import { Search, Loader2, Clock, X } from 'lucide-react'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 
@@ -7,6 +7,7 @@ import { searchTracks, searchAlbums, searchArtists } from '@/services/api'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import type { SearchResult, AlbumResult, ArtistSearchResult, DiscoverTrack, DiscoverAlbum } from '@/types/api'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
+import { getSearchHistory, addSearchQuery, removeSearchQuery, clearSearchHistory, type SearchHistoryEntry } from '@/utils/searchHistoryStorage'
 
 function SectionLabel({ label }: { label: string }) {
   return (
@@ -70,6 +71,27 @@ function AlbumRow({ album, artist, cover, onClick }: { album: string; artist: st
   )
 }
 
+function HistoryRow({ entry, onSelect, onRemove }: { entry: SearchHistoryEntry; onSelect: () => void; onRemove: () => void }) {
+  return (
+    <div className="w-full flex items-center gap-3 px-3 py-2 hover:bg-bg-2 transition-colors group">
+      <button onClick={onSelect} className="flex items-center gap-3 min-w-0 flex-1 text-left">
+        <Clock className="h-4 w-4 text-text-3 flex-shrink-0" />
+        <p className="text-sm text-text-1 truncate">{entry.query}</p>
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          onRemove()
+        }}
+        className="flex-shrink-0 p-1 text-text-3 hover:text-text-1 opacity-0 group-hover:opacity-100 transition-opacity"
+        aria-label={`Remove "${entry.query}" from search history`}
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  )
+}
+
 export function SearchBar({ containerClassName }: { containerClassName?: string } = {}) {
   const [query, setQuery] = useState('')
   const [isOpen, setIsOpen] = useState(false)
@@ -79,6 +101,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
   const [externalArtists, setExternalArtists] = useState<ArtistSearchResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
   const [searchedQuery, setSearchedQuery] = useState('')
+  const [history, setHistory] = useState<SearchHistoryEntry[]>(() => getSearchHistory())
   const containerRef = useRef<HTMLDivElement>(null)
   const requestIdRef = useRef(0)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -135,8 +158,20 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
     e.preventDefault()
     if (!query.trim()) return
     if (debounceRef.current) clearTimeout(debounceRef.current)
+    setHistory(addSearchQuery(query.trim()))
     setIsOpen(false)
     navigateTo(`/search?q=${encodeURIComponent(query)}`)
+  }
+
+  const handleSelectHistory = (entry: SearchHistoryEntry) => {
+    setQuery(entry.query)
+    setHistory(addSearchQuery(entry.query))
+    setIsOpen(false)
+    navigateTo(`/search?q=${encodeURIComponent(entry.query)}`)
+  }
+
+  const handleRemoveHistory = (entry: SearchHistoryEntry) => {
+    setHistory(removeSearchQuery(entry.query))
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,7 +181,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
     if (!val) {
       setHasSearched(false)
       setSearchedQuery('')
-      setIsOpen(false)
+      setIsOpen(history.length > 0)
       setExternalTracks([])
       setExternalAlbums([])
       setExternalArtists([])
@@ -190,7 +225,10 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
             type="text"
             value={query}
             onChange={handleChange}
-            onFocus={() => hasSearched && query === searchedQuery && setIsOpen(true)}
+            onFocus={() => {
+              if (!query && history.length > 0) setIsOpen(true)
+              else if (hasSearched && query === searchedQuery) setIsOpen(true)
+            }}
             placeholder="Search…"
             className="bg-transparent text-sm text-text-1 placeholder:text-text-3 outline-none flex-1 min-w-0"
           />
@@ -207,7 +245,30 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
 
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-bg-0-deep border border-border rounded-md-crate shadow-2xl z-50 overflow-y-auto max-h-[70vh]">
-          {isLoading ? (
+          {!query && history.length > 0 ? (
+            <div className="py-1">
+              <div className="flex items-center justify-between pr-3">
+                <SectionLabel label="Recent" />
+                <button
+                  onClick={() => {
+                    clearSearchHistory()
+                    setHistory([])
+                  }}
+                  className="text-xs text-accent hover:opacity-80 transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+              {history.map((entry) => (
+                <HistoryRow
+                  key={entry.query}
+                  entry={entry}
+                  onSelect={() => handleSelectHistory(entry)}
+                  onRemove={() => handleRemoveHistory(entry)}
+                />
+              ))}
+            </div>
+          ) : isLoading ? (
             <div className="flex items-center justify-center py-10">
               <Loader2 className="h-5 w-5 animate-spin text-text-2" />
             </div>

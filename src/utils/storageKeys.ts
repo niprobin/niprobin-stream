@@ -4,4 +4,5 @@ export const STORAGE_KEYS = {
   HIDDEN_ALBUMS: 'niprobin-hidden-albums',
   HIDDEN_TRACKS: 'niprobin-hidden-tracks',
   LIKED_TRACKS: 'likedTracks',
+  SEARCH_HISTORY: 'niprobin-search-history',
 } as const
