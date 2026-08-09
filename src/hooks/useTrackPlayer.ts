@@ -19,7 +19,16 @@ export type TrackPlayerOptions = {
  */
 export function useTrackPlayer() {
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
-  const { play, clearAlbumContext, loadingState, setLoadingState, beginTrackRequest, isLatestTrackRequest } = useAudio()
+  const {
+    play,
+    clearAlbumContext,
+    loadingState,
+    setLoadingState,
+    beginTrackRequest,
+    isLatestTrackRequest,
+    beginManualLoad,
+    endManualLoad,
+  } = useAudio()
   const { showNotification } = useNotification()
   const { token } = useAuth()
 
@@ -46,6 +55,7 @@ export function useTrackPlayer() {
     // Ticket for this load — if another track is requested before this one's
     // fetch resolves, this response must not be allowed to hijack playback.
     const requestId = beginTrackRequest()
+    beginManualLoad()
 
     try {
       // Clear album context if requested (for standalone tracks)
@@ -87,6 +97,7 @@ export function useTrackPlayer() {
       }
     } finally {
       if (isLatestTrackRequest(requestId)) setLoadingTrackId(null)
+      endManualLoad()
     }
   }
 

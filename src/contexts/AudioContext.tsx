@@ -81,6 +81,8 @@ type AudioContextType = {
   beginTrackRequest: () => number
   isLatestTrackRequest: (id: number) => boolean
   isNavInFlight: boolean
+  beginManualLoad: () => void
+  endManualLoad: () => void
 }
 
 // Create the Context - this is our "box" that holds audio state
@@ -160,6 +162,25 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // not-yet-advanced position and landing on the same track.
   const navInFlightRef = useRef(false)
   const [isNavInFlight, setIsNavInFlight] = useState(false)
+
+  // Counts manual, click-driven track loads currently in flight (see
+  // useTrackPlayer.playTrack). While this is above zero, the natural 'ended'
+  // event must not trigger auto-advance: the still-playing old track can
+  // reach its real end while a manual click's stream lookup is in flight, and
+  // since the auto-advance's lookup is usually served from the prefetch
+  // cache, it resolves near-instantly and wins the ticket race — silently
+  // dropping the click's result once it arrives. A counter (not a boolean)
+  // so two overlapping manual loads don't let the first one's cleanup
+  // re-enable 'ended' while the second is still pending. Always
+  // incremented/decremented in try/finally at the call site so it can never
+  // get stuck regardless of which branch runs.
+  const manualLoadInFlightRef = useRef(0)
+  const beginManualLoad = useCallback(() => {
+    manualLoadInFlightRef.current += 1
+  }, [])
+  const endManualLoad = useCallback(() => {
+    manualLoadInFlightRef.current = Math.max(0, manualLoadInFlightRef.current - 1)
+  }, [])
 
   const startPlayback = useCallback(
     (track: Track) => {
@@ -481,6 +502,9 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     }
 
     const handleEnded = () => {
+      // A manual click is already fetching its stream — let it land instead
+      // of racing it with an auto-advance (see manualLoadInFlightRef above).
+      if (manualLoadInFlightRef.current > 0) return
       void playNextTrack()
     }
 
@@ -650,6 +674,8 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         beginTrackRequest,
         isLatestTrackRequest,
         isNavInFlight,
+        beginManualLoad,
+        endManualLoad,
       }}
     >
       {children}
