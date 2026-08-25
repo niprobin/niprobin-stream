@@ -8,11 +8,9 @@ import type {
   LikeTrackPayload,
   LikeTrackResponse,
   RateAlbumPayload,
-  RateDiscoveryAlbumPayload,
   DiscoverAlbum,
   DiscoverTrack,
   HideAlbumPayload,
-  HideDiscoveryAlbumPayload,
   HideTrackPayload,
   SaveAlbumPayload,
   ArtistSearchResult,
@@ -33,6 +31,8 @@ export type {
   ArtistPageData,
 }
 
+const BASE = 'https://n8n.niprobin.com/webhook'
+
 // Auth headers helper
 export function authHeaders(token: string | null): HeadersInit {
   return token
@@ -40,22 +40,82 @@ export function authHeaders(token: string | null): HeadersInit {
     : { 'Content-Type': 'application/json' }
 }
 
-// Search for tracks
-export async function searchTracks(query: string): Promise<SearchResult[]> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/search', {
+// POST { query } with no auth, expecting either a bare array or { results: [...] }.
+// Shared by the plain-text search endpoints (tracks/albums/artists).
+async function postSearch<T>(path: string, query: string, errorMessage: string): Promise<T> {
+  const response = await fetch(`${BASE}/${path}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ query }),
   })
 
   if (!response.ok) {
-    throw new Error('Search failed')
+    throw new Error(errorMessage)
   }
 
   const data = await response.json()
   return data.results || data
+}
+
+// Authenticated POST that throws on failure and returns the raw JSON body.
+// Shared by the simple write endpoints (hide-*) that don't need parseApiResponse's
+// success/error-message normalization.
+async function postForJson<T>(path: string, payload: unknown, token: string | null, errorMessage: string): Promise<T> {
+  const response = await fetch(`${BASE}/${path}`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error(errorMessage)
+  }
+
+  return response.json()
+}
+
+// Authenticated POST whose result is normalized via parseApiResponse.
+// Shared by the user-action endpoints (like/rate/save/download-album).
+async function postAction(
+  path: string,
+  payload: unknown,
+  token: string | null,
+  options: { successMessage: string; errorMessage: string }
+): Promise<LikeTrackResponse> {
+  const response = await fetch(`${BASE}/${path}`, {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  })
+
+  const rawBody = await response.text()
+  return parseApiResponse(response, rawBody, options)
+}
+
+// Authenticated GET expecting either a bare array or { results: [...] } (or empty body).
+// Shared by the "to discover" list endpoints.
+async function getResultsList<T>(path: string, token: string | null, errorMessage: string): Promise<T[]> {
+  const response = await fetch(`${BASE}/${path}`, {
+    method: 'GET',
+    headers: authHeaders(token),
+  })
+
+  if (!response.ok) {
+    throw new Error(errorMessage)
+  }
+
+  const text = await response.text()
+  if (!text.trim()) return []
+
+  const data = JSON.parse(text)
+  if (Array.isArray(data)) return data
+  if (data?.results && Array.isArray(data.results)) return data.results
+  return []
+}
+
+// Search for tracks
+export async function searchTracks(query: string): Promise<SearchResult[]> {
+  return postSearch<SearchResult[]>('search', query, 'Search failed')
 }
 
 // Get stream URL for a track
@@ -116,20 +176,7 @@ export async function downloadTrack(
 
 // Search for albums
 export async function searchAlbums(query: string): Promise<AlbumResult[]> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/search-album', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ query }),
-  })
-
-  if (!response.ok) {
-    throw new Error('Album search failed')
-  }
-
-  const data = await response.json()
-  return data.results || data
+  return postSearch<AlbumResult[]>('search-album', query, 'Album search failed')
 }
 
 // Parses album metadata from either the old flat format or the new structured format.
@@ -206,56 +253,21 @@ export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
 }
 
 export async function likeTrack(payload: LikeTrackPayload, token: string | null): Promise<LikeTrackResponse> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/like-track', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(payload),
-  })
-
-  const rawBody = await response.text()
-  return parseApiResponse(response, rawBody, {
+  return postAction('like-track', payload, token, {
     successMessage: 'Action completed',
     errorMessage: 'Failed to like track',
   })
 }
 
 export async function rateAlbum(payload: RateAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/rate-album', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(payload),
-  })
-
-  const rawBody = await response.text()
-  return parseApiResponse(response, rawBody, {
-    successMessage: 'Rating saved',
-    errorMessage: 'Failed to rate album',
-  })
-}
-
-export async function rateDiscoveryAlbum(payload: RateDiscoveryAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/rate-album', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(payload),
-  })
-
-  const rawBody = await response.text()
-  return parseApiResponse(response, rawBody, {
+  return postAction('rate-album', payload, token, {
     successMessage: 'Rating saved',
     errorMessage: 'Failed to rate album',
   })
 }
 
 export async function saveAlbum(payload: SaveAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/save-album', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(payload),
-  })
-
-  const rawBody = await response.text()
-  return parseApiResponse(response, rawBody, {
+  return postAction('save-album', payload, token, {
     successMessage: 'Album saved for later',
     errorMessage: 'Failed to save album',
   })
@@ -266,113 +278,30 @@ export async function downloadAlbum(
   deezer_id: string,
   token: string | null
 ): Promise<LikeTrackResponse> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/download-album', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ deezer_id }),
-  })
-
-  const rawBody = await response.text()
-  return parseApiResponse(response, rawBody, {
+  return postAction('download-album', { deezer_id }, token, {
     successMessage: 'Album download initiated',
     errorMessage: 'Failed to trigger album download',
   })
 }
 
 export async function getAlbumsToDiscover(token: string | null): Promise<DiscoverAlbum[]> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/albums-to-discover', {
-    method: 'GET',
-    headers: authHeaders(token),
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to load albums to discover')
-  }
-
-  const text = await response.text()
-  if (!text.trim()) return []
-
-  const data = JSON.parse(text)
-  if (Array.isArray(data)) return data
-  if (data?.results && Array.isArray(data.results)) return data.results
-  return []
+  return getResultsList<DiscoverAlbum>('albums-to-discover', token, 'Failed to load albums to discover')
 }
 
 export async function getTracksToDiscover(token: string | null): Promise<DiscoverTrack[]> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/tracks-to-discover', {
-    method: 'GET',
-    headers: authHeaders(token),
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to load tracks to discover')
-  }
-
-  const text = await response.text()
-  if (!text.trim()) return []
-
-  const data = JSON.parse(text)
-  if (Array.isArray(data)) return data
-  if (data?.results && Array.isArray(data.results)) return data.results
-  return []
+  return getResultsList<DiscoverTrack>('tracks-to-discover', token, 'Failed to load tracks to discover')
 }
-
 
 export async function hideAlbum(payload: HideAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/hide-album', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to hide album')
-  }
-
-  return response.json()
-}
-
-export async function hideDiscoveryAlbum(payload: HideDiscoveryAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/hide-album', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to hide discovery album')
-  }
-
-  return response.json()
+  return postForJson('hide-album', payload, token, 'Failed to hide album')
 }
 
 export async function hideTrack(payload: HideTrackPayload, token: string | null): Promise<LikeTrackResponse> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/hide-track', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify(payload),
-  })
-
-  if (!response.ok) {
-    throw new Error('Failed to hide track')
-  }
-
-  return response.json()
+  return postForJson('hide-track', payload, token, 'Failed to hide track')
 }
 
 export async function searchArtists(query: string): Promise<ArtistSearchResult[]> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/search-artist', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
-  })
-
-  if (!response.ok) {
-    throw new Error('Artist search failed')
-  }
-
-  const data = await response.json()
-  return data.results || data
+  return postSearch<ArtistSearchResult[]>('search-artist', query, 'Artist search failed')
 }
 
 export async function getArtistPage(deezer_id: string | number): Promise<ArtistPageData> {

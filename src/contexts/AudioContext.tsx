@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { getStreamUrl, type StreamResponse } from '@/services/api'
 import { getStreamContext } from '@/utils/urlParser'
 import { useAuth } from '@/contexts/AuthContext'
+import { useSyncedState } from '@/hooks/useSyncedState'
 
 type AlbumInfo = {
   name: string
@@ -97,12 +98,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
   const [volume, setVolumeState] = useState(1) // 0 to 1
-  const [albumTracks, setAlbumTracks] = useState<AlbumTrackItem[]>([])
-  const [albumInfo, setAlbumInfo] = useState<AlbumInfo | null>(null)
+  const [albumTracks, updateAlbumTracks, albumTracksRef] = useSyncedState<AlbumTrackItem[]>([])
+  const [albumInfo, updateAlbumInfo, albumInfoRef] = useSyncedState<AlbumInfo | null>(null)
   const [albumAutoExpand, setAlbumAutoExpand] = useState(true)
   const [loadingState, setLoadingState] = useState<AudioLoadingState>({ status: 'idle' })
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0)
-  const [, setQueueProvider] = useState<QueueProvider | null>(null)
+  const [currentTrackIndex, updateCurrentTrackIndex, currentTrackIndexRef] = useSyncedState(0)
+  const [, updateQueueProvider, queueProviderRef] = useSyncedState<QueueProvider | null>(null)
 
   // Auth token for API requests
   const { token } = useAuth()
@@ -127,33 +128,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   }, [])
   const isLatestTrackRequest = useCallback((id: number) => id === trackRequestIdRef.current, [])
 
-  // Ref mirrors of state that playNextTrack/playPreviousTrack must read and
-  // act on synchronously within a single call. Plain useState values can't
-  // be relied on for this: a setState call earlier in the same function (or
-  // one made by a helper it calls, like the dynamic-queue refresh) isn't
-  // reflected in that function's own closure until the next render — refs
-  // are updated immediately, in place, so they're always current.
-  const albumTracksRef = useRef<AlbumTrackItem[]>([])
-  const currentTrackIndexRef = useRef(0)
-  const albumInfoRef = useRef<AlbumInfo | null>(null)
-  const queueProviderRef = useRef<QueueProvider | null>(null)
-
-  const updateAlbumTracks = useCallback((tracks: AlbumTrackItem[]) => {
-    albumTracksRef.current = tracks
-    setAlbumTracks(tracks)
-  }, [])
-  const updateCurrentTrackIndex = useCallback((index: number) => {
-    currentTrackIndexRef.current = index
-    setCurrentTrackIndex(index)
-  }, [])
-  const updateAlbumInfo = useCallback((info: AlbumInfo | null) => {
-    albumInfoRef.current = info
-    setAlbumInfo(info)
-  }, [])
-  const updateQueueProvider = useCallback((provider: QueueProvider | null) => {
-    queueProviderRef.current = provider
-    setQueueProvider(provider)
-  }, [])
+  // albumTracksRef/currentTrackIndexRef/albumInfoRef/queueProviderRef (from
+  // useSyncedState above) are the synchronous-read side of this state:
+  // playNextTrack/playPreviousTrack read them mid-call, where a setState
+  // made earlier in the same call (or by a helper it calls, like the
+  // dynamic-queue refresh) wouldn't yet be reflected in a plain useState
+  // closure.
 
   // True while a Next/Previous navigation is in flight. Next/Previous can be
   // triggered from four independent places — the player buttons, swipe

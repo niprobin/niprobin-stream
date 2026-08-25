@@ -94,13 +94,6 @@ export type RateAlbumPayload = {
   deezer_id?: string
 }
 
-export type RateDiscoveryAlbumPayload = {
-  id: string
-  album: string
-  artist: string
-  rating: number
-}
-
 export type SaveAlbumPayload = {
   album: string
   artist: string
@@ -112,12 +105,6 @@ export type HideAlbumPayload = {
   album: string
   artist: string
   deezer_id?: string
-}
-
-export type HideDiscoveryAlbumPayload = {
-  id: string
-  album: string
-  artist: string
 }
 
 export type HideTrackPayload = {
