@@ -15,11 +15,12 @@ interface LikeModalProps {
 }
 
 /**
- * Shared Add-to-playlist ("Like") modal — one centered-sheet treatment at every
- * breakpoint per the Crate spec (screenshot 09-like-modal). Presentational only:
- * the `useLikeModal` hook stays in each caller (Player / MobileFullPlayer) because
- * it also drives their heart trigger buttons (liked state + open action); this
- * component just renders the modal content from the props those callers pass in.
+ * Shared Add-to-playlist ("Like") drawer — bottom sheet on mobile, right-side
+ * panel on desktop, mirroring the Queue component's sheet/panel convention.
+ * Runs the full viewport height on desktop (top-0/bottom-0) instead of a
+ * centered card with its own height budget, so the playlist list has room to
+ * scroll internally without ever pushing the Cancel/Add row off-screen.
+ * Presentational only: the `useLikeModal` hook stays in each caller.
  */
 export function LikeModal({
   isOpen,
@@ -34,14 +35,20 @@ export function LikeModal({
   if (!isOpen || !track) return null
 
   return (
-    <div
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999] px-4"
-      role="dialog"
-      aria-modal="true"
-    >
+    <>
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
       <form
         onSubmit={onSubmit}
-        className="w-full md:max-w-lg h-[90vh] max-h-[720px] flex flex-col bg-bg-1 border border-border rounded-lg-crate p-5 space-y-4 shadow-2xl md:h-auto md:max-h-[85vh]"
+        role="dialog"
+        aria-modal="true"
+        className="fixed z-[9999] flex flex-col bg-bg-1 border-border shadow-2xl p-5 space-y-4
+          inset-x-0 bottom-0 max-h-[85vh] rounded-t-lg-crate border-t
+          md:inset-x-auto md:right-0 md:top-0 md:bottom-0 md:left-auto md:h-full md:max-h-none
+          md:w-96 md:rounded-t-none md:rounded-l-lg-crate md:border-t-0 md:border-l"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
@@ -77,7 +84,7 @@ export function LikeModal({
           ))}
         </div>
 
-        <div className="flex items-center justify-end gap-3">
+        <div className="flex items-center justify-end gap-3 flex-shrink-0">
           <Button
             type="button"
             variant="ghost"
@@ -96,6 +103,6 @@ export function LikeModal({
           </Button>
         </div>
       </form>
-    </div>
+    </>
   )
 }
