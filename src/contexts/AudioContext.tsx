@@ -67,9 +67,10 @@ type AudioContextType = {
   setAlbumContext: (
     tracks: AlbumTrackItem[],
     albumInfo: AlbumInfo,
-    options?: { expand?: boolean; loadFirst?: boolean },
+    options?: { expand?: boolean; loadFirst?: boolean; startIndex?: number },
   ) => void
   setAutoPlayContext: (tracks: AlbumTrackItem[], startIndex: number, contextName: string, queueProvider?: QueueProvider) => void
+  setQueuePosition: (index: number) => void
   updateDynamicQueue: () => void
   albumAutoExpand?: boolean
   clearAlbumContext: () => void
@@ -606,19 +607,28 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   const setAlbumContext = (
     tracks: AlbumTrackItem[],
     info: AlbumInfo,
-    options?: { expand?: boolean; loadFirst?: boolean },
+    options?: { expand?: boolean; loadFirst?: boolean; startIndex?: number },
   ) => {
     prefetchCacheRef.current.clear()
     prefetchInFlightRef.current.clear()
     updateAlbumTracks(tracks)
     updateAlbumInfo(info)
     setAlbumAutoExpand(options?.expand ?? true)
-    updateCurrentTrackIndex(0)
+    updateCurrentTrackIndex(options?.startIndex ?? 0)
 
     if (options?.loadFirst && tracks.length > 0) {
       void loadAndPlayTrack({ item: tracks[0], albumInfoForFallback: info, onlyLoad: true })
     }
   }
+
+  // Function: Reposition within the current queue (album or auto-play)
+  // without touching albumInfo/albumTracks/queueProvider — used when the
+  // user picks a track from a list that already reflects the active
+  // context, so its real metadata (cover, artist) and dynamic queue
+  // provider must survive the click.
+  const setQueuePosition = useCallback((index: number) => {
+    updateCurrentTrackIndex(index)
+  }, [updateCurrentTrackIndex])
 
   // Function: Set auto-play context for any track list
   const setAutoPlayContext = (tracks: AlbumTrackItem[], startIndex: number, contextName: string, dynamicQueueProvider?: QueueProvider) => {
@@ -663,6 +673,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         setVolume,
         setAlbumContext,
         setAutoPlayContext,
+        setQueuePosition,
         updateDynamicQueue,
         clearAlbumContext,
         albumAutoExpand,

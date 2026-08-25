@@ -33,7 +33,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [isDownloading, setIsDownloading] = useState(false)
   const [showShareTooltip, setShowShareTooltip] = useState(false)
 
-  const { currentTrack, setAlbumContext, setAutoPlayContext } = useAudio()
+  const { currentTrack, setAlbumContext } = useAudio()
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
@@ -433,8 +433,8 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
           'track-number': track['track-number'],
         }))}
         loadingTrackId={loadingTrackId}
-        onSelect={(trackItem, trackIndex) => {
-          const originalTrack = tracks.find(t => t.track === trackItem.track && t.artist === trackItem.artist)
+        onSelect={(_trackItem, trackIndex) => {
+          const originalTrack = tracks[trackIndex]
           if (originalTrack) {
             const albumTracksForContext = tracks.map((t) => ({
               track: t.track,
@@ -442,7 +442,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
               artist: t.artist,
               'track-number': t['track-number'],
             }))
-            setAutoPlayContext(albumTracksForContext, trackIndex, albumName)
+            setAlbumContext(
+              albumTracksForContext,
+              { name: albumName, artist: artistName, cover: coverUrl, id: albumDataId?.toString(), streamingLink },
+              { expand: false, loadFirst: false, startIndex: trackIndex }
+            )
             handlePlayTrack(originalTrack)
           }
         }}

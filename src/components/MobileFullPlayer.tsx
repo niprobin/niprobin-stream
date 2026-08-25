@@ -59,7 +59,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
     currentTrack, isPlaying, currentTime, duration,
     pause, resume, seek, playNextTrack, playPreviousTrack,
     currentTrackIndex, albumTracks, albumInfo, loadingState,
-    setAutoPlayContext, isNavInFlight,
+    setQueuePosition, isNavInFlight,
   } = useAudio()
   const { token } = useAuth()
   const { showNotification } = useNotification()
@@ -179,7 +179,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
 
   const handlePlayQueueTrack = async (track: AlbumTrackItem, trackIndex: number) => {
     if (!albumInfo) return
-    setAutoPlayContext(albumTracks, currentTrackIndex + trackIndex, albumInfo.name)
+    setQueuePosition(currentTrackIndex + trackIndex)
     playTrack(track.track, track.artist, {
       clearAlbum: false,
       albumName: albumInfo.name,

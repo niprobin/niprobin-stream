@@ -15,7 +15,7 @@ import { Queue } from '@/components/Queue'
 import { LikeModal } from '@/components/LikeModal'
 
 export function Player() {
-  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, setAutoPlayContext, playNextTrack, playPreviousTrack, currentTrackIndex, isNavInFlight } = useAudio()
+  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, setQueuePosition, playNextTrack, playPreviousTrack, currentTrackIndex, isNavInFlight } = useAudio()
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
@@ -128,7 +128,7 @@ export function Player() {
   const handlePlayAlbumTrack = async (track: AlbumTrackItem, slicedIndex: number) => {
     if (!albumInfo) return
     const absoluteIndex = currentTrackIndex + slicedIndex
-    setAutoPlayContext(albumTracks, absoluteIndex, albumInfo.name)
+    setQueuePosition(absoluteIndex)
     playTrack(track.track, track.artist, {
       clearAlbum: false,
       albumName: albumInfo.name,
