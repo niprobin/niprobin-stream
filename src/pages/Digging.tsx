@@ -348,6 +348,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange, onTabChange }
               totalItems={filteredTracks.length}
               pageSize={trackPageSize}
               onPageChange={onPageChange}
+              variant="simple"
             />
           )}
           {activeTab === 'albums' && filteredAlbums.length > albumPageSize && (
@@ -356,6 +357,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange, onTabChange }
               totalItems={filteredAlbums.length}
               pageSize={albumPageSize}
               onPageChange={onPageChange}
+              variant="simple"
             />
           )}
         </div>

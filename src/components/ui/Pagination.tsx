@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface PaginationProps {
@@ -7,6 +7,8 @@ interface PaginationProps {
   pageSize: number
   onPageChange: (page: number) => void
   className?: string
+  /** 'numbered' (default) shows a page-number list; 'simple' shows First/Previous ⋯ Next/Last with the current page in the middle. */
+  variant?: 'numbered' | 'simple'
 }
 
 // Builds a compact page list with `null` gaps for ellipses, always keeping
@@ -28,8 +30,57 @@ function buildPageList(currentPage: number, totalPages: number): (number | null)
   return result
 }
 
-export function Pagination({ currentPage, totalItems, pageSize, onPageChange, className }: PaginationProps) {
+export function Pagination({ currentPage, totalItems, pageSize, onPageChange, className, variant = 'numbered' }: PaginationProps) {
   const totalPages = Math.ceil(totalItems / pageSize)
+
+  if (variant === 'simple') {
+    return (
+      <div className={cn('flex items-center justify-center gap-[6px]', className)}>
+        <button
+          type="button"
+          onClick={() => onPageChange(1)}
+          disabled={currentPage === 1}
+          aria-label="First page"
+          className="flex items-center justify-center w-8 h-8 rounded-sm-crate text-text-2 disabled:opacity-30 disabled:cursor-not-allowed hover:text-text-1 transition-colors"
+        >
+          <ChevronsLeft className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          aria-label="Previous page"
+          className="flex items-center justify-center w-8 h-8 rounded-sm-crate text-text-2 disabled:opacity-30 disabled:cursor-not-allowed hover:text-text-1 transition-colors"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
+
+        <span className="px-2 min-w-[4.5rem] text-center text-[13px] font-medium text-text-1 font-mono-label">
+          {currentPage} / {totalPages}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage >= totalPages}
+          aria-label="Next page"
+          className="flex items-center justify-center w-8 h-8 rounded-sm-crate text-text-2 disabled:opacity-30 disabled:cursor-not-allowed hover:text-text-1 transition-colors"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => onPageChange(totalPages)}
+          disabled={currentPage >= totalPages}
+          aria-label="Last page"
+          className="flex items-center justify-center w-8 h-8 rounded-sm-crate text-text-2 disabled:opacity-30 disabled:cursor-not-allowed hover:text-text-1 transition-colors"
+        >
+          <ChevronsRight className="h-4 w-4" />
+        </button>
+      </div>
+    )
+  }
+
   const pageList = buildPageList(currentPage, totalPages)
 
   return (
