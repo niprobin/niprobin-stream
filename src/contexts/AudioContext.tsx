@@ -181,6 +181,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       }
 
       const audio = audioRef.current
+      console.log('[audio-debug] startPlayback', { trackId: track.id, deezer_id: track.deezer_id, newStreamUrl: track.streamUrl, prevSrc: audio.src, srcUnchanged: audio.src === track.streamUrl })
       audio.src = track.streamUrl
       audio.volume = volume
       audio.play()
@@ -349,6 +350,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const requestId = beginTrackRequest()
     const id = item.deezer_id || ''
     const key = trackCacheKey(item)
+    console.log('[audio-debug] request start', { requestId, track: item.track, artist: item.artist, deezer_id: item.deezer_id, key, useCache })
 
     try {
       let streamResponse: StreamResponse
@@ -361,10 +363,13 @@ export function AudioProvider({ children }: { children: ReactNode }) {
           ? await inFlight
           : await getStreamUrl(id || '0', item.track, item.artist, token, getStreamContext())
       }
+      console.log('[audio-debug] response', { requestId, trackId: streamResponse.trackId, track: streamResponse.track, artist: streamResponse.artist, streamUrl: streamResponse.streamUrl })
 
       // A newer track change (another click, Next/Prev, etc.) started after
       // this one — this response is stale, don't let it hijack playback.
-      if (!isLatestTrackRequest(requestId)) return 'stale'
+      const latest = isLatestTrackRequest(requestId)
+      console.log('[audio-debug] staleness check', { requestId, latest })
+      if (!latest) return 'stale'
 
       const track: Track = {
         id: streamResponse.trackId,
