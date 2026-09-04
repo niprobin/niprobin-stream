@@ -303,24 +303,37 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     updateCurrentTrackIndex(result.index)
   }, [computeDynamicQueue, updateAlbumTracks, updateCurrentTrackIndex])
 
+  // Cache/in-flight maps are keyed on more than deezer_id: two different
+  // rows in the same album can carry the same deezer_id (bonus/live/intro
+  // duplicates matched to the same catalog entry during curation) or both
+  // have it missing, and a deezer_id-only key would then serve one track's
+  // cached response to the other. Composing in track+artist makes that
+  // collision impossible even when deezer_id can't be trusted to be unique.
+  const trackCacheKey = useCallback(
+    (item: { track: string; artist: string; deezer_id?: string }) =>
+      `${item.deezer_id || ''}::${item.track}::${item.artist}`,
+    []
+  )
+
   // Silently pre-fetches the stream URL for the track after `fromIndex`.
   // Any failure is swallowed — this must never affect current playback.
   const prefetchNext = useCallback(async (fromIndex: number) => {
     const next = albumTracks[fromIndex + 1]
     if (!next?.deezer_id) return
-    if (prefetchCacheRef.current.has(next.deezer_id)) return
-    if (prefetchInFlightRef.current.has(next.deezer_id)) return
+    const key = trackCacheKey(next)
+    if (prefetchCacheRef.current.has(key)) return
+    if (prefetchInFlightRef.current.has(key)) return
     const promise = getStreamUrl(next.deezer_id, next.track, next.artist, token, getStreamContext())
-    prefetchInFlightRef.current.set(next.deezer_id, promise)
+    prefetchInFlightRef.current.set(key, promise)
     try {
       const res = await promise
-      prefetchCacheRef.current.set(next.deezer_id, res)
+      prefetchCacheRef.current.set(key, res)
     } catch {
       // intentionally silent
     } finally {
-      prefetchInFlightRef.current.delete(next.deezer_id)
+      prefetchInFlightRef.current.delete(key)
     }
-  }, [albumTracks, token])
+  }, [albumTracks, token, trackCacheKey])
 
   // Shared "fetch a track's stream URL, then play or load it" logic, used by
   // playNextTrack, playPreviousTrack, and the first-track preload in
@@ -335,14 +348,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     const { item, albumInfoForFallback, onlyLoad = false, useCache = false } = opts
     const requestId = beginTrackRequest()
     const id = item.deezer_id || ''
+    const key = trackCacheKey(item)
 
     try {
       let streamResponse: StreamResponse
-      if (useCache && prefetchCacheRef.current.has(id)) {
-        streamResponse = prefetchCacheRef.current.get(id)!
-        prefetchCacheRef.current.delete(id)
+      if (useCache && prefetchCacheRef.current.has(key)) {
+        streamResponse = prefetchCacheRef.current.get(key)!
+        prefetchCacheRef.current.delete(key)
       } else {
-        const inFlight = prefetchInFlightRef.current.get(id)
+        const inFlight = prefetchInFlightRef.current.get(key)
         streamResponse = inFlight
           ? await inFlight
           : await getStreamUrl(id || '0', item.track, item.artist, token, getStreamContext())
@@ -375,7 +389,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
       console.error('Failed to load track:', err)
       return isLatestTrackRequest(requestId) ? 'error' : 'stale'
     }
-  }, [token, beginTrackRequest, isLatestTrackRequest, loadTrack, startPlayback])
+  }, [token, beginTrackRequest, isLatestTrackRequest, loadTrack, startPlayback, trackCacheKey])
 
   // Function: Play next track in album or auto-play context
   const playNextTrack = useCallback(async () => {
