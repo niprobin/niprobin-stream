@@ -1,9 +1,6 @@
 import { useState } from 'react'
-import { getStreamUrl } from '@/services/api'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
-import { useAuth } from '@/contexts/AuthContext'
-import { getStreamContext } from '@/utils/urlParser'
 
 export type TrackPlayerOptions = {
   clearAlbum?: boolean
@@ -15,22 +12,25 @@ export type TrackPlayerOptions = {
 
 /**
  * Hook for playing tracks from any source (search, albums, player tracklist)
- * Handles loading state, error notifications, and consistent playback behavior
+ * Handles loading state, error notifications, and consistent playback behavior.
+ *
+ * Delegates the actual fetch-and-play work to AudioContext's loadAndPlayTrack —
+ * the same cache-aware pipeline used by Next/Previous/auto-advance — so a
+ * manual click benefits from whatever the app already prefetched instead of
+ * re-fetching from scratch, and there's a single place that owns "how do we
+ * start a track" instead of two pipelines that can drift apart.
  */
 export function useTrackPlayer() {
   const [loadingTrackId, setLoadingTrackId] = useState<string | null>(null)
   const {
-    play,
+    loadAndPlayTrack,
     clearAlbumContext,
     loadingState,
     setLoadingState,
-    beginTrackRequest,
-    isLatestTrackRequest,
     beginManualLoad,
     endManualLoad,
   } = useAudio()
   const { showNotification } = useNotification()
-  const { token } = useAuth()
 
   const playTrack = async (
     trackName: string,
@@ -52,9 +52,8 @@ export function useTrackPlayer() {
     // Set loading state for API fetch
     setLoadingState({ status: 'fetching-stream', trackId: loadingKey })
 
-    // Ticket for this load — if another track is requested before this one's
-    // fetch resolves, this response must not be allowed to hijack playback.
-    const requestId = beginTrackRequest()
+    // manualLoadInFlightRef guard — see AudioContext for why 'ended' must not
+    // auto-advance while a manual click's own fetch is in flight.
     beginManualLoad()
 
     try {
@@ -63,40 +62,22 @@ export function useTrackPlayer() {
         clearAlbumContext()
       }
 
-      // Fetch stream URL and track metadata from backend
-      const streamResponse = await getStreamUrl(
-        deezer_id || '0',
-        trackName,
-        artistName,
-        token,
-        getStreamContext()
-      )
-
-      if (!isLatestTrackRequest(requestId)) return
-
-      // Play the track with all metadata
-      play({
-        id: streamResponse.trackId,
-        hashUrl: streamResponse.hashUrl,
-        title: streamResponse.track,
-        artist: streamResponse.artist,
-        album: streamResponse.album || albumName,
-        albumId: streamResponse['album-id'],
-        streamUrl: streamResponse.streamUrl,
-        coverArt: coverArt || streamResponse.cover,
-        deezer_id,
-        curator,
+      const result = await loadAndPlayTrack({
+        item: { track: trackName, artist: artistName, deezer_id, curator },
+        albumInfoForFallback: { name: albumName ?? '', artist: '', cover: coverArt ?? '' },
+        useCache: true,
       })
 
-      // API fetch completed - loading state will be managed by AudioContext
-    } catch (err) {
-      console.error('Failed to load track:', err)
-      if (isLatestTrackRequest(requestId)) {
+      if (result === 'error') {
         showNotification('Failed to load track. Please try again.', 'error')
         setLoadingState({ status: 'idle' })
       }
+      // 'stale' means a newer click/navigation superseded this one — that
+      // request owns loadingTrackId cleanup now, so leave it alone here.
+      if (result !== 'stale') {
+        setLoadingTrackId(null)
+      }
     } finally {
-      if (isLatestTrackRequest(requestId)) setLoadingTrackId(null)
       endManualLoad()
     }
   }

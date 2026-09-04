@@ -77,6 +77,12 @@ type AudioContextType = {
   clearAlbumContext: () => void
   loadTrack: (track: Track) => void
   setLoadingState: (state: AudioLoadingState) => void
+  loadAndPlayTrack: (opts: {
+    item: { track: string; artist: string; deezer_id?: string; curator?: string }
+    albumInfoForFallback: AlbumInfo | null
+    onlyLoad?: boolean
+    useCache?: boolean
+  }) => Promise<'played' | 'stale' | 'error'>
   playNextTrack: () => void
   playPreviousTrack: () => void
   currentTrackIndex: number
@@ -321,7 +327,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // setAlbumContext — previously duplicated three times with near-identical
   // shape, which is how the stale-response bug slipped into one path first.
   const loadAndPlayTrack = useCallback(async (opts: {
-    item: AlbumTrackItem
+    item: { track: string; artist: string; deezer_id?: string; curator?: string }
     albumInfoForFallback: AlbumInfo | null
     onlyLoad?: boolean
     useCache?: boolean
@@ -354,7 +360,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         album: streamResponse.album || albumInfoForFallback?.name,
         albumId: streamResponse['album-id'],
         streamUrl: streamResponse.streamUrl,
-        coverArt: streamResponse.cover || albumInfoForFallback?.cover,
+        coverArt: albumInfoForFallback?.cover || streamResponse.cover,
         deezer_id: item.deezer_id,
         curator: item.curator,
       }
@@ -589,8 +595,15 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     info: AlbumInfo,
     options?: { expand?: boolean; loadFirst?: boolean; startIndex?: number },
   ) => {
-    prefetchCacheRef.current.clear()
-    prefetchInFlightRef.current.clear()
+    // Repositioning within the same album (e.g. clicking another row) should
+    // keep whatever's already prefetched — only a real album switch should
+    // discard it. Otherwise every click threw away the cache the app had
+    // just fetched, defeating the point of prefetching.
+    const isSameAlbum = info.id !== undefined && info.id === albumInfoRef.current?.id
+    if (!isSameAlbum) {
+      prefetchCacheRef.current.clear()
+      prefetchInFlightRef.current.clear()
+    }
     updateAlbumTracks(tracks)
     updateAlbumInfo(info)
     setAlbumAutoExpand(options?.expand ?? true)
@@ -659,6 +672,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
         albumAutoExpand,
         loadTrack,
         setLoadingState,
+        loadAndPlayTrack,
         playNextTrack,
         playPreviousTrack,
         currentTrackIndex,
