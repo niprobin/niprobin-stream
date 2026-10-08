@@ -569,7 +569,7 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // own /stream call in n8n (suspected backend collision, under QA).
   useEffect(() => {
     if (!isPlaying || albumTracks.length === 0) return
-    const timer = setTimeout(() => { void prefetchNext(currentTrackIndex) }, 5000)
+    const timer = setTimeout(() => { void prefetchNext(currentTrackIndex) }, 20000)
     return () => clearTimeout(timer)
   }, [currentTrackIndex, isPlaying, albumTracks, prefetchNext])
 
