@@ -78,7 +78,10 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         setArtistName(data.artist)
         setArtistId(data.artistId)
         setCoverUrl(data.cover)
-        setAlbumDataId(data.id)
+        // New-format albums have no legacy `id`; fall back to albumId so the
+        // player can tell clicks within the same album apart from an album
+        // switch (and keep its prefetched tracks).
+        setAlbumDataId(data.id ?? data.albumId)
         setStreamingLink(data.streamingLink)
 
         // Update meta tags for the album
