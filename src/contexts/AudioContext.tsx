@@ -570,9 +570,12 @@ export function AudioProvider({ children }: { children: ReactNode }) {
   // Prefetch the next track's stream URL whenever the current track index,
   // playback state, or the track list itself changes — covers the first
   // track in any new queue and re-targets correctly if the queue shifts.
+  // Delayed so the prefetch never runs concurrently with the current track's
+  // own /stream call in n8n (suspected backend collision, under QA).
   useEffect(() => {
     if (!isPlaying || albumTracks.length === 0) return
-    void prefetchNext(currentTrackIndex)
+    const timer = setTimeout(() => { void prefetchNext(currentTrackIndex) }, 5000)
+    return () => clearTimeout(timer)
   }, [currentTrackIndex, isPlaying, albumTracks, prefetchNext])
 
   // URL sync removed: tracks are not encoded into the URL anymore.
