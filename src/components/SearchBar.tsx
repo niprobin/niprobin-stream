@@ -93,7 +93,12 @@ function HistoryRow({ entry, onSelect, onRemove }: { entry: SearchHistoryEntry; 
 }
 
 export function SearchBar({ containerClassName }: { containerClassName?: string } = {}) {
-  const [query, setQuery] = useState('')
+  // Prefill when the app is opened directly on a /search?q=... URL
+  const [query, setQuery] = useState(() =>
+    window.location.pathname === '/search'
+      ? new URLSearchParams(window.location.search).get('q') ?? ''
+      : ''
+  )
   const [isOpen, setIsOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [externalTracks, setExternalTracks] = useState<SearchResult[]>([])
@@ -349,7 +354,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
 
               {filteredDiggingTracks.length > 0 && (
                 <div>
-                  <SectionLabel label="Digging Tracks" />
+                  <SectionLabel label="In your Tracks" />
                   {filteredDiggingTracks.map((t, i) => (
                     <TrackRow
                       key={i}
@@ -371,7 +376,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
 
               {filteredDiggingAlbums.length > 0 && (
                 <div>
-                  <SectionLabel label="Digging Albums" />
+                  <SectionLabel label="In your Albums" />
                   {filteredDiggingAlbums.map((a, i) => (
                     <AlbumRow
                       key={i}

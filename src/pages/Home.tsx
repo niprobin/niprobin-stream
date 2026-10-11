@@ -10,7 +10,6 @@ import { STORAGE_KEYS } from '@/utils/storageKeys'
 import type { DiscoverTrack, DiscoverAlbum } from '@/types/api'
 import { CarouselSection } from '@/components/ui/CarouselSection'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
-import { SearchBar } from '@/components/SearchBar'
 import { X } from 'lucide-react'
 
 function TrackCard({
@@ -159,11 +158,7 @@ export function HomePage() {
     .slice(0, 20)
 
   return (
-    <div className="py-8 space-y-6">
-      {/* Desktop search bar (>= lg) — mobile has its own in MobileHeader */}
-      <div className="hidden lg:block max-w-md">
-        <SearchBar containerClassName="h-[42px]" />
-      </div>
+    <div className="py-8 lg:pt-4 space-y-6">
 
       <CarouselSection title="Recently added tracks" seeAllHref={ROUTES.diggingTracks}>
         {isLoadingTracks ? <CarouselSkeleton /> : visibleTracks.map((track, index) => (

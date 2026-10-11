@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { Button } from '@/components/ui/button'
 import { searchTracks, searchAlbums, searchArtists, saveAlbum } from '@/services/api'
 import type { SearchResult, AlbumResult, ArtistSearchResult } from '@/types/api'
 import { useNotification } from '@/contexts/NotificationContext'
@@ -7,7 +6,7 @@ import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
-import { Search as SearchIcon, BookmarkPlus, Loader2 } from 'lucide-react'
+import { BookmarkPlus, Loader2 } from 'lucide-react'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { CarouselSection } from '@/components/ui/CarouselSection'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
@@ -146,8 +145,10 @@ function SearchArtistCard({ result }: { result: ArtistSearchResult }) {
   )
 }
 
+// Results page for the global SearchBar: the query comes from /search?q=...
+// (App remounts this component, keyed by query, whenever it changes).
 export function Search({ initialQuery = '' }: { initialQuery?: string }) {
-  const [query, setQuery] = useState(initialQuery)
+  const query = initialQuery
   const [trackResults, setTrackResults] = useState<SearchResult[]>([])
   const [albumResults, setAlbumResults] = useState<AlbumResult[]>([])
   const [artistResults, setArtistResults] = useState<ArtistSearchResult[]>([])
@@ -202,33 +203,16 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
   }
 
   return (
-    <div className="w-full py-8 space-y-6">
-      {/* Search Form */}
-      <form
-        onSubmit={(e) => { e.preventDefault(); performSearch(query) }}
-        className="flex gap-2"
-      >
-        <input
-          type="text"
-          placeholder="Search tracks and albums..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className={`flex-1 bg-bg-1 text-text-1 text-sm border rounded-md-crate h-10 px-4 outline-none transition-colors ${
-            query ? 'border-accent' : 'border-border focus:border-accent'
-          }`}
-        />
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="bg-text-1 text-bg-0 h-10 px-5 rounded-md-crate hover:opacity-90"
-        >
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <SearchIcon className="h-4 w-4" />
-          )}
-        </Button>
-      </form>
+    <div className="w-full py-8 lg:pt-4 space-y-6">
+      {query ? (
+        <h1 className="font-serif-display italic text-2xl text-text-1 truncate">
+          Results for “{query}”
+        </h1>
+      ) : (
+        <p className="text-text-2 text-center py-12">
+          Use the search bar to find tracks, albums and artists.
+        </p>
+      )}
 
       {/* Artist Results */}
       {(isLoading || artistResults.length > 0) && (

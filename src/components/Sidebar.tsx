@@ -1,4 +1,4 @@
-import { RefreshCw, Home, Music, Disc3, Search } from 'lucide-react'
+import { RefreshCw, Home, Music, Disc3 } from 'lucide-react'
 import { Logo } from './ui/Logo'
 import type { AlbumsView } from '@/utils/albumUtils'
 
@@ -15,7 +15,6 @@ interface SidebarProps {
   onNavigateHome: () => void
   onNavigateTracks: () => void
   onNavigateAlbumsView: (view: AlbumsView) => void
-  onNavigateSearch: () => void
   onRefresh: () => void
   onLogout: () => void
 }
@@ -37,7 +36,6 @@ export function Sidebar({
   onNavigateHome,
   onNavigateTracks,
   onNavigateAlbumsView,
-  onNavigateSearch,
   onRefresh,
   onLogout,
 }: SidebarProps) {
@@ -127,17 +125,6 @@ export function Sidebar({
               )
             })}
           </div>
-
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activePage === 'search'}
-            onClick={onNavigateSearch}
-            className={navItemClass(activePage === 'search')}
-          >
-            <Search className="h-[18px] w-[18px]" />
-            Search
-          </button>
         </nav>
       )}
 

@@ -11,6 +11,7 @@ import { AlbumsPage } from './pages/Digging'
 import { useAudio } from './contexts/AudioContext'
 import { useDiscovery } from './contexts/DiscoveryContext'
 import { Search } from './components/Search'
+import { SearchBar } from './components/SearchBar'
 import {
   buildDiggingUrlWithFilters,
 } from './utils/urlBuilder'
@@ -299,7 +300,6 @@ function AppContent() {
           onNavigateHome={() => navigate('home')}
           onNavigateTracks={() => navigateToDiggingTab('tracks')}
           onNavigateAlbumsView={navigateToAlbumsView}
-          onNavigateSearch={() => navigate('search')}
           onRefresh={handleRefresh}
           onLogout={logout}
         />
@@ -312,6 +312,14 @@ function AppContent() {
             showSearch={activePage !== 'menu'}
             onLogoClick={() => navigate('home')}
           />
+
+          {/* Desktop top bar (>= lg) — the one global search, on every page.
+              Mobile gets the same SearchBar in MobileHeader. */}
+          <div className="hidden lg:block flex-shrink-0 px-10 pt-5 pb-1">
+            <div className="max-w-md">
+              <SearchBar containerClassName="h-[42px]" />
+            </div>
+          </div>
 
           {/* Mobile albums sub-menu: Backlog / Listen to (< lg) */}
           {activePage === 'digging' && diggingTab === 'albums' && (

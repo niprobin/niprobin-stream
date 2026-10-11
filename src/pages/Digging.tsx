@@ -10,7 +10,6 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
-import { albumFilterFunction } from '@/hooks/useDiscoverySearch'
 import { useAudio } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { useLikeModal } from '@/hooks/useLikeModal'
@@ -118,7 +117,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
   const [prevActiveTab, setPrevActiveTab] = useState<DiggingTab>(activeTab)
   const [curatorPickerOpen, setCuratorPickerOpen] = useState(false)
 
-  const { curator, search, updateFilter, updateFilters } = useUrlFilters('digging')
+  const { curator, updateFilter, updateFilters } = useUrlFilters('digging')
 
   // Album grid columns match the `grid-cols-3 sm:grid-cols-4 lg:grid-cols-5`
   // classes below — page size is a multiple of the current column count so
@@ -274,7 +273,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
     .filter(t => curator === 'all' || t.curator === curator)
   // "Listen to" shows shortlisted albums; "Backlog" shows the rest
   const viewAlbums = albums.filter(a => isAlbumSaved(a) === (albumsView === 'listen'))
-  const filteredAlbums = albumFilterFunction(viewAlbums, search)
+  const filteredAlbums = viewAlbums
     .filter(a => !hiddenAlbums.has(`${a.album}-${a.artist}`))
 
   const queueCount = filteredTracks.length
@@ -315,27 +314,6 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
     </div>
   )
 
-  const albumSearchControl = (
-    <div className="relative">
-      <input
-        type="text"
-        placeholder="Search albums..."
-        value={search}
-        onChange={(e) => updateFilter('search', e.target.value)}
-        className="w-full bg-bg-1 text-text-1 text-sm border border-border rounded-md-crate h-10 pl-4 pr-10 py-2 focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent transition-colors"
-      />
-      {search && (
-        <button
-          onClick={() => updateFilter('search', '')}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-text-2 hover:text-text-1"
-          aria-label="Clear search"
-        >
-          <X className="h-4 w-4" />
-        </button>
-      )}
-    </div>
-  )
-
   return (
     <div className="w-full space-y-0">
 
@@ -347,7 +325,13 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
         </h1>
 
         <div className="flex-1 min-w-0">
-          {activeTab === 'albums' ? albumSearchControl : (
+          {activeTab === 'albums' ? (
+            <div className="flex items-center justify-end">
+              <EyebrowLabel className="text-[11px] flex-shrink-0">
+                {filteredAlbums.length} {filteredAlbums.length === 1 ? 'album' : 'albums'}
+              </EyebrowLabel>
+            </div>
+          ) : (
             <div className="flex items-center justify-between gap-4">
               {curatorFilterControl}
               <EyebrowLabel className="text-[11px] flex-shrink-0">
@@ -469,21 +453,11 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
 
       {activeTab === 'albums' && (
         <div>
-          {/* Album search — mobile/tablet only, desktop uses the sticky
-              header above */}
-          <div className="px-2 pt-4 pb-3 lg:hidden">
-            {albumSearchControl}
-          </div>
-
-          {viewAlbums.length === 0 ? (
+          {filteredAlbums.length === 0 ? (
             <div className="text-center text-text-2 py-12">
               {albumsView === 'listen'
                 ? 'No shortlisted albums yet. Use Shortlist on an album page to add one.'
                 : 'No albums available yet. Check back soon.'}
-            </div>
-          ) : search && filteredAlbums.length === 0 ? (
-            <div className="text-center text-text-2 py-12">
-              No albums found matching "{search}".
             </div>
           ) : (
             <>

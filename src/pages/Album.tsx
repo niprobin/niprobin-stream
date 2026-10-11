@@ -300,7 +300,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   return (
     <div className="w-full pb-32">
       {/* Album Header */}
-      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-6 lg:gap-10 mb-4 px-6 lg:px-10 pt-28 lg:pt-10 pb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr_auto] gap-6 lg:gap-10 mb-4 px-6 lg:px-10 pt-28 lg:pt-4 pb-4">
         {/* Left: Album Cover + Metadata */}
         <div className="flex flex-col gap-0">
           <div className="w-[184px] h-[184px] lg:w-64 lg:h-64 rounded-md-crate overflow-hidden bg-bg-1 flex-shrink-0 mx-auto lg:mx-0 border border-border">
