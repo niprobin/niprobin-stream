@@ -3,7 +3,7 @@ import { Pagination } from '@/components/ui/Pagination'
 import { AlbumCard } from '@/components/ui/AlbumCard'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { EyebrowLabel } from '@/components/ui/EyebrowLabel'
-import { X, ChevronDown, Heart, Loader2, ListPlus, Check } from 'lucide-react'
+import { X, ChevronDown, Heart, Loader2, ListPlus } from 'lucide-react'
 import { hideTrack, hideAlbum, shortlistAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
@@ -272,8 +272,8 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
   const filteredTracks = tracks
     .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
     .filter(t => curator === 'all' || t.curator === curator)
-  // "Listen to" only shows shortlisted albums; "Backlog" shows everything
-  const viewAlbums = albumsView === 'listen' ? albums.filter(isAlbumSaved) : albums
+  // "Listen to" shows shortlisted albums; "Backlog" shows the rest
+  const viewAlbums = albums.filter(a => isAlbumSaved(a) === (albumsView === 'listen'))
   const filteredAlbums = albumFilterFunction(viewAlbums, search)
     .filter(a => !hiddenAlbums.has(`${a.album}-${a.artist}`))
 
@@ -496,22 +496,18 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                       album={album}
                       onClick={() => handleAlbumClick(album)}
                       leftActionButton={albumsView === 'backlog' && (() => {
-                        const saved = isAlbumSaved(album)
+                        // Shortlisted albums leave the Backlog, so no "saved" state here
                         const isShortlisting = shortlistingIds.has(String(album.deezer_id))
                         return (
                           <button
                             onClick={(e) => handleShortlistAlbum(album, e)}
-                            disabled={saved || isShortlisting}
-                            className={`w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full transition-opacity ${
-                              saved ? '' : 'md:opacity-0 md:group-hover:opacity-100'
-                            }`}
-                            aria-label={saved ? 'Shortlisted' : 'Shortlist album'}
-                            title={saved ? 'Shortlisted' : 'Shortlist'}
+                            disabled={isShortlisting}
+                            className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+                            aria-label="Shortlist album"
+                            title="Shortlist"
                           >
                             {isShortlisting ? (
                               <Loader2 className="h-4 w-4 md:h-3.5 md:w-3.5 text-white animate-spin" />
-                            ) : saved ? (
-                              <Check className="h-4 w-4 md:h-3.5 md:w-3.5 text-accent" />
                             ) : (
                               <ListPlus className="h-4 w-4 md:h-3.5 md:w-3.5 text-white" />
                             )}

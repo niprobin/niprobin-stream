@@ -274,6 +274,7 @@ function AppContent() {
     : 'home'
 
   const listenCount = discoverAlbums.filter(isAlbumSaved).length
+  const backlogCount = discoverAlbums.length - listenCount
 
   const isRefreshing = isLoadingTracks || isLoadingAlbums
   const handleRefresh = () => { refreshTracks(); refreshAlbums() }
@@ -291,7 +292,7 @@ function AppContent() {
           diggingTab={diggingTab}
           tracksCount={discoverTracks.length}
           albumsView={albumsView}
-          albumsCount={discoverAlbums.length}
+          albumsCount={backlogCount}
           listenCount={listenCount}
           username={username}
           isRefreshing={isRefreshing}
@@ -317,7 +318,7 @@ function AppContent() {
             <div className="lg:hidden flex-shrink-0 px-[18px] py-3 border-b border-border">
               <div className="flex bg-bg-1 rounded-md-crate p-[3px] gap-[3px]">
                 {([
-                  { view: 'backlog', label: 'Backlog', count: discoverAlbums.length },
+                  { view: 'backlog', label: 'Backlog', count: backlogCount },
                   { view: 'listen', label: 'Listen to', count: listenCount },
                 ] as const).map(({ view, label, count }) => (
                   <button
