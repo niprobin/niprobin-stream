@@ -320,9 +320,7 @@ function AppContent() {
           {/* Desktop top bar (>= lg) — the one global search, on every page.
               Mobile gets the same SearchBar in MobileHeader. */}
           <div className="hidden lg:block flex-shrink-0 px-10 pt-5 pb-1">
-            <div className="max-w-md">
-              <SearchBar containerClassName="h-[42px]" />
-            </div>
+            <SearchBar containerClassName="h-[42px]" />
           </div>
 
           {/* Mobile albums sub-menu: Backlog / Listen to (< lg) */}
