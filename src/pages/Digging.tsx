@@ -17,6 +17,7 @@ import { useLikeModal } from '@/hooks/useLikeModal'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
 import { ROUTES, navigateTo } from '@/utils/routes'
+import { isAlbumSaved, type AlbumsView } from '@/utils/albumUtils'
 import type { AlbumTrackItem } from '@/contexts/AudioContext'
 import type { FormEvent } from 'react'
 import { LikeModal } from '@/components/LikeModal'
@@ -25,6 +26,7 @@ type DiggingTab = 'tracks' | 'albums'
 
 interface AlbumsPageProps {
   activeTab: DiggingTab
+  albumsView: AlbumsView
   currentPage: number
   onPageChange: (page: number) => void
 }
@@ -112,7 +114,7 @@ function DiggingTrackRow({
   )
 }
 
-export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageProps) {
+export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }: AlbumsPageProps) {
   const [prevActiveTab, setPrevActiveTab] = useState<DiggingTab>(activeTab)
   const [curatorPickerOpen, setCuratorPickerOpen] = useState(false)
 
@@ -245,7 +247,9 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
   const filteredTracks = tracks
     .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
     .filter(t => curator === 'all' || t.curator === curator)
-  const filteredAlbums = albumFilterFunction(albums, search)
+  // "Listen to" only shows shortlisted albums; "Backlog" shows everything
+  const viewAlbums = albumsView === 'listen' ? albums.filter(isAlbumSaved) : albums
+  const filteredAlbums = albumFilterFunction(viewAlbums, search)
     .filter(a => !hiddenAlbums.has(`${a.album}-${a.artist}`))
 
   const queueCount = filteredTracks.length
@@ -314,7 +318,7 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
           sticky so pagination is always reachable without scrolling. */}
       <div className="hidden lg:flex lg:items-center lg:gap-4 lg:sticky lg:top-0 lg:z-10 lg:bg-bg-0 lg:py-4">
         <h1 className="font-serif-display italic text-2xl text-text-1 flex-shrink-0">
-          {activeTab === 'albums' ? 'Albums' : 'Tracks'}
+          {activeTab === 'tracks' ? 'Tracks' : albumsView === 'listen' ? 'Listen to' : 'Backlog'}
         </h1>
 
         <div className="flex-1 min-w-0">
@@ -446,9 +450,11 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageP
             {albumSearchControl}
           </div>
 
-          {albums.length === 0 ? (
+          {viewAlbums.length === 0 ? (
             <div className="text-center text-text-2 py-12">
-              No albums available yet. Check back soon.
+              {albumsView === 'listen'
+                ? 'No shortlisted albums yet. Use Shortlist on an album page to add one.'
+                : 'No albums available yet. Check back soon.'}
             </div>
           ) : search && filteredAlbums.length === 0 ? (
             <div className="text-center text-text-2 py-12">

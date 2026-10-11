@@ -12,7 +12,6 @@ import { useAudio } from './contexts/AudioContext'
 import { useDiscovery } from './contexts/DiscoveryContext'
 import { Search } from './components/Search'
 import {
-  buildDiggingUrl,
   buildDiggingUrlWithFilters,
 } from './utils/urlBuilder'
 import {
@@ -24,6 +23,7 @@ import {
 } from './utils/urlParser'
 import { ROUTES } from './utils/routes'
 import { getTrackByDeezerId } from './services/api'
+import { isAlbumSaved, type AlbumsView } from './utils/albumUtils'
 import { AlbumPage } from './pages/Album'
 import { ArtistPage } from './pages/Artist'
 import { HomePage } from './pages/Home'
@@ -41,6 +41,7 @@ function AppContent() {
   const [currentArtistId, setCurrentArtistId] = useState<string | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
   const [diggingPage, setDiggingPage] = useState<number>(1)
+  const [albumsView, setAlbumsView] = useState<AlbumsView>('backlog')
   const [searchInitialQuery, setSearchInitialQuery] = useState('')
   const [mobilePlayerOpen, setMobilePlayerOpen] = useState(false)
 
@@ -123,6 +124,7 @@ function AppContent() {
           const currentPage = parsePageFromUrl(window.location.search)
           console.log(`syncFromLocation: parsed page=${currentPage}`)
           setDiggingPage(currentPage)
+          setAlbumsView(parseFiltersFromUrl(window.location.search).view ?? 'backlog')
 
           // Set tab based on URL
           if (path === '/digging/albums') {
@@ -161,7 +163,8 @@ function AppContent() {
     albumId?: number,
     diggingTabOverride?: 'tracks' | 'albums',
     pageNumber?: number,
-    preserveFilters?: boolean
+    preserveFilters?: boolean,
+    albumsViewOverride?: AlbumsView
   ) => {
     if (page === 'digging' && !isAuthenticated) {
       return
@@ -171,13 +174,15 @@ function AppContent() {
     if (page === 'digging') {
       const targetTab = diggingTabOverride || diggingTab
       const targetPage = pageNumber !== undefined ? pageNumber : diggingPage
+      // The Backlog / Listen to sub-view only exists on the albums tab
+      const targetView = targetTab === 'albums' ? (albumsViewOverride ?? albumsView) : 'backlog'
 
       if (preserveFilters) {
         // Parse current filters from URL and preserve them
         const currentFilters = parseFiltersFromUrl(window.location.search)
-        path = buildDiggingUrlWithFilters(targetTab, { ...currentFilters, page: targetPage })
+        path = buildDiggingUrlWithFilters(targetTab, { ...currentFilters, page: targetPage, view: targetView })
       } else {
-        path = buildDiggingUrl(targetTab, targetPage)
+        path = buildDiggingUrlWithFilters(targetTab, { page: targetPage, view: targetView })
       }
       console.log(`navigate: building digging URL - tab=${targetTab}, page=${targetPage}, preserveFilters=${preserveFilters}, result=${path}`)
     } else if (page === 'album' && albumId) {
@@ -207,13 +212,17 @@ function AppContent() {
       if (pageNumber !== undefined) {
         setDiggingPage(pageNumber)
       }
+      if (albumsViewOverride) {
+        setAlbumsView(albumsViewOverride)
+      }
     }
 
     setActivePage(page)
   }
 
   const handleMobilePageChange = (page: string) => {
-    if (page === 'tracks' || page === 'albums') navigateToDiggingTab(page)
+    if (page === 'tracks') navigateToDiggingTab('tracks')
+    else if (page === 'albums') navigateToAlbumsView('backlog')
     else if (page === 'menu') setActivePage('menu')
     else navigate('home')
   }
@@ -221,6 +230,10 @@ function AppContent() {
   const navigateToDiggingTab = (tab: 'tracks' | 'albums', page?: number) => {
     // When switching tabs, preserve filters
     navigate('digging', undefined, tab, page !== undefined ? page : 1, true)
+  }
+
+  const navigateToAlbumsView = (view: AlbumsView) => {
+    navigate('digging', undefined, 'albums', 1, true, view)
   }
 
   const navigateToDiggingPage = (page: number) => {
@@ -241,6 +254,7 @@ function AppContent() {
         ) : activePage === 'digging' ? (
           <AlbumsPage
             activeTab={diggingTab}
+            albumsView={albumsView}
             currentPage={diggingPage}
             onPageChange={navigateToDiggingPage}
           />
@@ -259,6 +273,8 @@ function AppContent() {
     : activePage === 'menu' ? 'menu'
     : 'home'
 
+  const listenCount = discoverAlbums.filter(isAlbumSaved).length
+
   const isRefreshing = isLoadingTracks || isLoadingAlbums
   const handleRefresh = () => { refreshTracks(); refreshAlbums() }
 
@@ -274,12 +290,14 @@ function AppContent() {
           activePage={activePage}
           diggingTab={diggingTab}
           tracksCount={discoverTracks.length}
+          albumsView={albumsView}
           albumsCount={discoverAlbums.length}
+          listenCount={listenCount}
           username={username}
           isRefreshing={isRefreshing}
           onNavigateHome={() => navigate('home')}
           onNavigateTracks={() => navigateToDiggingTab('tracks')}
-          onNavigateAlbums={() => navigateToDiggingTab('albums')}
+          onNavigateAlbumsView={navigateToAlbumsView}
           onNavigateSearch={() => navigate('search')}
           onRefresh={handleRefresh}
           onLogout={logout}
@@ -293,6 +311,36 @@ function AppContent() {
             showSearch={activePage !== 'menu'}
             onLogoClick={() => navigate('home')}
           />
+
+          {/* Mobile albums sub-menu: Backlog / Listen to (< lg) */}
+          {activePage === 'digging' && diggingTab === 'albums' && (
+            <div className="lg:hidden flex-shrink-0 px-[18px] py-3 border-b border-border">
+              <div className="flex bg-bg-1 rounded-md-crate p-[3px] gap-[3px]">
+                {([
+                  { view: 'backlog', label: 'Backlog', count: discoverAlbums.length },
+                  { view: 'listen', label: 'Listen to', count: listenCount },
+                ] as const).map(({ view, label, count }) => (
+                  <button
+                    key={view}
+                    type="button"
+                    onClick={() => navigateToAlbumsView(view)}
+                    className={`flex-1 flex items-center justify-center gap-[5px] py-2 text-sm font-semibold rounded-sm-crate transition-all ${
+                      albumsView === view
+                        ? 'bg-accent text-accent-ink'
+                        : 'text-text-2'
+                    }`}
+                  >
+                    {label}
+                    {count > 0 && (
+                      <span className={`text-[11px] font-mono-label ${albumsView === view ? 'text-accent-ink/70' : 'text-text-3'}`}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Scrollable page content — mobile padding clears the floating
               player+nav card; desktop docked bar is in-flow (no padding).

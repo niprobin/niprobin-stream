@@ -1,5 +1,6 @@
 import { ROUTES } from '@/utils/routes'
 import { parseFiltersFromUrl } from '@/utils/urlParser'
+import type { AlbumsView } from '@/utils/albumUtils'
 
 /**
  * Filter parameters interface for URL state management
@@ -10,6 +11,7 @@ export interface FilterParams {
   search?: string
   folder?: string
   type?: 'tracks' | 'albums'
+  view?: AlbumsView
 }
 
 export function buildTrackUrl(deezer_id: string): string {
@@ -89,6 +91,9 @@ function encodeFilterParams(params: FilterParams): string {
   }
   if (params.type && params.type !== 'tracks') {
     urlParams.set('type', params.type)
+  }
+  if (params.view && params.view !== 'backlog') {
+    urlParams.set('view', params.view)
   }
 
   const searchString = urlParams.toString()

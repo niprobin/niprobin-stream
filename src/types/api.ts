@@ -65,6 +65,8 @@ export type DiscoverAlbum = {
   artist: string
   cover_url: string
   deezer_id: string
+  // Set by the /shortlist webhook; n8n may send it as a boolean or a string
+  saved?: boolean | string
 }
 
 export type DiscoverTrack = {

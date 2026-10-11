@@ -1,17 +1,20 @@
 import { RefreshCw, Home, Music, Disc3, Search } from 'lucide-react'
 import { Logo } from './ui/Logo'
+import type { AlbumsView } from '@/utils/albumUtils'
 
 interface SidebarProps {
   isAuthenticated: boolean
   activePage: 'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'
   diggingTab: 'tracks' | 'albums'
   tracksCount?: number
+  albumsView: AlbumsView
   albumsCount?: number
+  listenCount?: number
   username?: string | null
   isRefreshing: boolean
   onNavigateHome: () => void
   onNavigateTracks: () => void
-  onNavigateAlbums: () => void
+  onNavigateAlbumsView: (view: AlbumsView) => void
   onNavigateSearch: () => void
   onRefresh: () => void
   onLogout: () => void
@@ -26,12 +29,14 @@ export function Sidebar({
   activePage,
   diggingTab,
   tracksCount,
+  albumsView,
   albumsCount,
+  listenCount,
   username,
   isRefreshing,
   onNavigateHome,
   onNavigateTracks,
-  onNavigateAlbums,
+  onNavigateAlbumsView,
   onNavigateSearch,
   onRefresh,
   onLogout,
@@ -44,8 +49,9 @@ export function Sidebar({
     }`
 
   const isTracksActive = activePage === 'digging' && diggingTab === 'tracks'
+  const isAlbumsListActive = activePage === 'digging' && diggingTab === 'albums'
   // Album detail pages belong to the Albums section
-  const isAlbumsActive = (activePage === 'digging' && diggingTab === 'albums') || activePage === 'album'
+  const isAlbumsActive = isAlbumsListActive || activePage === 'album'
 
   return (
     <aside className="hidden lg:flex flex-col flex-shrink-0 w-[232px] h-full bg-bg-0-deep border-r border-border">
@@ -91,15 +97,36 @@ export function Sidebar({
             type="button"
             role="tab"
             aria-selected={isAlbumsActive}
-            onClick={onNavigateAlbums}
+            onClick={() => onNavigateAlbumsView('backlog')}
             className={navItemClass(isAlbumsActive)}
           >
             <Disc3 className="h-[18px] w-[18px]" />
             <span className="flex-1 text-left">Albums</span>
-            {typeof albumsCount === 'number' && albumsCount > 0 && (
-              <span className="text-xs font-mono text-text-3">{albumsCount}</span>
-            )}
           </button>
+          <div className="space-y-0.5">
+            {([
+              { view: 'backlog', label: 'Backlog', count: albumsCount },
+              { view: 'listen', label: 'Listen to', count: listenCount },
+            ] as const).map(({ view, label, count }) => {
+              const isActive = isAlbumsListActive && albumsView === view
+              return (
+                <button
+                  key={view}
+                  type="button"
+                  aria-current={isActive ? 'page' : undefined}
+                  onClick={() => onNavigateAlbumsView(view)}
+                  className={`flex items-center w-full pl-[42px] pr-3 py-1.5 text-[13px] rounded-sm-crate transition-colors ${
+                    isActive ? 'text-accent font-medium' : 'text-text-3 hover:text-text-1'
+                  }`}
+                >
+                  <span className="flex-1 text-left">{label}</span>
+                  {typeof count === 'number' && count > 0 && (
+                    <span className="text-xs font-mono text-text-3">{count}</span>
+                  )}
+                </button>
+              )
+            })}
+          </div>
 
           <button
             type="button"

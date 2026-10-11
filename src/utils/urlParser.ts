@@ -48,5 +48,6 @@ export function parseFiltersFromUrl(search: string): FilterParams {
     search: params.get('search') || '',
     folder: params.get('folder') || 'all',
     type: (params.get('type') as 'tracks' | 'albums') || 'tracks',
+    view: params.get('view') === 'listen' ? 'listen' : 'backlog',
   }
 }

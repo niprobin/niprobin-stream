@@ -3,6 +3,7 @@ import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
+import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, shortlistAlbum, downloadAlbum, type AlbumTrack } from '@/services/api'
 import { StarRating } from '@/components/ui/StarRating'
@@ -38,6 +39,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
+  const { refreshAlbums } = useDiscovery()
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setMetaTags, resetToDefault } = useMetaTags()
 
@@ -208,6 +210,8 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         saved: true,
       }, token)
       showNotification(response.message, response.status)
+      // Re-fetch discovery albums so the "Listen to" view reflects the change
+      if (response.status === 'success') refreshAlbums()
     } catch (err) {
       showNotification('Failed to shortlist album', 'error')
       console.error('Failed to shortlist album:', err)
