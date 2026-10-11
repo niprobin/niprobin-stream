@@ -4,12 +4,13 @@ import { AlbumCard } from '@/components/ui/AlbumCard'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { EyebrowLabel } from '@/components/ui/EyebrowLabel'
 import { X, ChevronDown, Heart, Loader2, ListPlus } from 'lucide-react'
-import { hideTrack, hideAlbum, shortlistAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
+import { hideTrack, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
+import { useShortlistAlbum } from '@/hooks/useShortlistAlbum'
 import { useAudio } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { useLikeModal } from '@/hooks/useLikeModal'
@@ -161,32 +162,9 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
   const {
     discoverTracks: tracks,
     discoverAlbums: albums,
-    markAlbumSaved,
   } = useDiscovery()
 
-  const [shortlistingIds, setShortlistingIds] = useState<Set<string>>(new Set())
-
-  const handleShortlistAlbum = async (album: DiscoverAlbum, e: React.MouseEvent) => {
-    e.stopPropagation()
-    const id = String(album.deezer_id)
-    if (shortlistingIds.has(id) || isAlbumSaved(album)) return
-
-    setShortlistingIds(prev => new Set(prev).add(id))
-    try {
-      const response = await shortlistAlbum({ album_id: id, saved: true }, token)
-      showNotification(response.message, response.status)
-      if (response.status === 'success') markAlbumSaved(id)
-    } catch (err) {
-      console.error('Failed to shortlist album:', err)
-      showNotification('Failed to shortlist album', 'error')
-    } finally {
-      setShortlistingIds(prev => {
-        const next = new Set(prev)
-        next.delete(id)
-        return next
-      })
-    }
-  }
+  const { shortlist: handleShortlistAlbum, isShortlisting: isAlbumShortlisting } = useShortlistAlbum()
 
   const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem(
     (album: DiscoverAlbum) => hideAlbum({ album: album.album, artist: album.artist, deezer_id: album.deezer_id }, token),
@@ -509,7 +487,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                       onClick={() => handleAlbumClick(album)}
                       leftActionButton={albumsView === 'backlog' && (() => {
                         // Shortlisted albums leave the Backlog, so no "saved" state here
-                        const isShortlisting = shortlistingIds.has(String(album.deezer_id))
+                        const isShortlisting = isAlbumShortlisting(album)
                         return (
                           <button
                             onClick={(e) => handleShortlistAlbum(album, e)}

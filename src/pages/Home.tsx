@@ -4,13 +4,15 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { useHideItem } from '@/hooks/useHideItem'
+import { useShortlistAlbum } from '@/hooks/useShortlistAlbum'
+import { isAlbumSaved } from '@/utils/albumUtils'
 import { hideTrack, hideAlbum } from '@/services/api'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
 import type { DiscoverTrack, DiscoverAlbum } from '@/types/api'
 import { CarouselSection } from '@/components/ui/CarouselSection'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
-import { X } from 'lucide-react'
+import { X, ListPlus, Loader2 } from 'lucide-react'
 
 function TrackCard({
   track,
@@ -63,9 +65,13 @@ function TrackCard({
 function AlbumCard({
   album,
   onHide,
+  onShortlist,
+  isShortlisting,
 }: {
   album: DiscoverAlbum
   onHide: (e: React.MouseEvent) => void
+  onShortlist: (e: React.MouseEvent) => void
+  isShortlisting: boolean
 }) {
   const handleClick = () => {
     navigateTo(ROUTES.album(album.deezer_id))
@@ -83,6 +89,19 @@ function AlbumCard({
             />
           ) : (
             <CoverArtPlaceholder size={140} className="w-full h-full" />
+          )}
+        </button>
+        <button
+          onClick={onShortlist}
+          disabled={isShortlisting}
+          className="absolute top-1.5 left-1.5 w-6 h-6 flex items-center justify-center bg-black/45 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+          aria-label="Shortlist album"
+          title="Shortlist"
+        >
+          {isShortlisting ? (
+            <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
+          ) : (
+            <ListPlus className="h-3.5 w-3.5 text-white" />
           )}
         </button>
         <button
@@ -141,6 +160,8 @@ export function HomePage() {
     }
   )
 
+  const { shortlist, isShortlisting } = useShortlistAlbum()
+
   if (!isAuthenticated) {
     return (
       <div className="py-16 text-center space-y-2">
@@ -153,7 +174,9 @@ export function HomePage() {
     .filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`))
     .slice(0, 20)
 
+  // Same set as the Backlog ("See all"): shortlisted albums live in "Listen to"
   const visibleAlbums = discoverAlbums
+    .filter((a) => !isAlbumSaved(a))
     .filter((a) => !hiddenAlbums.has(`${a.album}-${a.artist}`))
     .slice(0, 20)
 
@@ -193,6 +216,8 @@ export function HomePage() {
             key={album.deezer_id}
             album={album}
             onHide={(e) => hideAlbumItem(album, e)}
+            onShortlist={(e) => shortlist(album, e)}
+            isShortlisting={isShortlisting(album)}
           />
         ))}
       </CarouselSection>
