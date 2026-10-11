@@ -39,7 +39,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
-  const { refreshAlbums } = useDiscovery()
+  const { markAlbumSaved } = useDiscovery()
   const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setMetaTags, resetToDefault } = useMetaTags()
 
@@ -210,8 +210,8 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         saved: true,
       }, token)
       showNotification(response.message, response.status)
-      // Re-fetch discovery albums so the "Listen to" view reflects the change
-      if (response.status === 'success') refreshAlbums()
+      // Update discovery albums locally so the "Listen to" view reflects the change
+      if (response.status === 'success') markAlbumSaved(albumId.toString())
     } catch (err) {
       showNotification('Failed to shortlist album', 'error')
       console.error('Failed to shortlist album:', err)

@@ -16,6 +16,7 @@ type DiscoveryContextValue = {
   isLoadingAlbums: boolean
   refreshTracks: () => void
   refreshAlbums: () => void
+  markAlbumSaved: (deezerId: string) => void
 }
 
 const DiscoveryContext = createContext<DiscoveryContextValue>({
@@ -25,6 +26,7 @@ const DiscoveryContext = createContext<DiscoveryContextValue>({
   isLoadingAlbums: false,
   refreshTracks: () => {},
   refreshAlbums: () => {},
+  markAlbumSaved: () => {},
 })
 
 export function DiscoveryProvider({ children }: { children: ReactNode }) {
@@ -44,7 +46,7 @@ export function DiscoveryProvider({ children }: { children: ReactNode }) {
       }
     )
 
-  const { data: rawAlbums, isLoading: isLoadingAlbums, refresh: clearAlbumsCache } =
+  const { data: rawAlbums, isLoading: isLoadingAlbums, refresh: clearAlbumsCache, mutate: mutateAlbums } =
     useCachedData<DiscoverAlbum[]>(
       ALBUMS_CACHE_KEY,
       () => getAlbumsToDiscover(token),
@@ -66,6 +68,13 @@ export function DiscoveryProvider({ children }: { children: ReactNode }) {
     setAlbumRefreshTrigger(n => n + 1)
   }
 
+  // Reflect a successful shortlist locally so "Listen to" updates without a refetch
+  const markAlbumSaved = (deezerId: string) => {
+    mutateAlbums(albums => albums?.map(a =>
+      String(a.deezer_id) === deezerId ? { ...a, saved: true } : a
+    ) ?? albums)
+  }
+
   return (
     <DiscoveryContext.Provider value={{
       discoverTracks: rawTracks ?? [],
@@ -74,6 +83,7 @@ export function DiscoveryProvider({ children }: { children: ReactNode }) {
       isLoadingAlbums,
       refreshTracks,
       refreshAlbums,
+      markAlbumSaved,
     }}>
       {children}
     </DiscoveryContext.Provider>

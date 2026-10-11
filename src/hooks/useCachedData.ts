@@ -100,6 +100,22 @@ export function useCachedData<T>(
     }
   }, [enabled, refreshTrigger, cacheKey, cacheDuration, errorMessage])
 
+  // Update the data locally (and in the cache) without refetching
+  const mutate = (updater: (current: T | null) => T | null) => {
+    setData((current) => {
+      const next = updater(current)
+      try {
+        // Keep the original timestamp so a local edit doesn't extend the cache lifetime
+        const cached = localStorage.getItem(cacheKey)
+        const timestamp = cached ? JSON.parse(cached).timestamp ?? Date.now() : Date.now()
+        localStorage.setItem(cacheKey, JSON.stringify({ data: next, timestamp }))
+      } catch {
+        // Ignore cache errors
+      }
+      return next
+    })
+  }
+
   const refresh = () => {
     // Clear cache and force refresh by removing cached item
     try {
@@ -109,5 +125,5 @@ export function useCachedData<T>(
     }
   }
 
-  return { data, isLoading, refresh }
+  return { data, isLoading, refresh, mutate }
 }

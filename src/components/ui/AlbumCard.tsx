@@ -10,11 +10,12 @@ interface AlbumCardProps {
   }
   onClick: () => void
   actionButton?: React.ReactNode
+  leftActionButton?: React.ReactNode
   bottomButton?: React.ReactNode
   className?: string
 }
 
-export function AlbumCard({ album, onClick, actionButton, bottomButton, className }: AlbumCardProps) {
+export function AlbumCard({ album, onClick, actionButton, leftActionButton, bottomButton, className }: AlbumCardProps) {
   // Handle both cover_url (Albums.tsx) and cover (Search.tsx) properties
   const coverUrl = album.cover_url || album.cover
 
@@ -31,6 +32,11 @@ export function AlbumCard({ album, onClick, actionButton, bottomButton, classNam
           <CoverArtPlaceholder radius={16} className="!w-full !h-full" />
         )}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
+        {leftActionButton && (
+          <div className="absolute top-2 left-2">
+            {leftActionButton}
+          </div>
+        )}
         {actionButton && (
           <div className="absolute top-2 right-2">
             {actionButton}
