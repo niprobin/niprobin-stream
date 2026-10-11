@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pagination } from '@/components/ui/Pagination'
 import { AlbumCard } from '@/components/ui/AlbumCard'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
@@ -119,12 +119,36 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
 
   const { curator, updateFilter, updateFilters } = useUrlFilters('digging')
 
-  // Album grid columns match the `grid-cols-3 sm:grid-cols-4 lg:grid-cols-5`
-  // classes below — page size is a multiple of the current column count so
-  // the last row of a page is never partially filled.
+  // Album grid columns match the `grid-cols-3 sm:grid-cols-4` classes below
+  // (desktop column count is measured, see below) — page size is a multiple
+  // of the current column count so the last row of a page is never partially
+  // filled.
   const isTablet = useMediaQuery('(min-width: 640px)')
   const isDesktop = useMediaQuery('(min-width: 1024px)')
-  const albumColumns = isDesktop ? 5 : isTablet ? 4 : 3
+
+  // Desktop: the album grid must show 2 full rows above the docked player
+  // with no scroll. Covers are capped by the available height, and we add as
+  // many columns as fit so the grid always fills the full width.
+  const albumAreaRef = useRef<HTMLDivElement>(null)
+  const [desktopAlbumColumns, setDesktopAlbumColumns] = useState(5)
+  useEffect(() => {
+    const el = albumAreaRef.current
+    if (!isDesktop || activeTab !== 'albums' || !el) return
+    const GAP = 16 // gap-4
+    const GRID_TOP = 13 // pt-[13px]
+    const TEXT_HEIGHT = 72 // title (2 lines) + artist under each cover
+    const MAX_COVER = 320 // [&>*]:max-w-[320px]
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height } = entry.contentRect
+      const maxCover = Math.min(MAX_COVER, (height - GRID_TOP - GAP - 2 * TEXT_HEIGHT) / 2)
+      const cols = Math.ceil((width + GAP) / (Math.max(maxCover, 80) + GAP))
+      setDesktopAlbumColumns(Math.max(5, cols))
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [isDesktop, activeTab])
+
+  const albumColumns = isDesktop ? desktopAlbumColumns : isTablet ? 4 : 3
   const albumRows = isDesktop ? 2 : 3
   const albumPageSize = albumColumns * albumRows
   const trackPageSize = 10
@@ -277,6 +301,15 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
     .filter(a => !hiddenAlbums.has(`${a.album}-${a.artist}`))
 
   const queueCount = filteredTracks.length
+
+  // Desktop column count follows the window size, so the page size can
+  // shrink — keep the current page within range when it does.
+  const albumLastPage = Math.max(1, Math.ceil(filteredAlbums.length / albumPageSize))
+  useEffect(() => {
+    if (activeTab === 'albums' && filteredAlbums.length > 0 && currentPage > albumLastPage) {
+      onPageChange(albumLastPage)
+    }
+  }, [activeTab, filteredAlbums.length, currentPage, albumLastPage, onPageChange])
 
   const curatorFilterControl = (
     <div className="relative">
@@ -454,7 +487,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
       {activeTab === 'albums' && (
         // Desktop: fills the space left between the sticky header and the
         // docked player, and is a size container so the grid can fit 2 rows.
-        <div className="lg:flex-1 lg:min-h-0 lg:pb-4 lg:[container-type:size]">
+        <div ref={albumAreaRef} className="lg:flex-1 lg:min-h-0 lg:pb-4">
           {filteredAlbums.length === 0 ? (
             <div className="text-center text-text-2 py-12">
               {albumsView === 'listen'
@@ -463,14 +496,9 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
             </div>
           ) : (
             <>
-              {/* Desktop cover size = the smaller of: 5 columns across the
-                  width, or 2 rows (cover + ~72px of title/artist text) down
-                  the height — so both rows are always fully visible. */}
               <div
-                className="grid grid-cols-3 sm:grid-cols-4 lg:[grid-template-columns:repeat(5,var(--album-size))] gap-4 pt-[13px] [&>*]:max-w-[320px] [&>*]:mx-auto lg:[&>*]:mx-0"
-                style={{
-                  '--album-size': 'max(80px, min(calc((100cqw - 4 * 16px) / 5), calc((100cqh - 13px - 16px - 2 * 72px) / 2)))',
-                } as React.CSSProperties}
+                className="grid grid-cols-3 sm:grid-cols-4 gap-4 pt-[13px] [&>*]:max-w-[320px] [&>*]:mx-auto"
+                style={isDesktop ? { gridTemplateColumns: `repeat(${albumColumns}, minmax(0, 1fr))` } : undefined}
               >
                 {filteredAlbums
                   .slice((currentPage - 1) * albumPageSize, currentPage * albumPageSize)
