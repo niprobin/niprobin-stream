@@ -11,6 +11,7 @@ import type {
   DiscoverAlbum,
   DiscoverTrack,
   HideAlbumPayload,
+  ShortlistAlbumPayload,
   HideTrackPayload,
   SaveAlbumPayload,
   ArtistSearchResult,
@@ -270,6 +271,13 @@ export async function saveAlbum(payload: SaveAlbumPayload, token: string | null)
   return postAction('save-album', payload, token, {
     successMessage: 'Album saved for later',
     errorMessage: 'Failed to save album',
+  })
+}
+
+export async function shortlistAlbum(payload: ShortlistAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
+  return postAction('shortlist', payload, token, {
+    successMessage: 'Album shortlisted',
+    errorMessage: 'Failed to shortlist album',
   })
 }
 

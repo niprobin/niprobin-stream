@@ -101,6 +101,11 @@ export type SaveAlbumPayload = {
   deezer_id?: string
 }
 
+export type ShortlistAlbumPayload = {
+  album_id: string
+  saved: boolean
+}
+
 export type HideAlbumPayload = {
   album: string
   artist: string

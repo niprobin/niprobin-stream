@@ -4,12 +4,12 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, downloadAlbum, type AlbumTrack } from '@/services/api'
+import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, shortlistAlbum, downloadAlbum, type AlbumTrack } from '@/services/api'
 import { StarRating } from '@/components/ui/StarRating'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { TrackList } from '@/components/TrackList'
 import { useHideItem } from '@/hooks/useHideItem'
-import { Share2, X, Loader2, Music4, Download } from 'lucide-react'
+import { Share2, X, Loader2, Music4, Download, ListPlus } from 'lucide-react'
 import { useMetaTags } from '@/hooks/useMetaTags'
 import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
@@ -30,6 +30,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [albumRating, setAlbumRating] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isShortlisting, setIsShortlisting] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
   const [showShareTooltip, setShowShareTooltip] = useState(false)
 
@@ -197,6 +198,24 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     }
   }
 
+  // Handle shortlist album
+  const handleShortlistAlbum = async () => {
+    setIsShortlisting(true)
+
+    try {
+      const response = await shortlistAlbum({
+        album_id: albumId.toString(),
+        saved: true,
+      }, token)
+      showNotification(response.message, response.status)
+    } catch (err) {
+      showNotification('Failed to shortlist album', 'error')
+      console.error('Failed to shortlist album:', err)
+    } finally {
+      setIsShortlisting(false)
+    }
+  }
+
   // Handle download album
   const handleDownloadAlbum = async () => {
     setIsDownloading(true)
@@ -353,6 +372,27 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
                   </>
                 ) : (
                   <span>Add +</span>
+                )}
+              </button>
+            )}
+
+            {/* Shortlist Button */}
+            {isAuthenticated && (
+              <button
+                onClick={handleShortlistAlbum}
+                disabled={isShortlisting}
+                className="ap-action-btn"
+              >
+                {isShortlisting ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" strokeWidth={1.5} />
+                    <span>Shortlisting...</span>
+                  </>
+                ) : (
+                  <>
+                    <span>Shortlist</span>
+                    <ListPlus className="h-3.5 w-3.5" strokeWidth={1.5} />
+                  </>
                 )}
               </button>
             )}
