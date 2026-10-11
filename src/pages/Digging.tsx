@@ -315,7 +315,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
   )
 
   return (
-    <div className="w-full space-y-0">
+    <div className={`w-full space-y-0 ${activeTab === 'albums' ? 'lg:h-full lg:flex lg:flex-col' : ''}`}>
 
       {/* Desktop header row: title + tab-specific filter + pagination,
           sticky so pagination is always reachable without scrolling. */}
@@ -452,7 +452,9 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
       )}
 
       {activeTab === 'albums' && (
-        <div>
+        // Desktop: fills the space left between the sticky header and the
+        // docked player, and is a size container so the grid can fit 2 rows.
+        <div className="lg:flex-1 lg:min-h-0 lg:pb-4 lg:[container-type:size]">
           {filteredAlbums.length === 0 ? (
             <div className="text-center text-text-2 py-12">
               {albumsView === 'listen'
@@ -461,7 +463,15 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-4 pt-[13px] [&>*]:max-w-[320px] [&>*]:mx-auto">
+              {/* Desktop cover size = the smaller of: 5 columns across the
+                  width, or 2 rows (cover + ~72px of title/artist text) down
+                  the height — so both rows are always fully visible. */}
+              <div
+                className="grid grid-cols-3 sm:grid-cols-4 lg:[grid-template-columns:repeat(5,var(--album-size))] gap-4 pt-[13px] [&>*]:max-w-[320px] [&>*]:mx-auto lg:[&>*]:mx-0"
+                style={{
+                  '--album-size': 'max(80px, min(calc((100cqw - 4 * 16px) / 5), calc((100cqh - 13px - 16px - 2 * 72px) / 2)))',
+                } as React.CSSProperties}
+              >
                 {filteredAlbums
                   .slice((currentPage - 1) * albumPageSize, currentPage * albumPageSize)
                   .map((album, index) => (
