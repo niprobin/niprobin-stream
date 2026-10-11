@@ -26,7 +26,7 @@ export function AlbumCard({ album, onClick, actionButton, leftActionButton, bott
           <img
             src={coverUrl}
             alt={`${album.album} by ${album.artist}`}
-            className="w-full h-full object-cover transition-transform group-hover:scale-[1.02]"
+            className="w-full h-full object-cover"
           />
         ) : (
           <CoverArtPlaceholder radius={16} className="!w-full !h-full" />
