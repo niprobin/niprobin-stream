@@ -27,7 +27,6 @@ interface AlbumsPageProps {
   activeTab: DiggingTab
   currentPage: number
   onPageChange: (page: number) => void
-  onTabChange: (tab: DiggingTab) => void
 }
 
 // Track row for the Digging tracks view
@@ -113,7 +112,7 @@ function DiggingTrackRow({
   )
 }
 
-export function AlbumsPage({ activeTab, currentPage, onPageChange, onTabChange }: AlbumsPageProps) {
+export function AlbumsPage({ activeTab, currentPage, onPageChange }: AlbumsPageProps) {
   const [prevActiveTab, setPrevActiveTab] = useState<DiggingTab>(activeTab)
   const [curatorPickerOpen, setCuratorPickerOpen] = useState(false)
 
@@ -308,27 +307,15 @@ export function AlbumsPage({ activeTab, currentPage, onPageChange, onTabChange }
     </div>
   )
 
-  const tabPillClass = (tab: DiggingTab) =>
-    `px-4 py-2 rounded-sm-crate text-sm font-semibold transition-colors flex-shrink-0 ${
-      activeTab === tab ? 'bg-accent text-accent-ink' : 'bg-bg-1 text-text-2 hover:text-text-1'
-    }`
-
   return (
     <div className="w-full space-y-0">
 
-      {/* Desktop header row: title + tabs + tab-specific filter + pagination,
+      {/* Desktop header row: title + tab-specific filter + pagination,
           sticky so pagination is always reachable without scrolling. */}
       <div className="hidden lg:flex lg:items-center lg:gap-4 lg:sticky lg:top-0 lg:z-10 lg:bg-bg-0 lg:py-4">
-        <h1 className="font-serif-display italic text-2xl text-text-1 flex-shrink-0">Digging</h1>
-
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <button type="button" onClick={() => onTabChange('tracks')} className={tabPillClass('tracks')}>
-            Tracks
-          </button>
-          <button type="button" onClick={() => onTabChange('albums')} className={tabPillClass('albums')}>
-            Albums
-          </button>
-        </div>
+        <h1 className="font-serif-display italic text-2xl text-text-1 flex-shrink-0">
+          {activeTab === 'albums' ? 'Albums' : 'Tracks'}
+        </h1>
 
         <div className="flex-1 min-w-0">
           {activeTab === 'albums' ? albumSearchControl : (

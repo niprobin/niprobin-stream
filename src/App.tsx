@@ -213,7 +213,7 @@ function AppContent() {
   }
 
   const handleMobilePageChange = (page: string) => {
-    if (page === 'digging') navigate('digging')
+    if (page === 'tracks' || page === 'albums') navigateToDiggingTab(page)
     else if (page === 'menu') setActivePage('menu')
     else navigate('home')
   }
@@ -243,7 +243,6 @@ function AppContent() {
             activeTab={diggingTab}
             currentPage={diggingPage}
             onPageChange={navigateToDiggingPage}
-            onTabChange={navigateToDiggingTab}
           />
         ) : activePage === 'search' ? (
           <Search key={searchInitialQuery} initialQuery={searchInitialQuery} />
@@ -254,8 +253,9 @@ function AppContent() {
     </div>
   )
 
-  const mobileCurrentPage: 'home' | 'digging' | 'menu' =
-    activePage === 'digging' || activePage === 'album' ? 'digging'
+  const mobileCurrentPage: 'home' | 'tracks' | 'albums' | 'menu' =
+    activePage === 'album' ? 'albums'
+    : activePage === 'digging' ? diggingTab
     : activePage === 'menu' ? 'menu'
     : 'home'
 
@@ -272,11 +272,14 @@ function AppContent() {
         <Sidebar
           isAuthenticated={isAuthenticated}
           activePage={activePage}
-          diggingCount={discoverTracks.length}
+          diggingTab={diggingTab}
+          tracksCount={discoverTracks.length}
+          albumsCount={discoverAlbums.length}
           username={username}
           isRefreshing={isRefreshing}
           onNavigateHome={() => navigate('home')}
-          onNavigateDigging={() => navigate('digging')}
+          onNavigateTracks={() => navigateToDiggingTab('tracks')}
+          onNavigateAlbums={() => navigateToDiggingTab('albums')}
           onNavigateSearch={() => navigate('search')}
           onRefresh={handleRefresh}
           onLogout={logout}
@@ -291,50 +294,10 @@ function AppContent() {
             onLogoClick={() => navigate('home')}
           />
 
-          {/* Mobile digging segmented control (< lg) */}
-          {isAuthenticated && activePage === 'digging' && (
-            <div className="lg:hidden flex-shrink-0 px-[18px] py-3 border-b border-border">
-              <div className="flex bg-bg-1 rounded-md-crate p-[3px] gap-[3px]">
-                <button
-                  type="button"
-                  onClick={() => navigateToDiggingTab('tracks')}
-                  className={`flex-1 flex items-center justify-center gap-[5px] py-2 text-sm font-semibold rounded-sm-crate transition-all ${
-                    diggingTab === 'tracks'
-                      ? 'bg-accent text-accent-ink'
-                      : 'text-text-2'
-                  }`}
-                >
-                  Tracks
-                  {discoverTracks.length > 0 && (
-                    <span className={`text-[11px] font-mono-label ${diggingTab === 'tracks' ? 'text-accent-ink/70' : 'text-text-3'}`}>
-                      {discoverTracks.length}
-                    </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigateToDiggingTab('albums')}
-                  className={`flex-1 flex items-center justify-center gap-[5px] py-2 text-sm font-semibold rounded-sm-crate transition-all ${
-                    diggingTab === 'albums'
-                      ? 'bg-accent text-accent-ink'
-                      : 'text-text-2'
-                  }`}
-                >
-                  Albums
-                  {discoverAlbums.length > 0 && (
-                    <span className={`text-[11px] font-mono-label ${diggingTab === 'albums' ? 'text-accent-ink/70' : 'text-text-3'}`}>
-                      {discoverAlbums.length}
-                    </span>
-                  )}
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Scrollable page content — mobile padding clears the floating
               player+nav card; desktop docked bar is in-flow (no padding).
               Digging's own sticky header (see AlbumsPage) keeps its title/
-              tabs/filter/pagination pinned at the top of this scroll
+              filter/pagination pinned at the top of this scroll
               container as the list/grid below it scrolls. */}
           <div className="flex-1 overflow-y-auto pb-[140px] lg:pb-0">
             {activePage === 'menu' ? (

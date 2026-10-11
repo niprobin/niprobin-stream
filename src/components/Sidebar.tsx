@@ -1,14 +1,17 @@
-import { RefreshCw, Home, Compass, Search } from 'lucide-react'
+import { RefreshCw, Home, Music, Disc3, Search } from 'lucide-react'
 import { Logo } from './ui/Logo'
 
 interface SidebarProps {
   isAuthenticated: boolean
   activePage: 'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'
-  diggingCount?: number
+  diggingTab: 'tracks' | 'albums'
+  tracksCount?: number
+  albumsCount?: number
   username?: string | null
   isRefreshing: boolean
   onNavigateHome: () => void
-  onNavigateDigging: () => void
+  onNavigateTracks: () => void
+  onNavigateAlbums: () => void
   onNavigateSearch: () => void
   onRefresh: () => void
   onLogout: () => void
@@ -21,11 +24,14 @@ interface SidebarProps {
 export function Sidebar({
   isAuthenticated,
   activePage,
-  diggingCount,
+  diggingTab,
+  tracksCount,
+  albumsCount,
   username,
   isRefreshing,
   onNavigateHome,
-  onNavigateDigging,
+  onNavigateTracks,
+  onNavigateAlbums,
   onNavigateSearch,
   onRefresh,
   onLogout,
@@ -36,6 +42,10 @@ export function Sidebar({
         ? 'bg-accent/12 text-accent'
         : 'text-text-2 hover:text-text-1 hover:bg-bg-2/50'
     }`
+
+  const isTracksActive = activePage === 'digging' && diggingTab === 'tracks'
+  // Album detail pages belong to the Albums section
+  const isAlbumsActive = (activePage === 'digging' && diggingTab === 'albums') || activePage === 'album'
 
   return (
     <aside className="hidden lg:flex flex-col flex-shrink-0 w-[232px] h-full bg-bg-0-deep border-r border-border">
@@ -67,14 +77,27 @@ export function Sidebar({
           <button
             type="button"
             role="tab"
-            aria-selected={activePage === 'digging'}
-            onClick={onNavigateDigging}
-            className={navItemClass(activePage === 'digging')}
+            aria-selected={isTracksActive}
+            onClick={onNavigateTracks}
+            className={navItemClass(isTracksActive)}
           >
-            <Compass className="h-[18px] w-[18px]" />
-            <span className="flex-1 text-left">Digging</span>
-            {typeof diggingCount === 'number' && diggingCount > 0 && (
-              <span className="text-xs font-mono text-text-3">{diggingCount}</span>
+            <Music className="h-[18px] w-[18px]" />
+            <span className="flex-1 text-left">Tracks</span>
+            {typeof tracksCount === 'number' && tracksCount > 0 && (
+              <span className="text-xs font-mono text-text-3">{tracksCount}</span>
+            )}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={isAlbumsActive}
+            onClick={onNavigateAlbums}
+            className={navItemClass(isAlbumsActive)}
+          >
+            <Disc3 className="h-[18px] w-[18px]" />
+            <span className="flex-1 text-left">Albums</span>
+            {typeof albumsCount === 'number' && albumsCount > 0 && (
+              <span className="text-xs font-mono text-text-3">{albumsCount}</span>
             )}
           </button>
 

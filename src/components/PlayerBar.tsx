@@ -1,17 +1,18 @@
-import { Home, Compass, MoreHorizontal, Play, Pause, SkipForward } from 'lucide-react'
+import { Home, Music, Disc3, MoreHorizontal, Play, Pause, SkipForward } from 'lucide-react'
 import { useAudio } from '@/contexts/AudioContext'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { Player } from './Player'
 
 interface PlayerBarProps {
-  currentPage: 'home' | 'digging' | 'menu'
+  currentPage: 'home' | 'tracks' | 'albums' | 'menu'
   onPageChange: (page: string) => void
   onNowPlayingClick: () => void
 }
 
 const TABS = [
   { id: 'home', label: 'Home', icon: Home },
-  { id: 'digging', label: 'Digging', icon: Compass },
+  { id: 'tracks', label: 'Tracks', icon: Music },
+  { id: 'albums', label: 'Albums', icon: Disc3 },
   { id: 'menu', label: 'Menu', icon: MoreHorizontal },
 ] as const
 
@@ -19,7 +20,7 @@ const TABS = [
  * The single floating player+nav surface.
  *
  * Mobile (< lg): one card (`rounded-lg-crate bg-bg-2`) that stacks the
- * mini-player, its progress scrubber and the 3-tab navigation row — matching
+ * mini-player, its progress scrubber and the 4-tab navigation row — matching
  * the Crate design's single-card treatment. This is the ONLY mobile chrome;
  * there is no separate bottom-nav component.
  *
