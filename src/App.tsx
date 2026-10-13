@@ -9,7 +9,7 @@ import { NotificationBanner } from './components/NotificationBanner'
 import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { AlbumsPage } from './pages/Digging'
 import { useAudio } from './contexts/AudioContext'
-import { useDiscovery } from './contexts/DiscoveryContext'
+import { useBacklog } from './contexts/BacklogContext'
 import { Search } from './components/Search'
 import { SearchBar } from './components/SearchBar'
 import {
@@ -24,7 +24,7 @@ import {
 } from './utils/urlParser'
 import { ROUTES } from './utils/routes'
 import { getTrackByDeezerId } from './services/api'
-import { isAlbumSaved, type AlbumsView } from './utils/albumUtils'
+import { isShortlisted, type AlbumsView } from './utils/albumUtils'
 import { AlbumPage } from './pages/Album'
 import { ArtistPage } from './pages/Artist'
 import { HomePage } from './pages/Home'
@@ -36,7 +36,7 @@ function AppContent() {
   const { isAuthenticated, token, username, logout } = useAuth()
   const { cueTrack } = useAudio()
   const { setMetaTags, resetToDefault } = useMetaTags()
-  const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, discoverTracks, discoverAlbums } = useDiscovery()
+  const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, trackBacklog, albumBacklog } = useBacklog()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [currentArtistId, setCurrentArtistId] = useState<string | null>(null)
@@ -279,8 +279,8 @@ function AppContent() {
     : activePage === 'menu' ? 'menu'
     : 'home'
 
-  const listenCount = discoverAlbums.filter(isAlbumSaved).length
-  const backlogCount = discoverAlbums.length - listenCount
+  const listenCount = albumBacklog.filter(isShortlisted).length
+  const backlogCount = albumBacklog.length - listenCount
 
   const isRefreshing = isLoadingTracks || isLoadingAlbums
   const handleRefresh = () => { refreshTracks(); refreshAlbums() }
@@ -296,7 +296,7 @@ function AppContent() {
           isAuthenticated={isAuthenticated}
           activePage={activePage}
           diggingTab={diggingTab}
-          tracksCount={discoverTracks.length}
+          tracksCount={trackBacklog.length}
           albumsView={albumsView}
           albumsCount={backlogCount}
           listenCount={listenCount}

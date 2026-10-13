@@ -130,7 +130,7 @@ export function Sidebar({
 
       <div className="flex-1" />
 
-      {/* Refresh discovery */}
+      {/* Refresh the backlogs */}
       {isAuthenticated && (
         <div className="px-3 pb-3">
           <button
@@ -141,7 +141,7 @@ export function Sidebar({
           >
             <RefreshCw className={`h-[18px] w-[18px] ${isRefreshing ? 'animate-spin' : ''}`} />
             <span className="text-sm font-medium">
-              {isRefreshing ? 'Refreshing…' : 'Refresh discovery'}
+              {isRefreshing ? 'Refreshing…' : 'Refresh backlogs'}
             </span>
           </button>
         </div>

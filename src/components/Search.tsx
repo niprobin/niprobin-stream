@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { searchTracks, searchAlbums, searchArtists, saveAlbum } from '@/services/api'
+import { searchTracks, searchAlbums, searchArtists, addAlbum } from '@/services/api'
 import type { SearchResult, AlbumResult, ArtistSearchResult } from '@/types/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
@@ -78,12 +78,12 @@ function SearchTrackRow({
 
 function SearchAlbumCard({
   album,
-  onSave,
-  isSaving,
+  onAdd,
+  isAdding,
 }: {
   album: AlbumResult
-  onSave: () => void
-  isSaving: boolean
+  onAdd: () => void
+  isAdding: boolean
 }) {
   const handleClick = () => {
     navigateTo(ROUTES.album(album.deezer_id))
@@ -107,16 +107,16 @@ function SearchAlbumCard({
         </div>
       </button>
       <button
-        onClick={onSave}
-        disabled={isSaving}
+        onClick={onAdd}
+        disabled={isAdding}
         className="w-full h-7 text-xs flex items-center justify-center gap-1 text-text-2 hover:text-text-1 border border-border hover:border-text-3 rounded-sm-crate transition-colors disabled:opacity-50"
       >
-        {isSaving ? (
+        {isAdding ? (
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
           <BookmarkPlus className="h-3 w-3" />
         )}
-        {isSaving ? 'Saving...' : 'Save'}
+        {isAdding ? 'Adding...' : 'Add'}
       </button>
     </div>
   )
@@ -152,7 +152,7 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
   const [albumResults, setAlbumResults] = useState<AlbumResult[]>([])
   const [artistResults, setArtistResults] = useState<ArtistSearchResult[]>([])
   const [hasSearched, setHasSearched] = useState(false)
-  const [savingAlbumId, setSavingAlbumId] = useState<string | null>(null)
+  const [addingAlbumId, setAddingAlbumId] = useState<string | null>(null)
 
   const { isLoading, increment, decrement } = useLoading()
   const { showNotification } = useNotification()
@@ -185,18 +185,18 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
     if (initialQuery) performSearch(initialQuery)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSaveAlbum = async (album: AlbumResult) => {
-    setSavingAlbumId(album.deezer_id)
+  const handleAddAlbum = async (album: AlbumResult) => {
+    setAddingAlbumId(album.deezer_id)
     try {
-      const response = await saveAlbum(
+      const response = await addAlbum(
         { album: album.album, artist: album.artist, deezer_id: album.deezer_id },
         token,
       )
       showNotification(response.message, response.status)
     } catch {
-      showNotification('Failed to save album', 'error')
+      showNotification("Couldn't Add this album", 'error')
     } finally {
-      setSavingAlbumId(null)
+      setAddingAlbumId(null)
     }
   }
 
@@ -272,8 +272,8 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
               <SearchAlbumCard
                 key={`${album.deezer_id}-${i}`}
                 album={album}
-                isSaving={savingAlbumId === album.deezer_id}
-                onSave={() => handleSaveAlbum(album)}
+                isAdding={addingAlbumId === album.deezer_id}
+                onAdd={() => handleAddAlbum(album)}
               />
             ))
           )}

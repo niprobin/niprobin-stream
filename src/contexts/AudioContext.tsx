@@ -22,10 +22,10 @@ type Track = {
   hashUrl?: string       // set by stream endpoint; used for share links
   album?: string
   albumId?: number       // links the player to the album page
-  coverArt?: string      // absent on discovery tracks with no cover
+  coverArt?: string      // absent on backlog tracks with no cover
   spotifyId?: string     // legacy field; not actively populated
-  deezer_id?: string     // preserved for like/hide payloads
-  curator?: string       // discovery tracks only
+  deezer_id?: string     // preserved for Pick/Hide payloads
+  curator?: string       // backlog tracks only
 }
 
 export type AlbumTrackItem = {
@@ -34,7 +34,7 @@ export type AlbumTrackItem = {
   artist: string
   'track-number': number
   date?: string
-  // Optional metadata for discovery tracks and external integrations
+  // Optional metadata for backlog tracks and external integrations
   curator?: string
   cover?: string
 }

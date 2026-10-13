@@ -14,14 +14,14 @@ npm test           # vitest run (module tests against a fake n8n, see test/)
 
 ## Architecture
 
-Niprobin Stream is a React 19 + TypeScript PWA that is a thin client over an **n8n webhook backend** — there is no app server or database in this repo; all data comes from `n8n.niprobin.com` webhooks. See `services/api.ts` for the full endpoint list (search, stream, download, curation/"digging" feeds, like/rate/hide actions).
+Niprobin Stream is a React 19 + TypeScript PWA that is a thin client over an **n8n webhook backend** — there is no app server or database in this repo; all data comes from `n8n.niprobin.com` webhooks. See `services/api.ts` for the full endpoint list (search, stream, download, curation/"digging" feeds, Pick/Rate/Hide actions; webhook names are frozen, e.g. `like-track` is Pick).
 
 ### State: Contexts, not a store library
 
 All app state lives in React Context providers under `src/contexts/`, composed in `App.tsx`:
 - **AudioContext** — a thin React layer over the playback engine in `src/playback/` (copied from the native client, ADR 0001). The engine owns the queue, next/previous and auto-advance; its Track Cache runs `/stream` lookups one at a time (n8n can't take overlapping ones) and downloads each file into memory before playing it (ADR 0002). Player components (`Player.tsx`, `PlayerBar.tsx`, `MobileFullPlayer.tsx`, `Queue.tsx`) consume `useAudio()`; pages start playback with `playList(tracks, index, info)`.
-- **AuthContext** — simple access-code login; gates the Digging page and like features. Session persisted to `localStorage`.
-- **DiscoveryContext** — state for the Digging page (curated tracks/albums, curator filter, pagination).
+- **AuthContext** — simple access-code login; gates the Digging page and the digging actions. Session persisted to `localStorage`.
+- **BacklogContext** — the Track and Album Backlogs for Home and the Digging page, without the items Hidden in this browser, plus Hide (rules in `src/digging/hides.ts`).
 - **LoadingContext** — drives the single `GlobalLoadingOverlay` used for network-heavy actions app-wide.
 - **NotificationContext** — centralized toast/banner system (`showNotification(message, type)`); prefer this over ad hoc inline error UI — the codebase intentionally moved away from scattered per-component error messages toward this single system.
 

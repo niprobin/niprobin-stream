@@ -6,7 +6,7 @@ import { AudioProvider } from './contexts/AudioContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { LoadingProvider } from './contexts/LoadingContext'
 import { NotificationProvider } from './contexts/NotificationContext'
-import { DiscoveryProvider } from './contexts/DiscoveryContext'
+import { BacklogProvider } from './contexts/BacklogContext'
 import { registerSW } from 'virtual:pwa-register'
 
 // Register service worker
@@ -25,9 +25,9 @@ createRoot(document.getElementById('root')!).render(
       <NotificationProvider>
         <AudioProvider>
           <LoadingProvider>
-            <DiscoveryProvider>
+            <BacklogProvider>
               <App />
-            </DiscoveryProvider>
+            </BacklogProvider>
           </LoadingProvider>
         </AudioProvider>
       </NotificationProvider>

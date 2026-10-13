@@ -1,19 +1,19 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useCachedData } from '@/hooks/useCachedData'
-import { getTracksToDiscover, getAlbumsToDiscover } from '@/services/api'
+import { getTrackBacklog, getAlbumBacklog } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { clearHides, createHides, hideKey, HIDE_UNDO_WINDOW_MS, type HideKind, type Hides, type HideTarget } from '@/digging/hides'
-import type { DiscoverTrack, DiscoverAlbum } from '@/types/api'
+import type { BacklogTrack, BacklogAlbum } from '@/types/api'
 
 const CACHE_DURATION_MS = 6 * 60 * 60 * 1000
 const TRACKS_CACHE_KEY = 'niprobin-tracks-cache'
 const ALBUMS_CACHE_KEY = 'niprobin-albums-cache'
 
 // What the Album page knows about an album, which any backlog album also has
-type AlbumToHide = Pick<DiscoverAlbum, 'album' | 'artist' | 'deezer_id'>
+type AlbumToHide = Pick<BacklogAlbum, 'album' | 'artist' | 'deezer_id'>
 
 const trackTarget = (t: { track: string; artist: string; deezer_id: string }): HideTarget =>
   ({ deezerId: String(t.deezer_id), title: t.track, artist: t.artist })
@@ -22,59 +22,59 @@ const albumTarget = (a: AlbumToHide): HideTarget =>
 
 const NOTHING_HIDDEN: ReadonlySet<string> = new Set()
 
-type DiscoveryContextValue = {
+type BacklogContextValue = {
   // The backlogs without the items Hidden in this browser
-  discoverTracks: DiscoverTrack[]
-  discoverAlbums: DiscoverAlbum[]
+  trackBacklog: BacklogTrack[]
+  albumBacklog: BacklogAlbum[]
   isLoadingTracks: boolean
   isLoadingAlbums: boolean
   refreshTracks: () => void
   refreshAlbums: () => void
-  markAlbumSaved: (deezerId: string) => void
+  markShortlisted: (deezerId: string) => void
   // Hide with a 5s Undo, see digging/hides.ts
-  hideTrack: (track: DiscoverTrack) => void
+  hideTrack: (track: BacklogTrack) => void
   hideAlbum: (album: AlbumToHide) => void
 }
 
-const DiscoveryContext = createContext<DiscoveryContextValue>({
-  discoverTracks: [],
-  discoverAlbums: [],
+const BacklogContext = createContext<BacklogContextValue>({
+  trackBacklog: [],
+  albumBacklog: [],
   isLoadingTracks: false,
   isLoadingAlbums: false,
   refreshTracks: () => {},
   refreshAlbums: () => {},
-  markAlbumSaved: () => {},
+  markShortlisted: () => {},
   hideTrack: () => {},
   hideAlbum: () => {},
 })
 
-export function DiscoveryProvider({ children }: { children: ReactNode }) {
+export function BacklogProvider({ children }: { children: ReactNode }) {
   const { token, isAuthenticated } = useAuth()
   const { showNotification } = useNotification()
   const [trackRefreshTrigger, setTrackRefreshTrigger] = useState(0)
   const [albumRefreshTrigger, setAlbumRefreshTrigger] = useState(0)
 
   const { data: rawTracks, isLoading: isLoadingTracks, refresh: clearTracksCache } =
-    useCachedData<DiscoverTrack[]>(
+    useCachedData<BacklogTrack[]>(
       TRACKS_CACHE_KEY,
-      () => getTracksToDiscover(token),
+      () => getTrackBacklog(token),
       {
         cacheDuration: CACHE_DURATION_MS,
         refreshTrigger: trackRefreshTrigger,
         enabled: isAuthenticated,
-        errorMessage: 'Failed to load discovery tracks.',
+        errorMessage: "Couldn't load the Track Backlog",
       }
     )
 
   const { data: rawAlbums, isLoading: isLoadingAlbums, refresh: clearAlbumsCache, mutate: mutateAlbums } =
-    useCachedData<DiscoverAlbum[]>(
+    useCachedData<BacklogAlbum[]>(
       ALBUMS_CACHE_KEY,
-      () => getAlbumsToDiscover(token),
+      () => getAlbumBacklog(token),
       {
         cacheDuration: CACHE_DURATION_MS,
         refreshTrigger: albumRefreshTrigger,
         enabled: isAuthenticated,
-        errorMessage: 'Failed to load discovery albums.',
+        errorMessage: "Couldn't load the Album Backlog",
       }
     )
 
@@ -89,7 +89,7 @@ export function DiscoveryProvider({ children }: { children: ReactNode }) {
   }
 
   // Reflect a successful shortlist locally so "Listen to" updates without a refetch
-  const markAlbumSaved = (deezerId: string) => {
+  const markShortlisted = (deezerId: string) => {
     mutateAlbums(albums => albums?.map(a =>
       String(a.deezer_id) === deezerId ? { ...a, saved: true } : a
     ) ?? albums)
@@ -149,36 +149,36 @@ export function DiscoveryProvider({ children }: { children: ReactNode }) {
     })
   }, [hides, showNotification])
 
-  const discoverTracks = useMemo(
+  const trackBacklog = useMemo(
     () => (rawTracks ?? []).filter(t => !hidden.track.has(hideKey(trackTarget(t)))),
     [rawTracks, hidden.track],
   )
-  const discoverAlbums = useMemo(
+  const albumBacklog = useMemo(
     () => (rawAlbums ?? []).filter(a => !hidden.album.has(hideKey(albumTarget(a)))),
     [rawAlbums, hidden.album],
   )
 
   return (
-    <DiscoveryContext.Provider value={{
-      discoverTracks,
-      discoverAlbums,
+    <BacklogContext.Provider value={{
+      trackBacklog,
+      albumBacklog,
       isLoadingTracks,
       isLoadingAlbums,
       refreshTracks,
       refreshAlbums,
-      markAlbumSaved,
+      markShortlisted,
       hideTrack: track => hide('track', trackTarget(track)),
       hideAlbum: album => hide('album', albumTarget(album)),
     }}>
       <HiddenTracksLeaveQueue sent={sentTrackHides} />
       {children}
-    </DiscoveryContext.Provider>
+    </BacklogContext.Provider>
   )
 }
 
 // Tracks leave the queue once their Hide is sent (an undone one stays), without
 // interrupting the playing one. Its own component so playback updates re-render
-// it alone, not every useDiscovery consumer.
+// it alone, not every useBacklog consumer.
 function HiddenTracksLeaveQueue({ sent }: { sent: ReadonlySet<string> }) {
   const { removeFromQueue } = useAudio()
   useEffect(() => {
@@ -187,4 +187,4 @@ function HiddenTracksLeaveQueue({ sent }: { sent: ReadonlySet<string> }) {
   return null
 }
 
-export const useDiscovery = () => useContext(DiscoveryContext)
+export const useBacklog = () => useContext(BacklogContext)

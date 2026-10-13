@@ -54,12 +54,12 @@ export type StreamResponse = {
   cover?: string
 }
 
-export type LikeTrackResponse = {
+export type ActionResponse = {
   status: 'success' | 'error'
   message: string
 }
 
-export type DiscoverAlbum = {
+export type BacklogAlbum = {
   id: string
   album: string
   artist: string
@@ -69,7 +69,7 @@ export type DiscoverAlbum = {
   saved?: boolean | string
 }
 
-export type DiscoverTrack = {
+export type BacklogTrack = {
   track: string
   artist: string
   curator: string
@@ -81,7 +81,7 @@ export type DiscoverTrack = {
 }
 
 // Payload types — shapes sent TO n8n webhooks
-export type LikeTrackPayload = {
+export type PickTrackPayload = {
   track: string
   artist: string
   playlist: string
@@ -96,7 +96,7 @@ export type RateAlbumPayload = {
   deezer_id?: string
 }
 
-export type SaveAlbumPayload = {
+export type AddAlbumPayload = {
   album: string
   artist: string
   'album-id'?: number

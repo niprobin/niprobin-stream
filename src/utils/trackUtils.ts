@@ -4,7 +4,7 @@
 export const TrackIdSource = {
   Album: 'album',
   Search: 'search',
-  Discovery: 'discovery'
+  Backlog: 'backlog'
 } as const
 
 export type TrackIdSource = typeof TrackIdSource[keyof typeof TrackIdSource]
@@ -15,7 +15,7 @@ export type TrackIdSource = typeof TrackIdSource[keyof typeof TrackIdSource]
  * @param trackName - Track name for logging/debugging
  * @param artistName - Artist name for logging/debugging
  * @param source - Source of the track for proper handling
- * @returns Normalized track ID (0 for discovery/invalid IDs, actual number for valid IDs)
+ * @returns Normalized track ID (0 for backlog/invalid IDs, actual number for valid IDs)
  */
 export function normalizeTrackId(
   trackId: string | number | null | undefined,
@@ -23,8 +23,8 @@ export function normalizeTrackId(
   artistName: string,
   source: TrackIdSource
 ): number {
-  // For discovery tracks, ALWAYS use 0 (check source first!)
-  if (source === TrackIdSource.Discovery) {
+  // For backlog tracks, ALWAYS use 0 (check source first!)
+  if (source === TrackIdSource.Backlog) {
     return 0;
   }
 
@@ -45,7 +45,7 @@ export function normalizeTrackId(
 }
 
 /**
- * Generate a stable track ID based on track content for persistent likes
+ * Generate a stable track ID based on track content for persistent Picks
  * This creates a deterministic hash from track + artist combination
  */
 export function generateStableTrackId(track: string, artist: string): number {

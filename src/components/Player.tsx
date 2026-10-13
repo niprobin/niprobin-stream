@@ -9,9 +9,9 @@ import { shareTrack } from '@/utils/urlBuilder'
 import { ROUTES } from '@/utils/routes'
 import { useState, useRef } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
-import { useLikeModal } from '@/hooks/useLikeModal'
+import { usePickModal } from '@/hooks/usePickModal'
 import { Queue } from '@/components/Queue'
-import { LikeModal } from '@/components/LikeModal'
+import { PickModal } from '@/components/PickModal'
 
 export function Player() {
   const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, playList, playNextTrack, playPreviousTrack, currentTrackIndex, isNavInFlight, loadingTrackId } = useAudio()
@@ -19,17 +19,17 @@ export function Player() {
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
   const {
-    isLikeModalOpen,
-    likeModalTrack,
+    isPickModalOpen,
+    pickModalTrack,
     selectedPlaylist,
-    isSubmittingLike,
-    PLAYLISTS,
-    isTrackLiked,
-    openLikeModal,
-    closeLikeModal,
-    handleSubmitLike,
+    isSubmittingPick,
+    RADIO_PLAYLISTS,
+    isTrackPicked,
+    openPickModal,
+    closePickModal,
+    handleSubmitPick,
     setSelectedPlaylist,
-  } = useLikeModal(token)
+  } = usePickModal(token)
 
   const [isQueueOpen, setIsQueueOpen] = useState(false)
   const [isDraggingProgress, setIsDraggingProgress] = useState(false)
@@ -128,7 +128,7 @@ export function Player() {
     playList(albumTracks, currentTrackIndex + slicedIndex, albumInfo)
   }
 
-  const handleLikeTrack = (_track: AlbumTrackItem) => {}
+  const handlePickTrack = (_track: AlbumTrackItem) => {}
 
   const canGoToPrevious = albumTracks.length > 0 && albumInfo && currentTrackIndex > 0
   const canGoToNext = albumTracks.length > 0 && albumInfo && currentTrackIndex < albumTracks.length - 1
@@ -218,12 +218,12 @@ export function Player() {
               <div className="flex gap-1 px-2 py-1 rounded-sm-crate bg-bg-2/40">
                 {isAuthenticated && currentTrack && (
                   <Button
-                    onClick={() => openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)}
+                    onClick={() => openPickModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)}
                     size="icon" variant="ghost"
-                    className={`hover:text-accent hover:bg-bg-2 ${isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-accent' : 'text-text-2'}`}
-                    aria-pressed={isTrackLiked(currentTrack.title, currentTrack.artist)}
+                    className={`hover:text-accent hover:bg-bg-2 ${isTrackPicked(currentTrack.title, currentTrack.artist) ? 'text-accent' : 'text-text-2'}`}
+                    aria-pressed={isTrackPicked(currentTrack.title, currentTrack.artist)}
                   >
-                    <Heart className="h-4 w-4" fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'} />
+                    <Heart className="h-4 w-4" fill={isTrackPicked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'} />
                   </Button>
                 )}
                 <Button onClick={handleShareStream} size="icon" variant="ghost"
@@ -269,22 +269,22 @@ export function Player() {
         subtitle={queueSubtitle}
         tracks={albumTracks.slice(currentTrackIndex)}
         onSelectTrack={handlePlayAlbumTrack}
-        onLikeTrack={handleLikeTrack}
+        onPickTrack={handlePickTrack}
         currentTrackId={currentTrack?.id}
         loadingTrackId={loadingTrackId}
         isAuthenticated={isAuthenticated}
       />
 
-      {/* ── Like modal ─────────────────────────────────────────────── */}
-      <LikeModal
-        isOpen={isLikeModalOpen}
-        track={likeModalTrack}
-        playlists={PLAYLISTS}
+      {/* ── Pick modal ─────────────────────────────────────────────── */}
+      <PickModal
+        isOpen={isPickModalOpen}
+        track={pickModalTrack}
+        playlists={RADIO_PLAYLISTS}
         selectedPlaylist={selectedPlaylist}
-        isSubmitting={isSubmittingLike}
+        isSubmitting={isSubmittingPick}
         onSelectPlaylist={setSelectedPlaylist}
-        onSubmit={handleSubmitLike}
-        onClose={closeLikeModal}
+        onSubmit={handleSubmitPick}
+        onClose={closePickModal}
       />
     </>
   )

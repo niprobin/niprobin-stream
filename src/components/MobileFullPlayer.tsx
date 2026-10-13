@@ -8,12 +8,12 @@ import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
-import { useLikeModal } from '@/hooks/useLikeModal'
+import { usePickModal } from '@/hooks/usePickModal'
 import { usePlayerGestures } from '@/hooks/usePlayerGestures'
 import { shareTrack } from '@/utils/urlBuilder'
 import { downloadTrack } from '@/services/api'
 import { Queue } from '@/components/Queue'
-import { LikeModal } from '@/components/LikeModal'
+import { PickModal } from '@/components/PickModal'
 
 interface MobileFullPlayerProps {
   isOpen: boolean
@@ -71,9 +71,9 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
   const [isDragging, setIsDragging] = useState(false)
 
   const {
-    isLikeModalOpen, likeModalTrack, selectedPlaylist, isSubmittingLike, PLAYLISTS,
-    isTrackLiked, openLikeModal, closeLikeModal, handleSubmitLike, setSelectedPlaylist,
-  } = useLikeModal(token)
+    isPickModalOpen, pickModalTrack, selectedPlaylist, isSubmittingPick, RADIO_PLAYLISTS,
+    isTrackPicked, openPickModal, closePickModal, handleSubmitPick, setSelectedPlaylist,
+  } = usePickModal(token)
 
   const canGoToPrevious = albumTracks.length > 0 && !!albumInfo && currentTrackIndex > 0
   const canGoToNext = albumTracks.length > 0 && !!albumInfo && currentTrackIndex < albumTracks.length - 1
@@ -180,7 +180,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
     playList(albumTracks, currentTrackIndex + trackIndex, albumInfo)
   }
 
-  const handleLikeQueueTrack = (_track: AlbumTrackItem) => {}
+  const handlePickQueueTrack = (_track: AlbumTrackItem) => {}
 
   const artTransition = isDragging ? 'none' : SPRING
 
@@ -279,17 +279,17 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
                   <button
                     type="button"
                     onClick={() => isAuthenticated
-                      ? openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)
+                      ? openPickModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)
                       : undefined
                     }
                     className={`flex-shrink-0 transition-opacity active:scale-90 ${
                       !isAuthenticated ? 'opacity-30 pointer-events-none' : ''
-                    } ${isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-accent' : 'text-text-2'}`}
-                    aria-label="Like track"
+                    } ${isTrackPicked(currentTrack.title, currentTrack.artist) ? 'text-accent' : 'text-text-2'}`}
+                    aria-label="Pick track"
                   >
                     <Heart
                       className="h-6 w-6"
-                      fill={isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
+                      fill={isTrackPicked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
                     />
                   </button>
                 )}
@@ -365,19 +365,19 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
               <button
                 type="button"
                 onClick={() => currentTrack && isAuthenticated
-                  ? openLikeModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)
+                  ? openPickModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)
                   : undefined
                 }
                 className={`flex flex-col items-center gap-1.5 py-2 justify-center transition-opacity active:opacity-50 ${
                   !isAuthenticated || !currentTrack ? 'opacity-30 pointer-events-none' : ''
-                } ${currentTrack && isTrackLiked(currentTrack.title, currentTrack.artist) ? 'text-accent' : 'text-text-2'}`}
-                aria-label="Like track"
+                } ${currentTrack && isTrackPicked(currentTrack.title, currentTrack.artist) ? 'text-accent' : 'text-text-2'}`}
+                aria-label="Pick track"
               >
                 <Heart
                   className="h-[22px] w-[22px]"
-                  fill={currentTrack && isTrackLiked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
+                  fill={currentTrack && isTrackPicked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'}
                 />
-                <span className="text-[11.5px] text-text-3">Like</span>
+                <span className="text-[11.5px] text-text-3">Pick</span>
               </button>
               <button
                 type="button"
@@ -422,7 +422,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
           subtitle={queueSubtitle}
           tracks={queueTracks}
           onSelectTrack={handlePlayQueueTrack}
-          onLikeTrack={handleLikeQueueTrack}
+          onPickTrack={handlePickQueueTrack}
           currentTrackId={currentTrack?.id}
           loadingTrackId={loadingTrackId}
           isAuthenticated={isAuthenticated}
@@ -431,16 +431,16 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
         />
       </div>
 
-      {/* Like modal */}
-      <LikeModal
-        isOpen={isLikeModalOpen}
-        track={likeModalTrack}
-        playlists={PLAYLISTS}
+      {/* Pick modal */}
+      <PickModal
+        isOpen={isPickModalOpen}
+        track={pickModalTrack}
+        playlists={RADIO_PLAYLISTS}
         selectedPlaylist={selectedPlaylist}
-        isSubmitting={isSubmittingLike}
+        isSubmitting={isSubmittingPick}
         onSelectPlaylist={setSelectedPlaylist}
-        onSubmit={handleSubmitLike}
-        onClose={closeLikeModal}
+        onSubmit={handleSubmitPick}
+        onClose={closePickModal}
       />
     </>
   )

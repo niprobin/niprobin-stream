@@ -17,7 +17,7 @@ interface QueueProps {
   subtitle: string
   tracks: AlbumTrackItem[]
   onSelectTrack: (track: AlbumTrackItem, trackIndex: number) => void
-  onLikeTrack: (track: AlbumTrackItem) => void
+  onPickTrack: (track: AlbumTrackItem) => void
   currentTrackId?: string | null
   loadingTrackId?: string | null
   isAuthenticated: boolean
@@ -45,7 +45,7 @@ export function Queue({
   subtitle,
   tracks,
   onSelectTrack,
-  onLikeTrack,
+  onPickTrack,
   currentTrackId,
   loadingTrackId,
   isAuthenticated,
@@ -57,8 +57,8 @@ export function Queue({
       variant="album"
       tracks={tracks}
       onSelect={onSelectTrack}
-      enableLikeButtons={isAuthenticated}
-      onLikeTrack={onLikeTrack}
+      enablePickButtons={isAuthenticated}
+      onPickTrack={onPickTrack}
       currentTrackId={currentTrackId}
       loadingTrackId={loadingTrackId}
       isAuthenticated={isAuthenticated}

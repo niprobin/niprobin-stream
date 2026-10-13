@@ -1,8 +1,8 @@
 import type { AlbumTrackItem } from '@/contexts/AudioContext'
 import { Loader2, Heart, Play } from 'lucide-react'
-import { useLikeModal } from '@/hooks/useLikeModal'
+import { usePickModal } from '@/hooks/usePickModal'
 import { useAuth } from '@/contexts/AuthContext'
-import { LikeModal } from '@/components/LikeModal'
+import { PickModal } from '@/components/PickModal'
 import type { FormEvent } from 'react'
 
 type BaseTrack = {
@@ -21,8 +21,8 @@ type AlbumListProps = {
   onSelect: (track: AlbumTrackItem, trackIndex: number) => void
   renderAction?: (track: AlbumTrackItem) => React.ReactNode
   loadingTrackId?: string | null
-  enableLikeButtons?: boolean
-  onLikeTrack?: (track: AlbumTrackItem) => void
+  enablePickButtons?: boolean
+  onPickTrack?: (track: AlbumTrackItem) => void
   currentTrackId?: string | null
   isAuthenticated?: boolean
   compactSpacing?: boolean
@@ -49,26 +49,26 @@ export function TrackList(props: TrackListProps) {
   const { token } = useAuth()
 
   const {
-    isLikeModalOpen,
-    likeModalTrack,
+    isPickModalOpen,
+    pickModalTrack,
     selectedPlaylist,
-    isSubmittingLike,
-    PLAYLISTS,
-    isTrackLiked,
-    openLikeModal,
-    closeLikeModal,
-    handleSubmitLike: handleModalSubmit,
+    isSubmittingPick,
+    RADIO_PLAYLISTS,
+    isTrackPicked,
+    openPickModal,
+    closePickModal,
+    handleSubmitPick: handleModalSubmit,
     setSelectedPlaylist,
-  } = useLikeModal(token)
+  } = usePickModal(token)
 
-  // Wrapper to handle parent callback after successful like
-  const handleSubmitLike = async (event: FormEvent) => {
+  // Wrapper to handle parent callback after a successful Pick
+  const handleSubmitPick = async (event: FormEvent) => {
     const result = await handleModalSubmit(event)
 
-    // Call the parent's like handler if provided and like was successful
-    if (result?.success && isAlbumVariant && props.onLikeTrack && likeModalTrack) {
-      const track = data.find(t => (t as AlbumTrackItem).deezer_id === likeModalTrack.id)
-      if (track) props.onLikeTrack(track as AlbumTrackItem)
+    // Call the parent's Pick handler if provided and the Pick succeeded
+    if (result?.success && isAlbumVariant && props.onPickTrack && pickModalTrack) {
+      const track = data.find(t => (t as AlbumTrackItem).deezer_id === pickModalTrack.id)
+      if (track) props.onPickTrack(track as AlbumTrackItem)
     }
   }
 
@@ -99,7 +99,7 @@ export function TrackList(props: TrackListProps) {
           const trackId = item.deezer_id
           const loading = props.loadingTrackId === trackId
           const isCurrentTrack = props.currentTrackId === trackId
-          const liked = isTrackLiked(item.track, item.artist)
+          const picked = isTrackPicked(item.track, item.artist)
 
           return (
             <div
@@ -137,19 +137,19 @@ export function TrackList(props: TrackListProps) {
               {/* Action Buttons Column */}
               <div className="flex items-center justify-end gap-2">
                 {props.renderAction?.(item)}
-                {props.enableLikeButtons && props.isAuthenticated && (
+                {props.enablePickButtons && props.isAuthenticated && (
                   <button
                     type="button"
                     className={`transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 ${
-                      liked ? 'text-accent' : 'text-text-3'
+                      picked ? 'text-accent' : 'text-text-3'
                     } hover:text-accent`}
                     onClick={(event) => {
                       event.stopPropagation()
-                      openLikeModal(trackId, item.track, item.artist, undefined, 'deezer_id' in item ? item.deezer_id : undefined)
+                      openPickModal(trackId, item.track, item.artist, undefined, 'deezer_id' in item ? item.deezer_id : undefined)
                     }}
-                    aria-pressed={liked}
+                    aria-pressed={picked}
                   >
-                    <Heart className="h-4 w-4" fill={liked ? 'currentColor' : 'none'} />
+                    <Heart className="h-4 w-4" fill={picked ? 'currentColor' : 'none'} />
                   </button>
                 )}
               </div>
@@ -202,15 +202,15 @@ export function TrackList(props: TrackListProps) {
       })}
     </div>
 
-    <LikeModal
-      isOpen={isLikeModalOpen}
-      track={likeModalTrack}
-      playlists={PLAYLISTS}
+    <PickModal
+      isOpen={isPickModalOpen}
+      track={pickModalTrack}
+      playlists={RADIO_PLAYLISTS}
       selectedPlaylist={selectedPlaylist}
-      isSubmitting={isSubmittingLike}
+      isSubmitting={isSubmittingPick}
       onSelectPlaylist={setSelectedPlaylist}
-      onSubmit={handleSubmitLike}
-      onClose={closeLikeModal}
+      onSubmit={handleSubmitPick}
+      onClose={closePickModal}
     />
   </>
   )

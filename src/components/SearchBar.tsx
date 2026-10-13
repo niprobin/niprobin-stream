@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
 import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { Search, Loader2, Clock, X } from 'lucide-react'
-import { useDiscovery } from '@/contexts/DiscoveryContext'
+import { useBacklog } from '@/contexts/BacklogContext'
 
 import { searchTracks, searchAlbums, searchArtists } from '@/services/api'
 import { ROUTES, navigateTo } from '@/utils/routes'
-import type { SearchResult, AlbumResult, ArtistSearchResult, DiscoverTrack, DiscoverAlbum } from '@/types/api'
+import type { SearchResult, AlbumResult, ArtistSearchResult, BacklogTrack, BacklogAlbum } from '@/types/api'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { getSearchHistory, addSearchQuery, removeSearchQuery, clearSearchHistory, type SearchHistoryEntry } from '@/utils/searchHistoryStorage'
 
@@ -111,12 +111,12 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
   const requestIdRef = useRef(0)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { discoverTracks, discoverAlbums } = useDiscovery()
+  const { trackBacklog, albumBacklog } = useBacklog()
   const { playList } = useAudio()
 
 
-  const filteredDiggingTracks: DiscoverTrack[] = hasSearched && query
-    ? discoverTracks
+  const filteredDiggingTracks: BacklogTrack[] = hasSearched && query
+    ? trackBacklog
         .filter(t =>
           t.track.toLowerCase().includes(query.toLowerCase()) ||
           t.artist.toLowerCase().includes(query.toLowerCase())
@@ -124,8 +124,8 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
         .slice(0, 4)
     : []
 
-  const filteredDiggingAlbums: DiscoverAlbum[] = hasSearched && query
-    ? discoverAlbums
+  const filteredDiggingAlbums: BacklogAlbum[] = hasSearched && query
+    ? albumBacklog
         .filter(a =>
           a.album.toLowerCase().includes(query.toLowerCase()) ||
           a.artist.toLowerCase().includes(query.toLowerCase())
@@ -354,7 +354,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
 
               {filteredDiggingTracks.length > 0 && (
                 <div>
-                  <SectionLabel label="In your Tracks" />
+                  <SectionLabel label="In the Track Backlog" />
                   {filteredDiggingTracks.map((t, i) => (
                     <TrackRow
                       key={i}
@@ -372,7 +372,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
 
               {filteredDiggingAlbums.length > 0 && (
                 <div>
-                  <SectionLabel label="In your Albums" />
+                  <SectionLabel label="In the Album Backlog" />
                   {filteredDiggingAlbums.map((a, i) => (
                     <AlbumRow
                       key={i}
