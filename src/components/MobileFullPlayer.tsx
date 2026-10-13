@@ -9,7 +9,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useLikeModal } from '@/hooks/useLikeModal'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { usePlayerGestures } from '@/hooks/usePlayerGestures'
 import { shareTrack } from '@/utils/urlBuilder'
 import { downloadTrack } from '@/services/api'
@@ -58,13 +57,12 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
   const {
     currentTrack, isPlaying, currentTime, duration,
     pause, resume, seek, playNextTrack, playPreviousTrack,
-    currentTrackIndex, albumTracks, albumInfo, loadingState,
-    setQueuePosition, isNavInFlight,
+    currentTrackIndex, albumTracks, albumInfo,
+    playList, isNavInFlight, loadingTrackId,
   } = useAudio()
   const { token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
-  const { playTrack, loadingTrackId } = useTrackPlayer()
   const containerRef = useRef<HTMLDivElement>(null)
   const [showQueue, setShowQueue] = useState(false)
   const [dragX, setDragX] = useState(0)
@@ -79,7 +77,7 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
 
   const canGoToPrevious = albumTracks.length > 0 && !!albumInfo && currentTrackIndex > 0
   const canGoToNext = albumTracks.length > 0 && !!albumInfo && currentTrackIndex < albumTracks.length - 1
-  const isCurrentTrackLoading = loadingState.status !== 'idle' && loadingState.trackId === currentTrack?.id
+  const isCurrentTrackLoading = isNavInFlight
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
   const hasQueue = albumTracks.length > 0 && !!albumInfo
   const queueTitle = albumInfo?.artist === 'Auto-play' ? 'Queue' : (albumInfo?.name ?? 'Queue')
@@ -177,15 +175,9 @@ export function MobileFullPlayer({ isOpen, onClose, isAuthenticated }: MobileFul
 
   const queueTracks = albumTracks.slice(currentTrackIndex)
 
-  const handlePlayQueueTrack = async (track: AlbumTrackItem, trackIndex: number) => {
+  const handlePlayQueueTrack = (_track: AlbumTrackItem, trackIndex: number) => {
     if (!albumInfo) return
-    setQueuePosition(currentTrackIndex + trackIndex)
-    playTrack(track.track, track.artist, {
-      clearAlbum: false,
-      albumName: albumInfo.name,
-      coverArt: albumInfo.cover,
-      deezer_id: track.deezer_id || '0',
-    })
+    playList(albumTracks, currentTrackIndex + trackIndex, albumInfo)
   }
 
   const handleLikeQueueTrack = (_track: AlbumTrackItem) => {}

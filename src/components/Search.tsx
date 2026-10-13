@@ -3,9 +3,8 @@ import { searchTracks, searchAlbums, searchArtists, saveAlbum } from '@/services
 import type { SearchResult, AlbumResult, ArtistSearchResult } from '@/types/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useAuth } from '@/contexts/AuthContext'
-import { useAudio } from '@/contexts/AudioContext'
+import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { BookmarkPlus, Loader2 } from 'lucide-react'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { CarouselSection } from '@/components/ui/CarouselSection'
@@ -157,8 +156,7 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
 
   const { isLoading, increment, decrement } = useLoading()
   const { showNotification } = useNotification()
-  const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { setAutoPlayContext } = useAudio()
+  const { playList, loadingTrackId } = useAudio()
   const { token } = useAuth()
 
   const performSearch = async (q: string) => {
@@ -253,14 +251,9 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
                       deezer_id: r.deezer_id,
                       artist: r.artist,
                       'track-number': idx + 1,
+                      cover: r.cover_url || r.cover,
                     }))
-                    setAutoPlayContext(queue, i, 'Search Results', () => queue)
-                    playTrack(result.track, result.artist, {
-                      clearAlbum: false,
-                      albumName: result.album,
-                      coverArt: result.cover_url || result.cover,
-                      deezer_id: result.deezer_id,
-                    })
+                    playList(queue, i, autoPlayInfo('Search Results'))
                   }}
                 />
               ))}

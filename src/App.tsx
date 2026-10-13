@@ -34,7 +34,7 @@ import { generateTrackMetaTags } from './utils/metaTagHelpers'
 
 function AppContent() {
   const { isAuthenticated, token, username, logout } = useAuth()
-  const { loadTrack } = useAudio()
+  const { cueTrack } = useAudio()
   const { setMetaTags, resetToDefault } = useMetaTags()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, discoverTracks, discoverAlbums } = useDiscovery()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'>('home')
@@ -87,17 +87,18 @@ function AppContent() {
           })
           setMetaTags(trackMetaTags)
 
-          // Load the track from shared link (paused, not playing)
-          loadTrack({
-            id: streamResponse.trackId,
-            hashUrl: streamResponse.hashUrl,
-            title: streamResponse.track,
-            artist: streamResponse.artist,
-            album: streamResponse.album,
-            streamUrl: streamResponse.streamUrl,
-            coverArt: streamResponse.cover,
-            deezer_id: deezerId,
-          })
+          // Show the shared track in the player, paused: it's fetched on Play
+          cueTrack(
+            { track: streamResponse.track, artist: streamResponse.artist, deezer_id: deezerId, 'track-number': 1, cover: streamResponse.cover },
+            {
+              trackId: streamResponse.trackId,
+              hashUrl: streamResponse.hashUrl,
+              title: streamResponse.track,
+              artist: streamResponse.artist,
+              album: streamResponse.album,
+              cover: streamResponse.cover,
+            },
+          )
 
           // Redirect URL to home page after successful track load
           window.history.replaceState({}, '', '/')
@@ -157,7 +158,7 @@ function AppContent() {
     return () => {
       window.removeEventListener('popstate', syncFromLocation)
     }
-  }, [isAuthenticated, loadTrack])
+  }, [isAuthenticated, cueTrack])
 
   const navigate = (
     page: 'home' | 'digging' | 'album' | 'search',

@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, shortlistAlbum, downloadAlbum, type AlbumTrack } from '@/services/api'
 import { StarRating } from '@/components/ui/StarRating'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
@@ -35,12 +34,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [isDownloading, setIsDownloading] = useState(false)
   const [showShareTooltip, setShowShareTooltip] = useState(false)
 
-  const { currentTrack, setAlbumContext } = useAudio()
+  const { currentTrack, playList, loadingTrackId } = useAudio()
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
   const { markAlbumSaved } = useDiscovery()
-  const { playTrack, loadingTrackId } = useTrackPlayer()
   const { setMetaTags, resetToDefault } = useMetaTags()
 
   // Hide functionality
@@ -59,12 +57,12 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   }
 
   // Load album data on mount or when albumId changes
-  const contextRef = useRef({ increment, decrement, showNotification, setAlbumContext })
+  const contextRef = useRef({ increment, decrement, showNotification })
   const shareTooltipRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    contextRef.current = { increment, decrement, showNotification, setAlbumContext }
-  }, [increment, decrement, showNotification, setAlbumContext])
+    contextRef.current = { increment, decrement, showNotification }
+  }, [increment, decrement, showNotification])
 
   useEffect(() => {
     // Reset scroll position when entering album page
@@ -137,31 +135,23 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     }
   }, [showShareTooltip])
 
-  // Handle playing a track from the list
-  const handlePlayTrack = (track: AlbumTrack) => {
-    playTrack(track.track, track.artist, {
-      clearAlbum: false,
-      albumName: albumName,
-      coverArt: coverUrl,
-      deezer_id: track.deezer_id,
-    })
-  }
-
-  // Handle "Play Album" button - plays first track
-  const handlePlayAlbum = () => {
+  // Plays the album from `index`, fetching the next tracks ahead
+  const playAlbumFrom = (index: number) => {
     if (tracks.length === 0) return
-    setAlbumContext(
+    playList(
       tracks.map((t) => ({
         track: t.track,
         deezer_id: t.deezer_id,
         artist: t.artist,
         'track-number': t['track-number'],
       })),
+      index,
       { name: albumName, artist: artistName, cover: coverUrl, id: albumDataId?.toString(), streamingLink },
-      { expand: false, loadFirst: false }
     )
-    handlePlayTrack(tracks[0])
   }
+
+  // Handle "Play Album" button - plays first track
+  const handlePlayAlbum = () => playAlbumFrom(0)
 
   // Handle rating
   const handleRateAlbum = async (value: number) => {
@@ -480,23 +470,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
           'track-number': track['track-number'],
         }))}
         loadingTrackId={loadingTrackId}
-        onSelect={(_trackItem, trackIndex) => {
-          const originalTrack = tracks[trackIndex]
-          if (originalTrack) {
-            const albumTracksForContext = tracks.map((t) => ({
-              track: t.track,
-              deezer_id: t.deezer_id,
-              artist: t.artist,
-              'track-number': t['track-number'],
-            }))
-            setAlbumContext(
-              albumTracksForContext,
-              { name: albumName, artist: artistName, cover: coverUrl, id: albumDataId?.toString(), streamingLink },
-              { expand: false, loadFirst: false, startIndex: trackIndex }
-            )
-            handlePlayTrack(originalTrack)
-          }
-        }}
+        onSelect={(_trackItem, trackIndex) => playAlbumFrom(trackIndex)}
         enableLikeButtons={isAuthenticated}
         onLikeTrack={handleLikeTrack}
         currentTrackId={currentTrack?.id}

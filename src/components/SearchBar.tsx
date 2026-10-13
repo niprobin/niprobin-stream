@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
+import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { Search, Loader2, Clock, X } from 'lucide-react'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 
 import { searchTracks, searchAlbums, searchArtists } from '@/services/api'
 import { ROUTES, navigateTo } from '@/utils/routes'
@@ -112,7 +112,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { discoverTracks, discoverAlbums } = useDiscovery()
-  const { playTrack } = useTrackPlayer()
+  const { playList } = useAudio()
 
 
   const filteredDiggingTracks: DiscoverTrack[] = hasSearched && query
@@ -329,7 +329,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       cover={r.cover_url || r.cover}
                       onClick={() => {
                         commitSearch(query)
-                        playTrack(r.track, r.artist, { clearAlbum: false, deezer_id: r.deezer_id, coverArt: r.cover_url || r.cover })
+                        playList([{ track: r.track, artist: r.artist, deezer_id: r.deezer_id, 'track-number': 1, cover: r.cover_url || r.cover }], 0, autoPlayInfo('Search'))
                         setIsOpen(false)
                       }}
                     />
@@ -362,11 +362,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       artist={t.artist}
                       onClick={() => {
                         commitSearch(query)
-                        playTrack(t.track, t.artist, {
-                          clearAlbum: false,
-                          deezer_id: t.deezer_id,
-                          curator: t.curator,
-                        })
+                        playList([{ track: t.track, artist: t.artist, deezer_id: t.deezer_id, 'track-number': 1, curator: t.curator }], 0, autoPlayInfo('Search'))
                         setIsOpen(false)
                       }}
                     />

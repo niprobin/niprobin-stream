@@ -22,15 +22,15 @@ const updateSW = registerSW({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <AudioProvider>
-        <LoadingProvider>
-          <NotificationProvider>
+      <NotificationProvider>
+        <AudioProvider>
+          <LoadingProvider>
             <DiscoveryProvider>
               <App />
             </DiscoveryProvider>
-          </NotificationProvider>
-        </LoadingProvider>
-      </AudioProvider>
+          </LoadingProvider>
+        </AudioProvider>
+      </NotificationProvider>
     </AuthProvider>
   </StrictMode>,
 )

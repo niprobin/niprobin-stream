@@ -119,34 +119,79 @@ export async function searchTracks(query: string): Promise<SearchResult[]> {
   return postSearch<SearchResult[]>('search', query, 'Search failed')
 }
 
-// Get stream URL for a track
-export async function getStreamUrl(
-  deezer_id: string,
-  track: string,
-  artist: string,
+export type StreamContext = 'digging' | 'album' | 'search' | 'artist'
+
+export type StreamTrack = { deezerId: string; title: string; artist: string }
+
+// Two rows can share a deezer_id (bonus or live duplicates) or both lack one,
+// so the title and artist are part of a track's identity.
+export function trackKey(track: StreamTrack): string {
+  return `${track.deezerId}::${track.title}::${track.artist}`
+}
+
+// What /stream says about a track besides where to download it
+export type StreamDetails = {
+  trackId: string
+  hashUrl?: string
+  title: string
+  artist: string
+  album?: string
+  albumId?: number
+  cover?: string
+}
+
+export type StreamLookupResult =
+  | { ok: true; streamUrl: string; details: StreamDetails }
+  | { ok: false; error: string }
+
+// Lookups run one at a time, so one that n8n never answers (a tunnel, a stuck
+// workflow) must give up rather than hold every later track back
+export const STREAM_LOOKUP_TIMEOUT_MS = 60_000
+
+// Asks n8n to fetch a track onto the server and returns where to download it.
+// The file there is deleted after about 10 minutes (ADR 0002). Search plays
+// without a session, so the token is optional.
+export async function lookupStream(
   token: string | null,
-  context?: string
-): Promise<StreamResponse> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/stream', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ deezer_id, track, artist, context }),
-  })
+  track: StreamTrack,
+  context: StreamContext,
+): Promise<StreamLookupResult> {
+  const failure = { ok: false as const, error: "Couldn't find this track" }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), STREAM_LOOKUP_TIMEOUT_MS)
+  try {
+    const response = await fetch(`${BASE}/stream`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        deezer_id: track.deezerId || '0',
+        track: track.title,
+        artist: track.artist,
+        context,
+      }),
+    })
+    if (!response.ok) return failure
 
-  if (!response.ok) {
-    throw new Error('Failed to get stream URL')
-  }
-
-  const data = await response.json()
-  return {
-    streamUrl: data.stream_url,
-    trackId: String(data.track_id || deezer_id),
-    hashUrl: data.hash_url,
-    track: data.track,
-    artist: data.artist,
-    album: data['album-name'] || data.album,
-    'album-id': data['album-id'] ? parseInt(String(data['album-id']), 10) : undefined,
-    cover: data.cover,
+    const data = await response.json()
+    if (typeof data?.stream_url !== 'string' || !data.stream_url) return failure
+    return {
+      ok: true,
+      streamUrl: data.stream_url,
+      details: {
+        trackId: String(data.track_id || track.deezerId),
+        hashUrl: data.hash_url,
+        title: data.track || track.title,
+        artist: data.artist || track.artist,
+        album: data['album-name'] || data.album,
+        albumId: data['album-id'] ? parseInt(String(data['album-id']), 10) : undefined,
+        cover: data.cover,
+      },
+    }
+  } catch {
+    return failure
+  } finally {
+    clearTimeout(timer)
   }
 }
 

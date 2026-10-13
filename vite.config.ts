@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
@@ -62,5 +63,20 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  server: {
+    proxy: {
+      // The file server only allows the production origin, so in dev the
+      // Track Cache downloads through here (src/playback/trackFiles.ts)
+      '/files-proxy': {
+        target: 'https://files.niprobin.com',
+        changeOrigin: true,
+        rewrite: p => p.replace(/^\/files-proxy/, ''),
+      },
+    },
+  },
+  test: {
+    globals: true,
+    environment: 'node',
   },
 })

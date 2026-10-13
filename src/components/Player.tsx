@@ -9,17 +9,15 @@ import { shareTrack } from '@/utils/urlBuilder'
 import { ROUTES } from '@/utils/routes'
 import { useState, useRef } from 'react'
 import { useLoading } from '@/contexts/LoadingContext'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useLikeModal } from '@/hooks/useLikeModal'
 import { Queue } from '@/components/Queue'
 import { LikeModal } from '@/components/LikeModal'
 
 export function Player() {
-  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, setQueuePosition, playNextTrack, playPreviousTrack, currentTrackIndex, isNavInFlight } = useAudio()
+  const { currentTrack, isPlaying, pause, resume, currentTime, duration, seek, albumTracks, albumInfo, playList, playNextTrack, playPreviousTrack, currentTrackIndex, isNavInFlight, loadingTrackId } = useAudio()
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement, isLoading: isGlobalLoading } = useLoading()
-  const { playTrack, loadingTrackId, loadingState } = useTrackPlayer()
   const {
     isLikeModalOpen,
     likeModalTrack,
@@ -38,7 +36,7 @@ export function Player() {
   const playerRef = useRef<HTMLDivElement>(null)
   const progressRef = useRef<HTMLDivElement>(null)
 
-  const isCurrentTrackLoading = loadingState.status !== 'idle' && loadingState.trackId === currentTrack?.id
+  const isCurrentTrackLoading = isNavInFlight
   const hasAlbumContext = albumTracks.length > 0 && albumInfo
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
@@ -125,16 +123,9 @@ export function Player() {
     shareTrack(currentTrack.deezer_id, showNotification)
   }
 
-  const handlePlayAlbumTrack = async (track: AlbumTrackItem, slicedIndex: number) => {
+  const handlePlayAlbumTrack = (_track: AlbumTrackItem, slicedIndex: number) => {
     if (!albumInfo) return
-    const absoluteIndex = currentTrackIndex + slicedIndex
-    setQueuePosition(absoluteIndex)
-    playTrack(track.track, track.artist, {
-      clearAlbum: false,
-      albumName: albumInfo.name,
-      coverArt: albumInfo.cover,
-      deezer_id: track.deezer_id || '0',
-    })
+    playList(albumTracks, currentTrackIndex + slicedIndex, albumInfo)
   }
 
   const handleLikeTrack = (_track: AlbumTrackItem) => {}

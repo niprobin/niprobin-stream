@@ -8,10 +8,9 @@ import { hideTrack, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useHideItem } from '@/hooks/useHideItem'
 import { useShortlistAlbum } from '@/hooks/useShortlistAlbum'
-import { useAudio } from '@/contexts/AudioContext'
+import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { useLikeModal } from '@/hooks/useLikeModal'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
@@ -154,8 +153,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
   const albumPageSize = albumColumns * albumRows
   const trackPageSize = 10
 
-  const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { setAutoPlayContext, currentTrack } = useAudio()
+  const { playList, removeFromQueue, loadingTrackId, currentTrack } = useAudio()
   const { token } = useAuth()
   const { showNotification } = useNotification()
 
@@ -235,33 +233,20 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
       'track-number': index + 1,
       date: t.date,
       curator: t.curator,
+      cover: t.cover_url,
     }))
 
     const globalIndex = filteredTracks.findIndex(
       t => t.track === selectedTrack.track && t.artist === selectedTrack.artist
     )
 
-    const queueProvider = () => {
-      const current = tracks
-        .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
-        .filter(t => curator === 'all' || t.curator === curator)
-      return current.map((t, i) => ({
-        track: t.track,
-        deezer_id: t.deezer_id,
-        artist: t.artist,
-        'track-number': i + 1,
-        date: t.date,
-        curator: t.curator,
-      }))
-    }
-
-    setAutoPlayContext(allQueue, globalIndex, 'Discovery Tracks', queueProvider)
-    playTrack(selectedTrack.track, selectedTrack.artist, {
-      clearAlbum: false,
-      deezer_id: selectedTrack.deezer_id,
-      curator: selectedTrack.curator,
-    })
+    playList(allQueue, globalIndex, autoPlayInfo('Discovery Tracks'))
   }
+
+  // Hidden tracks leave the queue too, without interrupting the playing one
+  useEffect(() => {
+    removeFromQueue(t => hiddenTracks.has(`${t.track}-${t.artist}`))
+  }, [hiddenTracks, removeFromQueue])
 
   // Curators list
   const availableCurators = Array.from(

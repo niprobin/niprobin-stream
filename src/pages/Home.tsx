@@ -1,8 +1,8 @@
+import { useEffect } from 'react'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { useAudio } from '@/contexts/AudioContext'
+import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { useHideItem } from '@/hooks/useHideItem'
 import { useShortlistAlbum } from '@/hooks/useShortlistAlbum'
 import { isAlbumSaved } from '@/utils/albumUtils'
@@ -136,8 +136,7 @@ function CarouselSkeleton() {
 
 export function HomePage() {
   const { discoverTracks, discoverAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
-  const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { setAutoPlayContext } = useAudio()
+  const { playList, removeFromQueue, loadingTrackId } = useAudio()
   const { isAuthenticated, token } = useAuth()
 
   const { showNotification } = useNotification()
@@ -161,6 +160,11 @@ export function HomePage() {
   )
 
   const { shortlist, isShortlisting } = useShortlistAlbum()
+
+  // Hidden tracks leave the queue too, without interrupting the playing one
+  useEffect(() => {
+    removeFromQueue(t => hiddenTracks.has(`${t.track}-${t.artist}`))
+  }, [hiddenTracks, removeFromQueue])
 
   if (!isAuthenticated) {
     return (
@@ -198,13 +202,9 @@ export function HomePage() {
                 'track-number': i + 1,
                 date: t.date,
                 curator: t.curator,
+                cover: t.cover_url,
               }))
-              setAutoPlayContext(queue, index, 'Recently added tracks', () => queue)
-              playTrack(track.track, track.artist, {
-                clearAlbum: false,
-                deezer_id: track.deezer_id,
-                curator: track.curator,
-              })
+              playList(queue, index, autoPlayInfo('Recently added tracks'))
             }}
           />
         ))}

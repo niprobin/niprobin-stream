@@ -9,9 +9,8 @@ npm run dev       # start Vite dev server
 npm run build      # tsc -b (project references type-check) then vite build
 npm run lint       # eslint .
 npm run preview    # preview production build
+npm test           # vitest run (module tests against a fake n8n, see test/)
 ```
-
-There is no test suite/framework configured in this repo.
 
 ## Architecture
 
@@ -20,7 +19,7 @@ Niprobin Stream is a React 19 + TypeScript PWA that is a thin client over an **n
 ### State: Contexts, not a store library
 
 All app state lives in React Context providers under `src/contexts/`, composed in `App.tsx`:
-- **AudioContext** (`AudioContext.tsx`, ~700 lines) — the largest and most central piece of state. Owns the `<audio>` element, current track/album, play/pause/seek, queue and album-context navigation, and download. Most player-related components (`Player.tsx`, `PlayerBar.tsx`, `MobileFullPlayer.tsx`, `Queue.tsx`) consume this rather than owning their own playback state.
+- **AudioContext** — a thin React layer over the playback engine in `src/playback/` (copied from the native client, ADR 0001). The engine owns the queue, next/previous and auto-advance; its Track Cache runs `/stream` lookups one at a time (n8n can't take overlapping ones) and downloads each file into memory before playing it (ADR 0002). Player components (`Player.tsx`, `PlayerBar.tsx`, `MobileFullPlayer.tsx`, `Queue.tsx`) consume `useAudio()`; pages start playback with `playList(tracks, index, info)`.
 - **AuthContext** — simple access-code login; gates the Digging page and like features. Session persisted to `localStorage`.
 - **DiscoveryContext** — state for the Digging page (curated tracks/albums, curator filter, pagination).
 - **LoadingContext** — drives the single `GlobalLoadingOverlay` used for network-heavy actions app-wide.
@@ -43,5 +42,7 @@ All app state lives in React Context providers under `src/contexts/`, composed i
 Tailwind CSS with a dark slate theme (`slate-900`/`slate-950` backgrounds). No light theme. `class-variance-authority` + `tailwind-merge`/`clsx` (via `src/lib/utils.ts` `cn()`) are the standard pattern for variant-based component styling, matching shadcn/ui conventions.
 
 ### Docs
+
+`CONTEXT.md` points to the domain glossary, which lives in the native client's repo (`nipstream-native-app/CONTEXT.md`); `docs/adr/` holds this repo's decisions.
 
 `docs/superpowers/plans/` and `docs/superpowers/specs/` contain dated planning/design docs for past features (search & mobile UI, album download button, swipe animations) — useful for understanding *why* a feature was built a certain way before changing it.
