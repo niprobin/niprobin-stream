@@ -52,6 +52,17 @@ export function NotificationBanner() {
     >
       <span className={`h-2 w-2 flex-shrink-0 rounded-full ${styles.dot}`} />
       <p className={`flex-1 text-sm font-medium ${styles.text}`}>{notification.message}</p>
+      {notification.action && (
+        <button
+          onClick={() => {
+            notification.action?.onClick()
+            dismissNotification()
+          }}
+          className="flex-shrink-0 text-sm font-semibold text-accent hover:underline"
+        >
+          {notification.action.label}
+        </button>
+      )}
       <button
         onClick={dismissNotification}
         className={`flex-shrink-0 rounded-full p-1 transition-colors hover:bg-text-1/10 ${styles.text}`}

@@ -4,15 +4,13 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
-import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, shortlistAlbum, downloadAlbum, type AlbumTrack } from '@/services/api'
+import { getAlbumById, rateAlbum, saveAlbum, shortlistAlbum, downloadAlbum, type AlbumTrack } from '@/services/api'
 import { StarRating } from '@/components/ui/StarRating'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { TrackList } from '@/components/TrackList'
-import { useHideItem } from '@/hooks/useHideItem'
 import { Share2, X, Loader2, Music4, Download, ListPlus } from 'lucide-react'
 import { useMetaTags } from '@/hooks/useMetaTags'
 import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
-import { STORAGE_KEYS } from '@/utils/storageKeys'
 import { ROUTES } from '@/utils/routes'
 
 type AlbumPageProps = {
@@ -38,19 +36,8 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
-  const { markAlbumSaved } = useDiscovery()
+  const { markAlbumSaved, hideAlbum, discoverAlbums } = useDiscovery()
   const { setMetaTags, resetToDefault } = useMetaTags()
-
-  // Hide functionality
-  const { hideItem: hideAlbumItem } = useHideItem(
-    (album: { album: string; artist: string }) => hideAlbum({
-      album: album.album,
-      artist: album.artist,
-      deezer_id: albumId.toString()
-    }, token),
-    (album) => `${album.album}-${album.artist}`,
-    { persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS }
-  )
 
   const handleLikeTrack = (_track: AlbumTrackItem) => {
     // no-op: TrackList handles the full like flow; this callback exists for future use
@@ -255,20 +242,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       })
   }
 
-  // Handle hide album
-  const handleHideAlbum = async () => {
-    try {
-      await hideAlbumItem({
-        album: albumName,
-        artist: artistName
-      })
-
-      showNotification('Album hidden successfully', 'success')
-
-    } catch (err) {
-      console.error('Failed to hide album:', err)
-      showNotification('Failed to hide album', 'error')
-    }
+  // Hides the backlog's own row when it lists this album, as its name may differ
+  const handleHideAlbum = () => {
+    const deezerId = albumId.toString()
+    const listed = discoverAlbums.find(a => String(a.deezer_id) === deezerId)
+    hideAlbum(listed ?? { album: albumName, artist: artistName, deezer_id: deezerId })
   }
 
   if (error) {

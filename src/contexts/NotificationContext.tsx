@@ -2,15 +2,23 @@ import { createContext, useContext, useState, useRef, useEffect, useCallback, ty
 
 type NotificationType = 'success' | 'error' | 'info'
 
+// A button on the notification, such as Undo; pressing it dismisses the notification
+type NotificationAction = { label: string; onClick: () => void }
+
+type NotificationOptions = { action?: NotificationAction; durationMs?: number }
+
 type Notification = {
   message: string
   type: NotificationType
   id: number
+  action?: NotificationAction
 }
+
+const DEFAULT_DURATION_MS = 3500
 
 type NotificationContextType = {
   notification: Notification | null
-  showNotification: (message: string, type: NotificationType) => void
+  showNotification: (message: string, type: NotificationType, options?: NotificationOptions) => void
   dismissNotification: () => void
 }
 
@@ -28,20 +36,19 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const showNotification = useCallback((message: string, type: NotificationType) => {
+  const showNotification = useCallback((message: string, type: NotificationType, options: NotificationOptions = {}) => {
     // Clear existing timer
     if (timerRef.current) {
       clearTimeout(timerRef.current)
     }
 
     // Set new notification
-    setNotification({ message, type, id: Date.now() })
+    setNotification({ message, type, id: Date.now(), action: options.action })
 
-    // Auto-dismiss after 3500ms
     timerRef.current = window.setTimeout(() => {
       setNotification(null)
       timerRef.current = null
-    }, 3500)
+    }, options.durationMs ?? DEFAULT_DURATION_MS)
   }, [])
 
   // Cleanup timer on unmount

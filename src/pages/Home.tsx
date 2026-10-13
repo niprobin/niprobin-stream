@@ -1,14 +1,9 @@
-import { useEffect } from 'react'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
-import { useNotification } from '@/contexts/NotificationContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
-import { useHideItem } from '@/hooks/useHideItem'
 import { useShortlistAlbum } from '@/hooks/useShortlistAlbum'
 import { isAlbumSaved } from '@/utils/albumUtils'
-import { hideTrack, hideAlbum } from '@/services/api'
 import { ROUTES, navigateTo } from '@/utils/routes'
-import { STORAGE_KEYS } from '@/utils/storageKeys'
 import type { DiscoverTrack, DiscoverAlbum } from '@/types/api'
 import { CarouselSection } from '@/components/ui/CarouselSection'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
@@ -135,36 +130,11 @@ function CarouselSkeleton() {
 }
 
 export function HomePage() {
-  const { discoverTracks, discoverAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
-  const { playList, removeFromQueue, loadingTrackId } = useAudio()
-  const { isAuthenticated, token } = useAuth()
-
-  const { showNotification } = useNotification()
-
-  const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem(
-    (track: DiscoverTrack) => hideTrack({ track: track.track, artist: track.artist, deezer_id: track.deezer_id }, token),
-    (track: DiscoverTrack) => `${track.track}-${track.artist}`,
-    {
-      persistentCacheKey: STORAGE_KEYS.HIDDEN_TRACKS,
-      onSuccess: (result) => showNotification(result.message, result.status),
-    }
-  )
-
-  const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem(
-    (album: DiscoverAlbum) => hideAlbum({ album: album.album, artist: album.artist, deezer_id: album.deezer_id }, token),
-    (album: DiscoverAlbum) => `${album.album}-${album.artist}`,
-    {
-      persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS,
-      onSuccess: (result) => showNotification(result.message, result.status),
-    }
-  )
+  const { discoverTracks, discoverAlbums, isLoadingTracks, isLoadingAlbums, hideTrack, hideAlbum } = useDiscovery()
+  const { playList, loadingTrackId } = useAudio()
+  const { isAuthenticated } = useAuth()
 
   const { shortlist, isShortlisting } = useShortlistAlbum()
-
-  // Hidden tracks leave the queue too, without interrupting the playing one
-  useEffect(() => {
-    removeFromQueue(t => hiddenTracks.has(`${t.track}-${t.artist}`))
-  }, [hiddenTracks, removeFromQueue])
 
   if (!isAuthenticated) {
     return (
@@ -174,14 +144,11 @@ export function HomePage() {
     )
   }
 
-  const visibleTracks = discoverTracks
-    .filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`))
-    .slice(0, 20)
+  const visibleTracks = discoverTracks.slice(0, 20)
 
   // Same set as the Backlog ("See all"): shortlisted albums live in "Listen to"
   const visibleAlbums = discoverAlbums
     .filter((a) => !isAlbumSaved(a))
-    .filter((a) => !hiddenAlbums.has(`${a.album}-${a.artist}`))
     .slice(0, 20)
 
   return (
@@ -193,7 +160,10 @@ export function HomePage() {
             key={track.deezer_id}
             track={track}
             isLoading={loadingTrackId === track.deezer_id}
-            onHide={(e) => hideTrackItem(track, e)}
+            onHide={(e) => {
+              e.stopPropagation()
+              hideTrack(track)
+            }}
             onPlay={() => {
               const queue = visibleTracks.map((t, i) => ({
                 track: t.track,
@@ -215,7 +185,10 @@ export function HomePage() {
           <AlbumCard
             key={album.deezer_id}
             album={album}
-            onHide={(e) => hideAlbumItem(album, e)}
+            onHide={(e) => {
+              e.stopPropagation()
+              hideAlbum(album)
+            }}
             onShortlist={(e) => shortlist(album, e)}
             isShortlisting={isShortlisting(album)}
           />

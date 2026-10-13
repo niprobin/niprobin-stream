@@ -4,17 +4,14 @@ import { AlbumCard } from '@/components/ui/AlbumCard'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { EyebrowLabel } from '@/components/ui/EyebrowLabel'
 import { X, ChevronDown, Heart, Loader2, ListPlus } from 'lucide-react'
-import { hideTrack, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
+import type { DiscoverAlbum, DiscoverTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
-import { useNotification } from '@/contexts/NotificationContext'
 import { useDiscovery } from '@/contexts/DiscoveryContext'
-import { useHideItem } from '@/hooks/useHideItem'
 import { useShortlistAlbum } from '@/hooks/useShortlistAlbum'
 import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
 import { useLikeModal } from '@/hooks/useLikeModal'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { STORAGE_KEYS } from '@/utils/storageKeys'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { isAlbumSaved, type AlbumsView } from '@/utils/albumUtils'
 import type { AlbumTrackItem } from '@/contexts/AudioContext'
@@ -153,34 +150,17 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
   const albumPageSize = albumColumns * albumRows
   const trackPageSize = 10
 
-  const { playList, removeFromQueue, loadingTrackId, currentTrack } = useAudio()
+  const { playList, loadingTrackId, currentTrack } = useAudio()
   const { token } = useAuth()
-  const { showNotification } = useNotification()
 
   const {
     discoverTracks: tracks,
     discoverAlbums: albums,
+    hideTrack,
+    hideAlbum,
   } = useDiscovery()
 
   const { shortlist: handleShortlistAlbum, isShortlisting: isAlbumShortlisting } = useShortlistAlbum()
-
-  const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem(
-    (album: DiscoverAlbum) => hideAlbum({ album: album.album, artist: album.artist, deezer_id: album.deezer_id }, token),
-    (album: DiscoverAlbum) => `${album.album}-${album.artist}`,
-    {
-      persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS,
-      onSuccess: (result) => showNotification(result.message || 'Album hidden', result.status),
-    }
-  )
-
-  const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem(
-    (track: DiscoverTrack) => hideTrack({ track: track.track, artist: track.artist, deezer_id: track.deezer_id }, token),
-    (track: DiscoverTrack) => `${track.track}-${track.artist}`,
-    {
-      persistentCacheKey: STORAGE_KEYS.HIDDEN_TRACKS,
-      onSuccess: (result) => showNotification(result.message || 'Track hidden', result.status),
-    }
-  )
 
   const {
     isLikeModalOpen,
@@ -243,11 +223,6 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
     playList(allQueue, globalIndex, autoPlayInfo('Discovery Tracks'))
   }
 
-  // Hidden tracks leave the queue too, without interrupting the playing one
-  useEffect(() => {
-    removeFromQueue(t => hiddenTracks.has(`${t.track}-${t.artist}`))
-  }, [hiddenTracks, removeFromQueue])
-
   // Curators list
   const availableCurators = Array.from(
     new Set(tracks.map(t => t.curator).filter(Boolean))
@@ -255,13 +230,10 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
 
   // Hoisted so both the sticky desktop header (pagination totals) and the
   // tab body below can share the same filtered lists.
-  const filteredTracks = tracks
-    .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
-    .filter(t => curator === 'all' || t.curator === curator)
+  const filteredTracks = tracks.filter(t => curator === 'all' || t.curator === curator)
   // "Listen to" shows shortlisted albums; "Backlog" shows the rest
   const viewAlbums = albums.filter(a => isAlbumSaved(a) === (albumsView === 'listen'))
   const filteredAlbums = viewAlbums
-    .filter(a => !hiddenAlbums.has(`${a.album}-${a.artist}`))
 
   const queueCount = filteredTracks.length
 
@@ -414,7 +386,8 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                           if (originalTrack) buildQueueAndPlay(filteredTracks, originalTrack)
                         }}
                         onHide={(e) => {
-                          if (originalTrack) hideTrackItem(originalTrack, e)
+                          e.stopPropagation()
+                          if (originalTrack) hideTrack(originalTrack)
                         }}
                         onLike={(e) => {
                           e.stopPropagation()
@@ -491,7 +464,10 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                       })()}
                       actionButton={
                         <button
-                          onClick={(e) => hideAlbumItem(album, e)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            hideAlbum(album)
+                          }}
                           className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                           aria-label="Hide album"
                         >
