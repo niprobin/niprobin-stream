@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { MobileFullPlayer } from './components/MobileFullPlayer'
 import { Sidebar } from './components/Sidebar'
 import { MobileHeader } from './components/MobileHeader'
 import { PlayerBar } from './components/PlayerBar'
@@ -44,7 +43,6 @@ function AppContent() {
   const [diggingPage, setDiggingPage] = useState<number>(1)
   const [albumsView, setAlbumsView] = useState<AlbumsView>('backlog')
   const [searchInitialQuery, setSearchInitialQuery] = useState('')
-  const [mobilePlayerOpen, setMobilePlayerOpen] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -377,16 +375,6 @@ function AppContent() {
           <PlayerBar
             currentPage={mobileCurrentPage}
             onPageChange={handleMobilePageChange}
-            onNowPlayingClick={() => setMobilePlayerOpen(true)}
-          />
-        </div>
-
-        {/* Mobile-only full-screen player (< lg) */}
-        <div className="lg:hidden">
-          <MobileFullPlayer
-            isOpen={mobilePlayerOpen}
-            onClose={() => setMobilePlayerOpen(false)}
-            isAuthenticated={isAuthenticated}
           />
         </div>
       </div>

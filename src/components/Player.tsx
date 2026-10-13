@@ -262,7 +262,6 @@ export function Player() {
 
       {/* ── Queue (desktop slide-in panel) ─────────────────────────── */}
       <Queue
-        variant="panel"
         isOpen={isQueueOpen}
         onClose={() => setIsQueueOpen(false)}
         title={queueTitle}

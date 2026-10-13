@@ -19,7 +19,7 @@ Niprobin Stream is a React 19 + TypeScript PWA that is a thin client over an **n
 ### State: Contexts, not a store library
 
 All app state lives in React Context providers under `src/contexts/`, composed in `App.tsx`:
-- **AudioContext** — a thin React layer over the playback engine in `src/playback/` (copied from the native client, ADR 0001). The engine owns the queue, next/previous and auto-advance; its Track Cache runs `/stream` lookups one at a time (n8n can't take overlapping ones) and downloads each file into memory before playing it (ADR 0002). Player components (`Player.tsx`, `PlayerBar.tsx`, `MobileFullPlayer.tsx`, `Queue.tsx`) consume `useAudio()`; pages start playback with `playList(tracks, index, info)`.
+- **AudioContext** — a thin React layer over the playback engine in `src/playback/` (copied from the native client, ADR 0001). The engine owns the queue, next/previous and auto-advance; its Track Cache runs `/stream` lookups one at a time (n8n can't take overlapping ones) and downloads each file into memory before playing it (ADR 0002). Player components (`Player.tsx`, `PlayerBar.tsx`, `Queue.tsx`) consume `useAudio()`; pages start playback with `playList(tracks, index, info)`.
 - **AuthContext** — simple access-code login; gates the Digging page and the digging actions. Session persisted to `localStorage`.
 - **BacklogContext** — the Track and Album Backlogs for Home and the Digging page, without the items Hidden in this browser, plus Hide (rules in `src/digging/hides.ts`).
 - **LoadingContext** — drives the single `GlobalLoadingOverlay` used for network-heavy actions app-wide.
@@ -34,7 +34,7 @@ All app state lives in React Context providers under `src/contexts/`, composed i
 ### Pages vs. components
 
 - `src/pages/` — top-level routed screens (`Home` = search, `Digging` = curated tracks/albums, `Album`, `Artist`, `Login`).
-- `src/components/` — reusable UI, including player chrome (`Player.tsx`, `PlayerBar.tsx`, `MobileFullPlayer.tsx`), `TrackList.tsx` (used for both search results and album views via a variant prop), and `src/components/ui/` which is shadcn/ui-generated (new-york style, slate base color) — treat these as generated/vendor components and prefer composing over heavily editing them.
+- `src/components/` — reusable UI, including player chrome (`Player.tsx` docked on desktop, `PlayerBar.tsx` the small-screen mini player and nav), `TrackList.tsx` (used for both search results and album views via a variant prop), and `src/components/ui/` which is shadcn/ui-generated (new-york style, slate base color) — treat these as generated/vendor components and prefer composing over heavily editing them.
 - Path alias `@/*` maps to `src/*` (configured in both `vite.config.ts` and `tsconfig.json`).
 
 ### Styling
@@ -45,4 +45,4 @@ Tailwind CSS with a dark slate theme (`slate-900`/`slate-950` backgrounds). No l
 
 `CONTEXT.md` points to the domain glossary, which lives in the native client's repo (`nipstream-native-app/CONTEXT.md`); `docs/adr/` holds this repo's decisions.
 
-`docs/superpowers/plans/` and `docs/superpowers/specs/` contain dated planning/design docs for past features (search & mobile UI, album download button, swipe animations) — useful for understanding *why* a feature was built a certain way before changing it.
+`docs/superpowers/plans/` and `docs/superpowers/specs/` contain dated planning/design docs for past features (search & mobile UI, album download button, swipe animations — the swipes and full-screen mobile player have since been removed: the PWA is the desktop client, mobile is the native app) — useful for understanding *why* a feature was built a certain way before changing it.

@@ -16,7 +16,7 @@ interface PickModalProps {
 
 /**
  * Shared Pick drawer (choose a Radio Playlist) — bottom sheet on mobile, right-side
- * panel on desktop, mirroring the Queue component's sheet/panel convention.
+ * panel on desktop.
  * Runs the full viewport height on desktop (top-0/bottom-0) instead of a
  * centered card with its own height budget, so the playlist list has room to
  * scroll internally without ever pushing the Cancel/Add row off-screen.
