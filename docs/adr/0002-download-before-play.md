@@ -1,0 +1,3 @@
+# Download each track before playing it
+
+As in the native client's ADR 0002, the PWA fetches a track's whole file as soon as `/stream` returns its URL and plays that copy instead of streaming the URL, because the server deletes the files about 10 minutes after the lookup. A long track, a long pause, a late seek or a URL fetched ahead could otherwise hit a deleted file and stop playback silently. The copies are Blobs held in memory and played from object URLs: only the playing track and the next 3 album tracks are kept, and nothing survives a reload, so there's no on-disk cache to size or clear. The file server sends CORS headers only for `https://stream.niprobin.com`, so in dev the downloads go through Vite's `/files-proxy`.

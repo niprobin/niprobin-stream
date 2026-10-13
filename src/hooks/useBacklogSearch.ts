@@ -9,13 +9,13 @@ function debounce<T extends (...args: any[]) => void>(func: T, delay: number): T
   }) as T
 }
 
-interface UseDiscoverySearchProps<T> {
+interface UseBacklogSearchProps<T> {
   data: T[]
   filterFunction: (items: T[], query: string) => T[]
   setCurrentPage: (page: number) => void
 }
 
-interface UseDiscoverySearchReturn<T> {
+interface UseBacklogSearchReturn<T> {
   searchQuery: string
   setSearchQuery: (query: string) => void
   filteredData: T[]
@@ -24,11 +24,11 @@ interface UseDiscoverySearchReturn<T> {
   clearSearch: () => void
 }
 
-export function useDiscoverySearch<T>({
+export function useBacklogSearch<T>({
   data,
   filterFunction,
   setCurrentPage,
-}: UseDiscoverySearchProps<T>): UseDiscoverySearchReturn<T> {
+}: UseBacklogSearchProps<T>): UseBacklogSearchReturn<T> {
   const [searchQuery, setSearchQueryInternal] = useState('')
   const [debouncedQuery, setDebouncedQuery] = useState('')
 

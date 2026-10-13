@@ -1,15 +1,10 @@
-import { useDiscovery } from '@/contexts/DiscoveryContext'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { useNotification } from '@/contexts/NotificationContext'
+import { useBacklog } from '@/contexts/BacklogContext'
 import { useAuth } from '@/contexts/AuthContext'
-import { useAudio } from '@/contexts/AudioContext'
-import { useHideItem } from '@/hooks/useHideItem'
+import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { useShortlistAlbum } from '@/hooks/useShortlistAlbum'
-import { isAlbumSaved } from '@/utils/albumUtils'
-import { hideTrack, hideAlbum } from '@/services/api'
+import { isShortlisted } from '@/utils/albumUtils'
 import { ROUTES, navigateTo } from '@/utils/routes'
-import { STORAGE_KEYS } from '@/utils/storageKeys'
-import type { DiscoverTrack, DiscoverAlbum } from '@/types/api'
+import type { BacklogTrack, BacklogAlbum } from '@/types/api'
 import { CarouselSection } from '@/components/ui/CarouselSection'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { X, ListPlus, Loader2 } from 'lucide-react'
@@ -20,7 +15,7 @@ function TrackCard({
   onHide,
   isLoading,
 }: {
-  track: DiscoverTrack
+  track: BacklogTrack
   onPlay: () => void
   onHide: (e: React.MouseEvent) => void
   isLoading: boolean
@@ -68,7 +63,7 @@ function AlbumCard({
   onShortlist,
   isShortlisting,
 }: {
-  album: DiscoverAlbum
+  album: BacklogAlbum
   onHide: (e: React.MouseEvent) => void
   onShortlist: (e: React.MouseEvent) => void
   isShortlisting: boolean
@@ -135,61 +130,40 @@ function CarouselSkeleton() {
 }
 
 export function HomePage() {
-  const { discoverTracks, discoverAlbums, isLoadingTracks, isLoadingAlbums } = useDiscovery()
-  const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { setAutoPlayContext } = useAudio()
-  const { isAuthenticated, token } = useAuth()
-
-  const { showNotification } = useNotification()
-
-  const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem(
-    (track: DiscoverTrack) => hideTrack({ track: track.track, artist: track.artist, deezer_id: track.deezer_id }, token),
-    (track: DiscoverTrack) => `${track.track}-${track.artist}`,
-    {
-      persistentCacheKey: STORAGE_KEYS.HIDDEN_TRACKS,
-      onSuccess: (result) => showNotification(result.message, result.status),
-    }
-  )
-
-  const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem(
-    (album: DiscoverAlbum) => hideAlbum({ album: album.album, artist: album.artist, deezer_id: album.deezer_id }, token),
-    (album: DiscoverAlbum) => `${album.album}-${album.artist}`,
-    {
-      persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS,
-      onSuccess: (result) => showNotification(result.message, result.status),
-    }
-  )
+  const { trackBacklog, albumBacklog, isLoadingTracks, isLoadingAlbums, hideTrack, hideAlbum } = useBacklog()
+  const { playList, loadingTrackId } = useAudio()
+  const { isAuthenticated } = useAuth()
 
   const { shortlist, isShortlisting } = useShortlistAlbum()
 
   if (!isAuthenticated) {
     return (
       <div className="py-16 text-center space-y-2">
-        <p className="text-text-2 text-sm">Log in to discover tracks and albums.</p>
+        <p className="text-text-2 text-sm">Log in to dig through the Track and Album Backlogs.</p>
       </div>
     )
   }
 
-  const visibleTracks = discoverTracks
-    .filter((t) => !hiddenTracks.has(`${t.track}-${t.artist}`))
-    .slice(0, 20)
+  const visibleTracks = trackBacklog.slice(0, 20)
 
   // Same set as the Backlog ("See all"): shortlisted albums live in "Listen to"
-  const visibleAlbums = discoverAlbums
-    .filter((a) => !isAlbumSaved(a))
-    .filter((a) => !hiddenAlbums.has(`${a.album}-${a.artist}`))
+  const visibleAlbums = albumBacklog
+    .filter((a) => !isShortlisted(a))
     .slice(0, 20)
 
   return (
     <div className="py-8 lg:pt-4 space-y-6">
 
-      <CarouselSection title="Recently added tracks" seeAllHref={ROUTES.diggingTracks}>
+      <CarouselSection title="Track Backlog" seeAllHref={ROUTES.diggingTracks}>
         {isLoadingTracks ? <CarouselSkeleton /> : visibleTracks.map((track, index) => (
           <TrackCard
             key={track.deezer_id}
             track={track}
             isLoading={loadingTrackId === track.deezer_id}
-            onHide={(e) => hideTrackItem(track, e)}
+            onHide={(e) => {
+              e.stopPropagation()
+              hideTrack(track)
+            }}
             onPlay={() => {
               const queue = visibleTracks.map((t, i) => ({
                 track: t.track,
@@ -198,24 +172,23 @@ export function HomePage() {
                 'track-number': i + 1,
                 date: t.date,
                 curator: t.curator,
+                cover: t.cover_url,
               }))
-              setAutoPlayContext(queue, index, 'Recently added tracks', () => queue)
-              playTrack(track.track, track.artist, {
-                clearAlbum: false,
-                deezer_id: track.deezer_id,
-                curator: track.curator,
-              })
+              playList(queue, index, autoPlayInfo('Track Backlog'))
             }}
           />
         ))}
       </CarouselSection>
 
-      <CarouselSection title="Recently added albums" seeAllHref={ROUTES.diggingAlbums}>
+      <CarouselSection title="Album Backlog" seeAllHref={ROUTES.diggingAlbums}>
         {isLoadingAlbums ? <CarouselSkeleton /> : visibleAlbums.map((album) => (
           <AlbumCard
             key={album.deezer_id}
             album={album}
-            onHide={(e) => hideAlbumItem(album, e)}
+            onHide={(e) => {
+              e.stopPropagation()
+              hideAlbum(album)
+            }}
             onShortlist={(e) => shortlist(album, e)}
             isShortlisting={isShortlisting(album)}
           />

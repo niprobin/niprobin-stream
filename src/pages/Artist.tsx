@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getArtistPage } from '@/services/api'
-import type { ArtistPageData, ArtistTrack, ArtistAlbum } from '@/types/api'
-import { useAudio } from '@/contexts/AudioContext'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
+import type { ArtistPageData, ArtistAlbum } from '@/types/api'
+import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { AlbumCard } from '@/components/ui/AlbumCard'
@@ -14,8 +13,7 @@ export function ArtistPage({ artistId }: { artistId: string }) {
   const [data, setData] = useState<ArtistPageData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const { setAutoPlayContext } = useAudio()
-  const { playTrack, loadingTrackId } = useTrackPlayer()
+  const { playList, loadingTrackId } = useAudio()
   const { increment, decrement } = useLoading()
   const { showNotification } = useNotification()
 
@@ -40,19 +38,16 @@ export function ArtistPage({ artistId }: { artistId: string }) {
     return () => { cancelled = true }
   }, [artistId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleTrackClick = (track: ArtistTrack, index: number) => {
+  const handleTrackClick = (index: number) => {
     if (!data) return
     const queue = data.tracks.map((t, i) => ({
       track: t.title,
       deezer_id: t.deezer_id,
       artist: t.artist,
       'track-number': i + 1,
+      cover: t.cover,
     }))
-    setAutoPlayContext(queue, index, data.info.name)
-    playTrack(track.title, track.artist, {
-      deezer_id: track.deezer_id,
-      coverArt: track.cover,
-    })
+    playList(queue, index, autoPlayInfo(data.info.name))
   }
 
   const handleAlbumClick = (album: ArtistAlbum) => {
@@ -104,7 +99,7 @@ export function ArtistPage({ artistId }: { artistId: string }) {
           {data.tracks.slice(0, 10).map((track, i) => (
             <li
               key={track.deezer_id}
-              onClick={() => handleTrackClick(track, i)}
+              onClick={() => handleTrackClick(i)}
               className="flex items-center gap-4 px-2 py-2 rounded-lg hover:bg-bg-2 cursor-pointer group transition-colors"
             >
               <span className="text-text-3 w-5 text-sm text-right shrink-0">{i + 1}</span>

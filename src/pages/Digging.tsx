@@ -4,23 +4,19 @@ import { AlbumCard } from '@/components/ui/AlbumCard'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { EyebrowLabel } from '@/components/ui/EyebrowLabel'
 import { X, ChevronDown, Heart, Loader2, ListPlus } from 'lucide-react'
-import { hideTrack, hideAlbum, type DiscoverAlbum, type DiscoverTrack } from '@/services/api'
+import type { BacklogAlbum, BacklogTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
-import { useNotification } from '@/contexts/NotificationContext'
-import { useDiscovery } from '@/contexts/DiscoveryContext'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { useHideItem } from '@/hooks/useHideItem'
+import { useBacklog } from '@/contexts/BacklogContext'
 import { useShortlistAlbum } from '@/hooks/useShortlistAlbum'
-import { useAudio } from '@/contexts/AudioContext'
+import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { useUrlFilters } from '@/hooks/useUrlFilters'
-import { useLikeModal } from '@/hooks/useLikeModal'
+import { usePickModal } from '@/hooks/usePickModal'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
-import { STORAGE_KEYS } from '@/utils/storageKeys'
 import { ROUTES, navigateTo } from '@/utils/routes'
-import { isAlbumSaved, type AlbumsView } from '@/utils/albumUtils'
+import { isShortlisted, type AlbumsView } from '@/utils/albumUtils'
 import type { AlbumTrackItem } from '@/contexts/AudioContext'
 import type { FormEvent } from 'react'
-import { LikeModal } from '@/components/LikeModal'
+import { PickModal } from '@/components/PickModal'
 
 type DiggingTab = 'tracks' | 'albums'
 
@@ -39,8 +35,8 @@ function DiggingTrackRow({
   coverArt,
   onPlay,
   onHide,
-  onLike,
-  isLiked,
+  onPick,
+  isPicked,
 }: {
   track: AlbumTrackItem
   isCurrentTrack: boolean
@@ -48,8 +44,8 @@ function DiggingTrackRow({
   coverArt?: string
   onPlay: () => void
   onHide: (e: React.MouseEvent) => void
-  onLike: (e: React.MouseEvent) => void
-  isLiked: boolean
+  onPick: (e: React.MouseEvent) => void
+  isPicked: boolean
 }) {
   return (
     <div
@@ -89,7 +85,7 @@ function DiggingTrackRow({
           type="button"
           onClick={onHide}
           className="w-[44px] h-[44px] flex items-center justify-center"
-          aria-label="Dismiss track"
+          aria-label="Hide track"
         >
           <span className="w-[38px] h-[38px] flex items-center justify-center rounded-full border border-border text-text-2 active:bg-bg-2 transition-colors">
             <X className="h-4 w-4" />
@@ -97,16 +93,16 @@ function DiggingTrackRow({
         </button>
         <button
           type="button"
-          onClick={onLike}
+          onClick={onPick}
           className="w-[44px] h-[44px] flex items-center justify-center"
-          aria-label={isLiked ? 'Liked' : 'Like track'}
+          aria-label={isPicked ? 'Picked' : 'Pick track'}
         >
           <span className={`w-[38px] h-[38px] flex items-center justify-center rounded-full border transition-colors ${
-            isLiked
+            isPicked
               ? 'border-accent/50 text-accent'
               : 'border-border text-text-2 active:bg-bg-2'
           }`}>
-            <Heart className="h-4 w-4" fill={isLiked ? 'currentColor' : 'none'} />
+            <Heart className="h-4 w-4" fill={isPicked ? 'currentColor' : 'none'} />
           </span>
         </button>
       </div>
@@ -154,54 +150,36 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
   const albumPageSize = albumColumns * albumRows
   const trackPageSize = 10
 
-  const { playTrack, loadingTrackId } = useTrackPlayer()
-  const { setAutoPlayContext, currentTrack } = useAudio()
+  const { playList, loadingTrackId, currentTrack } = useAudio()
   const { token } = useAuth()
-  const { showNotification } = useNotification()
 
   const {
-    discoverTracks: tracks,
-    discoverAlbums: albums,
-  } = useDiscovery()
+    trackBacklog: tracks,
+    albumBacklog: albums,
+    hideTrack,
+    hideAlbum,
+  } = useBacklog()
 
   const { shortlist: handleShortlistAlbum, isShortlisting: isAlbumShortlisting } = useShortlistAlbum()
 
-  const { hiddenItems: hiddenAlbums, hideItem: hideAlbumItem } = useHideItem(
-    (album: DiscoverAlbum) => hideAlbum({ album: album.album, artist: album.artist, deezer_id: album.deezer_id }, token),
-    (album: DiscoverAlbum) => `${album.album}-${album.artist}`,
-    {
-      persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS,
-      onSuccess: (result) => showNotification(result.message || 'Album hidden', result.status),
-    }
-  )
-
-  const { hiddenItems: hiddenTracks, hideItem: hideTrackItem } = useHideItem(
-    (track: DiscoverTrack) => hideTrack({ track: track.track, artist: track.artist, deezer_id: track.deezer_id }, token),
-    (track: DiscoverTrack) => `${track.track}-${track.artist}`,
-    {
-      persistentCacheKey: STORAGE_KEYS.HIDDEN_TRACKS,
-      onSuccess: (result) => showNotification(result.message || 'Track hidden', result.status),
-    }
-  )
-
   const {
-    isLikeModalOpen,
-    likeModalTrack,
+    isPickModalOpen,
+    pickModalTrack,
     selectedPlaylist,
-    isSubmittingLike,
-    PLAYLISTS,
-    isTrackLiked,
-    openLikeModal,
-    closeLikeModal,
-    handleSubmitLike: handleModalSubmit,
+    isSubmittingPick,
+    RADIO_PLAYLISTS,
+    isTrackPicked,
+    openPickModal,
+    closePickModal,
+    handleSubmitPick: handleModalSubmit,
     setSelectedPlaylist,
-  } = useLikeModal(token)
+  } = usePickModal(token)
 
-  const handleSubmitLike = async (event: FormEvent) => {
+  const handleSubmitPick = async (event: FormEvent) => {
     await handleModalSubmit(event)
   }
 
-  const handleAlbumClick = (album: DiscoverAlbum) => {
+  const handleAlbumClick = (album: BacklogAlbum) => {
     navigateTo(ROUTES.album(album.deezer_id))
   }
 
@@ -227,7 +205,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
     }
   }, [isDesktop, isTablet, prevIsDesktop, prevIsTablet, onPageChange])
 
-  const buildQueueAndPlay = (filteredTracks: DiscoverTrack[], selectedTrack: DiscoverTrack) => {
+  const buildQueueAndPlay = (filteredTracks: BacklogTrack[], selectedTrack: BacklogTrack) => {
     const allQueue = filteredTracks.map((t, index) => ({
       track: t.track,
       deezer_id: t.deezer_id,
@@ -235,32 +213,14 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
       'track-number': index + 1,
       date: t.date,
       curator: t.curator,
+      cover: t.cover_url,
     }))
 
     const globalIndex = filteredTracks.findIndex(
       t => t.track === selectedTrack.track && t.artist === selectedTrack.artist
     )
 
-    const queueProvider = () => {
-      const current = tracks
-        .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
-        .filter(t => curator === 'all' || t.curator === curator)
-      return current.map((t, i) => ({
-        track: t.track,
-        deezer_id: t.deezer_id,
-        artist: t.artist,
-        'track-number': i + 1,
-        date: t.date,
-        curator: t.curator,
-      }))
-    }
-
-    setAutoPlayContext(allQueue, globalIndex, 'Discovery Tracks', queueProvider)
-    playTrack(selectedTrack.track, selectedTrack.artist, {
-      clearAlbum: false,
-      deezer_id: selectedTrack.deezer_id,
-      curator: selectedTrack.curator,
-    })
+    playList(allQueue, globalIndex, autoPlayInfo('Track Backlog'))
   }
 
   // Curators list
@@ -270,13 +230,10 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
 
   // Hoisted so both the sticky desktop header (pagination totals) and the
   // tab body below can share the same filtered lists.
-  const filteredTracks = tracks
-    .filter(t => !hiddenTracks.has(`${t.track}-${t.artist}`))
-    .filter(t => curator === 'all' || t.curator === curator)
+  const filteredTracks = tracks.filter(t => curator === 'all' || t.curator === curator)
   // "Listen to" shows shortlisted albums; "Backlog" shows the rest
-  const viewAlbums = albums.filter(a => isAlbumSaved(a) === (albumsView === 'listen'))
+  const viewAlbums = albums.filter(a => isShortlisted(a) === (albumsView === 'listen'))
   const filteredAlbums = viewAlbums
-    .filter(a => !hiddenAlbums.has(`${a.album}-${a.artist}`))
 
   const queueCount = filteredTracks.length
 
@@ -415,7 +372,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                       currentTrack.title === item.track &&
                       currentTrack.artist === item.artist)
                     const isLoading = loadingTrackId === item.deezer_id
-                    const isLiked = isTrackLiked(item.track, item.artist)
+                    const isPicked = isTrackPicked(item.track, item.artist)
                     const coverArt = originalTrack?.cover_url || (isCurrentTrack ? currentTrack?.coverArt : undefined)
 
                     return (
@@ -429,11 +386,12 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                           if (originalTrack) buildQueueAndPlay(filteredTracks, originalTrack)
                         }}
                         onHide={(e) => {
-                          if (originalTrack) hideTrackItem(originalTrack, e)
-                        }}
-                        onLike={(e) => {
                           e.stopPropagation()
-                          openLikeModal(
+                          if (originalTrack) hideTrack(originalTrack)
+                        }}
+                        onPick={(e) => {
+                          e.stopPropagation()
+                          openPickModal(
                             item.deezer_id,
                             item.track,
                             item.artist,
@@ -441,7 +399,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                             item.deezer_id
                           )
                         }}
-                        isLiked={isLiked}
+                        isPicked={isPicked}
                       />
                     )
                   })}
@@ -486,7 +444,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                       album={album}
                       onClick={() => handleAlbumClick(album)}
                       leftActionButton={albumsView === 'backlog' && (() => {
-                        // Shortlisted albums leave the Backlog, so no "saved" state here
+                        // Shortlisted albums leave the Backlog, so no "shortlisted" state here
                         const isShortlisting = isAlbumShortlisting(album)
                         return (
                           <button
@@ -506,7 +464,10 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                       })()}
                       actionButton={
                         <button
-                          onClick={(e) => hideAlbumItem(album, e)}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            hideAlbum(album)
+                          }}
                           className="w-8 h-8 md:w-6 md:h-6 flex items-center justify-center bg-black/60 hover:bg-black/80 rounded-full md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                           aria-label="Hide album"
                         >
@@ -530,15 +491,15 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
         </div>
       )}
 
-      <LikeModal
-        isOpen={isLikeModalOpen}
-        track={likeModalTrack}
-        playlists={PLAYLISTS}
+      <PickModal
+        isOpen={isPickModalOpen}
+        track={pickModalTrack}
+        playlists={RADIO_PLAYLISTS}
         selectedPlaylist={selectedPlaylist}
-        isSubmitting={isSubmittingLike}
+        isSubmitting={isSubmittingPick}
         onSelectPlaylist={setSelectedPlaylist}
-        onSubmit={handleSubmitLike}
-        onClose={closeLikeModal}
+        onSubmit={handleSubmitPick}
+        onClose={closePickModal}
       />
     </div>
   )

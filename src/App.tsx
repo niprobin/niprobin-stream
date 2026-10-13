@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { MobileFullPlayer } from './components/MobileFullPlayer'
 import { Sidebar } from './components/Sidebar'
 import { MobileHeader } from './components/MobileHeader'
 import { PlayerBar } from './components/PlayerBar'
@@ -9,7 +8,7 @@ import { NotificationBanner } from './components/NotificationBanner'
 import GlobalLoadingOverlay from '@/components/GlobalLoadingOverlay'
 import { AlbumsPage } from './pages/Digging'
 import { useAudio } from './contexts/AudioContext'
-import { useDiscovery } from './contexts/DiscoveryContext'
+import { useBacklog } from './contexts/BacklogContext'
 import { Search } from './components/Search'
 import { SearchBar } from './components/SearchBar'
 import {
@@ -24,7 +23,7 @@ import {
 } from './utils/urlParser'
 import { ROUTES } from './utils/routes'
 import { getTrackByDeezerId } from './services/api'
-import { isAlbumSaved, type AlbumsView } from './utils/albumUtils'
+import { isShortlisted, type AlbumsView } from './utils/albumUtils'
 import { AlbumPage } from './pages/Album'
 import { ArtistPage } from './pages/Artist'
 import { HomePage } from './pages/Home'
@@ -34,9 +33,9 @@ import { generateTrackMetaTags } from './utils/metaTagHelpers'
 
 function AppContent() {
   const { isAuthenticated, token, username, logout } = useAuth()
-  const { loadTrack } = useAudio()
+  const { cueTrack } = useAudio()
   const { setMetaTags, resetToDefault } = useMetaTags()
-  const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, discoverTracks, discoverAlbums } = useDiscovery()
+  const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, trackBacklog, albumBacklog } = useBacklog()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [currentArtistId, setCurrentArtistId] = useState<string | null>(null)
@@ -44,7 +43,6 @@ function AppContent() {
   const [diggingPage, setDiggingPage] = useState<number>(1)
   const [albumsView, setAlbumsView] = useState<AlbumsView>('backlog')
   const [searchInitialQuery, setSearchInitialQuery] = useState('')
-  const [mobilePlayerOpen, setMobilePlayerOpen] = useState(false)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -87,17 +85,18 @@ function AppContent() {
           })
           setMetaTags(trackMetaTags)
 
-          // Load the track from shared link (paused, not playing)
-          loadTrack({
-            id: streamResponse.trackId,
-            hashUrl: streamResponse.hashUrl,
-            title: streamResponse.track,
-            artist: streamResponse.artist,
-            album: streamResponse.album,
-            streamUrl: streamResponse.streamUrl,
-            coverArt: streamResponse.cover,
-            deezer_id: deezerId,
-          })
+          // Show the shared track in the player, paused: it's fetched on Play
+          cueTrack(
+            { track: streamResponse.track, artist: streamResponse.artist, deezer_id: deezerId, 'track-number': 1, cover: streamResponse.cover },
+            {
+              trackId: streamResponse.trackId,
+              hashUrl: streamResponse.hashUrl,
+              title: streamResponse.track,
+              artist: streamResponse.artist,
+              album: streamResponse.album,
+              cover: streamResponse.cover,
+            },
+          )
 
           // Redirect URL to home page after successful track load
           window.history.replaceState({}, '', '/')
@@ -157,7 +156,7 @@ function AppContent() {
     return () => {
       window.removeEventListener('popstate', syncFromLocation)
     }
-  }, [isAuthenticated, loadTrack])
+  }, [isAuthenticated, cueTrack])
 
   const navigate = (
     page: 'home' | 'digging' | 'album' | 'search',
@@ -278,8 +277,8 @@ function AppContent() {
     : activePage === 'menu' ? 'menu'
     : 'home'
 
-  const listenCount = discoverAlbums.filter(isAlbumSaved).length
-  const backlogCount = discoverAlbums.length - listenCount
+  const listenCount = albumBacklog.filter(isShortlisted).length
+  const backlogCount = albumBacklog.length - listenCount
 
   const isRefreshing = isLoadingTracks || isLoadingAlbums
   const handleRefresh = () => { refreshTracks(); refreshAlbums() }
@@ -295,7 +294,7 @@ function AppContent() {
           isAuthenticated={isAuthenticated}
           activePage={activePage}
           diggingTab={diggingTab}
-          tracksCount={discoverTracks.length}
+          tracksCount={trackBacklog.length}
           albumsView={albumsView}
           albumsCount={backlogCount}
           listenCount={listenCount}
@@ -376,16 +375,6 @@ function AppContent() {
           <PlayerBar
             currentPage={mobileCurrentPage}
             onPageChange={handleMobilePageChange}
-            onNowPlayingClick={() => setMobilePlayerOpen(true)}
-          />
-        </div>
-
-        {/* Mobile-only full-screen player (< lg) */}
-        <div className="lg:hidden">
-          <MobileFullPlayer
-            isOpen={mobilePlayerOpen}
-            onClose={() => setMobilePlayerOpen(false)}
-            isAuthenticated={isAuthenticated}
           />
         </div>
       </div>

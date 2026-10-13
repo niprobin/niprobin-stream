@@ -3,17 +3,14 @@ import { useAudio, type AlbumTrackItem } from '@/contexts/AudioContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
-import { useDiscovery } from '@/contexts/DiscoveryContext'
-import { useTrackPlayer } from '@/hooks/useTrackPlayer'
-import { getAlbumById, rateAlbum, hideAlbum, saveAlbum, shortlistAlbum, downloadAlbum, type AlbumTrack } from '@/services/api'
+import { useBacklog } from '@/contexts/BacklogContext'
+import { getAlbumById, rateAlbum, addAlbum, shortlistAlbum, addAlbumToJellyfin, type AlbumTrack } from '@/services/api'
 import { StarRating } from '@/components/ui/StarRating'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { TrackList } from '@/components/TrackList'
-import { useHideItem } from '@/hooks/useHideItem'
 import { Share2, X, Loader2, Music4, Download, ListPlus } from 'lucide-react'
 import { useMetaTags } from '@/hooks/useMetaTags'
 import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
-import { STORAGE_KEYS } from '@/utils/storageKeys'
 import { ROUTES } from '@/utils/routes'
 
 type AlbumPageProps = {
@@ -30,41 +27,29 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [artistId, setArtistId] = useState<string | undefined>(undefined)
   const [albumRating, setAlbumRating] = useState(0)
   const [error, setError] = useState<string | null>(null)
-  const [isSaving, setIsSaving] = useState(false)
+  const [isAdding, setIsAdding] = useState(false)
   const [isShortlisting, setIsShortlisting] = useState(false)
-  const [isDownloading, setIsDownloading] = useState(false)
+  const [isAddingToJellyfin, setIsAddingToJellyfin] = useState(false)
   const [showShareTooltip, setShowShareTooltip] = useState(false)
 
-  const { currentTrack, setAlbumContext } = useAudio()
+  const { currentTrack, playList, loadingTrackId } = useAudio()
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
-  const { markAlbumSaved } = useDiscovery()
-  const { playTrack, loadingTrackId } = useTrackPlayer()
+  const { markShortlisted, hideAlbum, albumBacklog } = useBacklog()
   const { setMetaTags, resetToDefault } = useMetaTags()
 
-  // Hide functionality
-  const { hideItem: hideAlbumItem } = useHideItem(
-    (album: { album: string; artist: string }) => hideAlbum({
-      album: album.album,
-      artist: album.artist,
-      deezer_id: albumId.toString()
-    }, token),
-    (album) => `${album.album}-${album.artist}`,
-    { persistentCacheKey: STORAGE_KEYS.HIDDEN_ALBUMS }
-  )
-
-  const handleLikeTrack = (_track: AlbumTrackItem) => {
-    // no-op: TrackList handles the full like flow; this callback exists for future use
+  const handlePickTrack = (_track: AlbumTrackItem) => {
+    // no-op: TrackList handles the full Pick flow; this callback exists for future use
   }
 
   // Load album data on mount or when albumId changes
-  const contextRef = useRef({ increment, decrement, showNotification, setAlbumContext })
+  const contextRef = useRef({ increment, decrement, showNotification })
   const shareTooltipRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    contextRef.current = { increment, decrement, showNotification, setAlbumContext }
-  }, [increment, decrement, showNotification, setAlbumContext])
+    contextRef.current = { increment, decrement, showNotification }
+  }, [increment, decrement, showNotification])
 
   useEffect(() => {
     // Reset scroll position when entering album page
@@ -137,31 +122,23 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     }
   }, [showShareTooltip])
 
-  // Handle playing a track from the list
-  const handlePlayTrack = (track: AlbumTrack) => {
-    playTrack(track.track, track.artist, {
-      clearAlbum: false,
-      albumName: albumName,
-      coverArt: coverUrl,
-      deezer_id: track.deezer_id,
-    })
-  }
-
-  // Handle "Play Album" button - plays first track
-  const handlePlayAlbum = () => {
+  // Plays the album from `index`, fetching the next tracks ahead
+  const playAlbumFrom = (index: number) => {
     if (tracks.length === 0) return
-    setAlbumContext(
+    playList(
       tracks.map((t) => ({
         track: t.track,
         deezer_id: t.deezer_id,
         artist: t.artist,
         'track-number': t['track-number'],
       })),
+      index,
       { name: albumName, artist: artistName, cover: coverUrl, id: albumDataId?.toString(), streamingLink },
-      { expand: false, loadFirst: false }
     )
-    handlePlayTrack(tracks[0])
   }
+
+  // Handle "Play Album" button - plays first track
+  const handlePlayAlbum = () => playAlbumFrom(0)
 
   // Handle rating
   const handleRateAlbum = async (value: number) => {
@@ -181,22 +158,22 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     }
   }
 
-  // Handle add album (save for later)
+  // Add: puts the album into the Album Backlog
   const handleAddAlbum = async () => {
-    setIsSaving(true)
+    setIsAdding(true)
 
     try {
-      const response = await saveAlbum({
+      const response = await addAlbum({
         album: albumName,
         artist: artistName,
         deezer_id: albumId.toString()
       }, token)
       showNotification(response.message, response.status)
     } catch (err) {
-      showNotification('Failed to save album', 'error')
-      console.error('Failed to save album:', err)
+      showNotification("Couldn't Add this album", 'error')
+      console.error("Couldn't Add this album:", err)
     } finally {
-      setIsSaving(false)
+      setIsAdding(false)
     }
   }
 
@@ -210,8 +187,8 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         saved: true,
       }, token)
       showNotification(response.message, response.status)
-      // Update discovery albums locally so the "Listen to" view reflects the change
-      if (response.status === 'success') markAlbumSaved(albumId.toString())
+      // Update the Album Backlog locally so the "Listen to" view reflects the change
+      if (response.status === 'success') markShortlisted(albumId.toString())
     } catch (err) {
       showNotification('Failed to shortlist album', 'error')
       console.error('Failed to shortlist album:', err)
@@ -220,18 +197,18 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     }
   }
 
-  // Handle download album
-  const handleDownloadAlbum = async () => {
-    setIsDownloading(true)
+  // Add to Jellyfin: the server fetches the album into the Jellyfin library
+  const handleAddToJellyfin = async () => {
+    setIsAddingToJellyfin(true)
 
     try {
-      const response = await downloadAlbum(albumId.toString(), token)
+      const response = await addAlbumToJellyfin(albumId.toString(), token)
       showNotification(response.message, response.status)
     } catch (err) {
-      showNotification('Failed to download album', 'error')
-      console.error('Failed to download album:', err)
+      showNotification("Couldn't Add this album to Jellyfin", 'error')
+      console.error("Couldn't Add this album to Jellyfin:", err)
     } finally {
-      setIsDownloading(false)
+      setIsAddingToJellyfin(false)
     }
   }
 
@@ -265,20 +242,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       })
   }
 
-  // Handle hide album
-  const handleHideAlbum = async () => {
-    try {
-      await hideAlbumItem({
-        album: albumName,
-        artist: artistName
-      })
-
-      showNotification('Album hidden successfully', 'success')
-
-    } catch (err) {
-      console.error('Failed to hide album:', err)
-      showNotification('Failed to hide album', 'error')
-    }
+  // Hides the backlog's own row when it lists this album, as its name may differ
+  const handleHideAlbum = () => {
+    const deezerId = albumId.toString()
+    const listed = albumBacklog.find(a => String(a.deezer_id) === deezerId)
+    hideAlbum(listed ?? { album: albumName, artist: artistName, deezer_id: deezerId })
   }
 
   if (error) {
@@ -366,10 +334,10 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             {isAuthenticated && (
               <button
                 onClick={handleAddAlbum}
-                disabled={isSaving}
+                disabled={isAdding}
                 className="ap-action-btn"
               >
-                {isSaving ? (
+                {isAdding ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" strokeWidth={1.5} />
                     <span>Adding...</span>
@@ -446,21 +414,21 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
               </button>
             )}
 
-            {/* Download Button */}
+            {/* Add to Jellyfin Button */}
             {isAuthenticated && (
               <button
-                onClick={handleDownloadAlbum}
-                disabled={isDownloading}
+                onClick={handleAddToJellyfin}
+                disabled={isAddingToJellyfin}
                 className="ap-action-btn"
               >
-                {isDownloading ? (
+                {isAddingToJellyfin ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" strokeWidth={1.5} />
-                    <span>Downloading...</span>
+                    <span>Adding...</span>
                   </>
                 ) : (
                   <>
-                    <span>Download</span>
+                    <span>Add to Jellyfin</span>
                     <Download className="h-3.5 w-3.5" strokeWidth={1.5} />
                   </>
                 )}
@@ -480,25 +448,9 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
           'track-number': track['track-number'],
         }))}
         loadingTrackId={loadingTrackId}
-        onSelect={(_trackItem, trackIndex) => {
-          const originalTrack = tracks[trackIndex]
-          if (originalTrack) {
-            const albumTracksForContext = tracks.map((t) => ({
-              track: t.track,
-              deezer_id: t.deezer_id,
-              artist: t.artist,
-              'track-number': t['track-number'],
-            }))
-            setAlbumContext(
-              albumTracksForContext,
-              { name: albumName, artist: artistName, cover: coverUrl, id: albumDataId?.toString(), streamingLink },
-              { expand: false, loadFirst: false, startIndex: trackIndex }
-            )
-            handlePlayTrack(originalTrack)
-          }
-        }}
-        enableLikeButtons={isAuthenticated}
-        onLikeTrack={handleLikeTrack}
+        onSelect={(_trackItem, trackIndex) => playAlbumFrom(trackIndex)}
+        enablePickButtons={isAuthenticated}
+        onPickTrack={handlePickTrack}
         currentTrackId={currentTrack?.id}
         isAuthenticated={isAuthenticated}
       />

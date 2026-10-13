@@ -6,7 +6,7 @@ import { AudioProvider } from './contexts/AudioContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { LoadingProvider } from './contexts/LoadingContext'
 import { NotificationProvider } from './contexts/NotificationContext'
-import { DiscoveryProvider } from './contexts/DiscoveryContext'
+import { BacklogProvider } from './contexts/BacklogContext'
 import { registerSW } from 'virtual:pwa-register'
 
 // Register service worker
@@ -22,15 +22,15 @@ const updateSW = registerSW({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider>
-      <AudioProvider>
-        <LoadingProvider>
-          <NotificationProvider>
-            <DiscoveryProvider>
+      <NotificationProvider>
+        <AudioProvider>
+          <LoadingProvider>
+            <BacklogProvider>
               <App />
-            </DiscoveryProvider>
-          </NotificationProvider>
-        </LoadingProvider>
-      </AudioProvider>
+            </BacklogProvider>
+          </LoadingProvider>
+        </AudioProvider>
+      </NotificationProvider>
     </AuthProvider>
   </StrictMode>,
 )

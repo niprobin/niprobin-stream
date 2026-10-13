@@ -6,7 +6,6 @@ import { Player } from './Player'
 interface PlayerBarProps {
   currentPage: 'home' | 'tracks' | 'albums' | 'menu'
   onPageChange: (page: string) => void
-  onNowPlayingClick: () => void
 }
 
 const TABS = [
@@ -28,7 +27,7 @@ const TABS = [
  * component becomes the full-width-minus-sidebar docked bar, rendered in-flow at
  * the bottom of the main column via the existing `Player` transport UI.
  */
-export function PlayerBar({ currentPage, onPageChange, onNowPlayingClick }: PlayerBarProps) {
+export function PlayerBar({ currentPage, onPageChange }: PlayerBarProps) {
   const { currentTrack, isPlaying, pause, resume, playNextTrack, currentTime, duration } = useAudio()
 
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
@@ -46,13 +45,8 @@ export function PlayerBar({ currentPage, onPageChange, onNowPlayingClick }: Play
         >
           {currentTrack ? (
             <>
-              {/* Mini-player row — opens the full player */}
-              <div
-                className="flex items-center gap-[10px] px-[10px] py-[9px] cursor-pointer active:opacity-90 transition-opacity"
-                onClick={onNowPlayingClick}
-                role="button"
-                aria-label="Open full player"
-              >
+              {/* Mini-player row */}
+              <div className="flex items-center gap-[10px] px-[10px] py-[9px]">
                 {/* Art: 11px matches design HTML exactly at this size; off-scale from the
                     10/16/22 token ramp but kept for fidelity to the mini-player reference. */}
                 {currentTrack.coverArt ? (

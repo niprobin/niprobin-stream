@@ -25,7 +25,7 @@ export function MobileMenu({
 
       {isAuthenticated && (
         <div className="space-y-2">
-          <p className="text-xs text-text-3 uppercase tracking-wider">Discovery</p>
+          <p className="text-xs text-text-3 uppercase tracking-wider">Backlogs</p>
           <button
             type="button"
             onClick={onRefresh}
@@ -34,7 +34,7 @@ export function MobileMenu({
           >
             <RefreshCw className={`h-5 w-5 text-text-3 ${isRefreshing ? 'animate-spin' : ''}`} />
             <span className="text-sm font-medium">
-              {isRefreshing ? 'Refreshing…' : 'Refresh discovery'}
+              {isRefreshing ? 'Refreshing…' : 'Refresh backlogs'}
             </span>
           </button>
         </div>

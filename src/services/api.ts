@@ -5,15 +5,15 @@ import type {
   AlbumTrack,
   AlbumResponse,
   StreamResponse,
-  LikeTrackPayload,
-  LikeTrackResponse,
+  PickTrackPayload,
+  ActionResponse,
   RateAlbumPayload,
-  DiscoverAlbum,
-  DiscoverTrack,
+  BacklogAlbum,
+  BacklogTrack,
   HideAlbumPayload,
   ShortlistAlbumPayload,
   HideTrackPayload,
-  SaveAlbumPayload,
+  AddAlbumPayload,
   ArtistSearchResult,
   ArtistPageData,
 } from '@/types/api'
@@ -25,9 +25,9 @@ export type {
   AlbumTrack,
   AlbumResponse,
   StreamResponse,
-  LikeTrackResponse,
-  DiscoverAlbum,
-  DiscoverTrack,
+  ActionResponse,
+  BacklogAlbum,
+  BacklogTrack,
   ArtistSearchResult,
   ArtistPageData,
 }
@@ -76,13 +76,13 @@ async function postForJson<T>(path: string, payload: unknown, token: string | nu
 }
 
 // Authenticated POST whose result is normalized via parseApiResponse.
-// Shared by the user-action endpoints (like/rate/save/download-album).
+// Shared by the user-action endpoints (Pick, Rate, Add, Add to Jellyfin).
 async function postAction(
   path: string,
   payload: unknown,
   token: string | null,
   options: { successMessage: string; errorMessage: string }
-): Promise<LikeTrackResponse> {
+): Promise<ActionResponse> {
   const response = await fetch(`${BASE}/${path}`, {
     method: 'POST',
     headers: authHeaders(token),
@@ -94,7 +94,7 @@ async function postAction(
 }
 
 // Authenticated GET expecting either a bare array or { results: [...] } (or empty body).
-// Shared by the "to discover" list endpoints.
+// Shared by the Backlog list endpoints.
 async function getResultsList<T>(path: string, token: string | null, errorMessage: string): Promise<T[]> {
   const response = await fetch(`${BASE}/${path}`, {
     method: 'GET',
@@ -119,34 +119,79 @@ export async function searchTracks(query: string): Promise<SearchResult[]> {
   return postSearch<SearchResult[]>('search', query, 'Search failed')
 }
 
-// Get stream URL for a track
-export async function getStreamUrl(
-  deezer_id: string,
-  track: string,
-  artist: string,
+export type StreamContext = 'digging' | 'album' | 'search' | 'artist'
+
+export type StreamTrack = { deezerId: string; title: string; artist: string }
+
+// Two rows can share a deezer_id (bonus or live duplicates) or both lack one,
+// so the title and artist are part of a track's identity.
+export function trackKey(track: StreamTrack): string {
+  return `${track.deezerId}::${track.title}::${track.artist}`
+}
+
+// What /stream says about a track besides where to download it
+export type StreamDetails = {
+  trackId: string
+  hashUrl?: string
+  title: string
+  artist: string
+  album?: string
+  albumId?: number
+  cover?: string
+}
+
+export type StreamLookupResult =
+  | { ok: true; streamUrl: string; details: StreamDetails }
+  | { ok: false; error: string }
+
+// Lookups run one at a time, so one that n8n never answers (a tunnel, a stuck
+// workflow) must give up rather than hold every later track back
+export const STREAM_LOOKUP_TIMEOUT_MS = 60_000
+
+// Asks n8n to fetch a track onto the server and returns where to download it.
+// The file there is deleted after about 10 minutes (ADR 0002). Search plays
+// without a session, so the token is optional.
+export async function lookupStream(
   token: string | null,
-  context?: string
-): Promise<StreamResponse> {
-  const response = await fetch('https://n8n.niprobin.com/webhook/stream', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ deezer_id, track, artist, context }),
-  })
+  track: StreamTrack,
+  context: StreamContext,
+): Promise<StreamLookupResult> {
+  const failure = { ok: false as const, error: "Couldn't find this track" }
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), STREAM_LOOKUP_TIMEOUT_MS)
+  try {
+    const response = await fetch(`${BASE}/stream`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: authHeaders(token),
+      body: JSON.stringify({
+        deezer_id: track.deezerId || '0',
+        track: track.title,
+        artist: track.artist,
+        context,
+      }),
+    })
+    if (!response.ok) return failure
 
-  if (!response.ok) {
-    throw new Error('Failed to get stream URL')
-  }
-
-  const data = await response.json()
-  return {
-    streamUrl: data.stream_url,
-    trackId: String(data.track_id || deezer_id),
-    hashUrl: data.hash_url,
-    track: data.track,
-    artist: data.artist,
-    album: data['album-name'] || data.album,
-    'album-id': data['album-id'] ? parseInt(String(data['album-id']), 10) : undefined,
-    cover: data.cover,
+    const data = await response.json()
+    if (typeof data?.stream_url !== 'string' || !data.stream_url) return failure
+    return {
+      ok: true,
+      streamUrl: data.stream_url,
+      details: {
+        trackId: String(data.track_id || track.deezerId),
+        hashUrl: data.hash_url,
+        title: data.track || track.title,
+        artist: data.artist || track.artist,
+        album: data['album-name'] || data.album,
+        albumId: data['album-id'] ? parseInt(String(data['album-id']), 10) : undefined,
+        cover: data.cover,
+      },
+    }
+  } catch {
+    return failure
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -253,58 +298,58 @@ export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
   }
 }
 
-export async function likeTrack(payload: LikeTrackPayload, token: string | null): Promise<LikeTrackResponse> {
+export async function pickTrack(payload: PickTrackPayload, token: string | null): Promise<ActionResponse> {
   return postAction('like-track', payload, token, {
     successMessage: 'Action completed',
-    errorMessage: 'Failed to like track',
+    errorMessage: "Couldn't Pick this track",
   })
 }
 
-export async function rateAlbum(payload: RateAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
+export async function rateAlbum(payload: RateAlbumPayload, token: string | null): Promise<ActionResponse> {
   return postAction('rate-album', payload, token, {
     successMessage: 'Rating saved',
     errorMessage: 'Failed to rate album',
   })
 }
 
-export async function saveAlbum(payload: SaveAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
+export async function addAlbum(payload: AddAlbumPayload, token: string | null): Promise<ActionResponse> {
   return postAction('save-album', payload, token, {
-    successMessage: 'Album saved for later',
-    errorMessage: 'Failed to save album',
+    successMessage: 'Added to the Album Backlog',
+    errorMessage: "Couldn't Add this album",
   })
 }
 
-export async function shortlistAlbum(payload: ShortlistAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
+export async function shortlistAlbum(payload: ShortlistAlbumPayload, token: string | null): Promise<ActionResponse> {
   return postAction('shortlist', payload, token, {
     successMessage: 'Album shortlisted',
     errorMessage: 'Failed to shortlist album',
   })
 }
 
-// Trigger album download via n8n webhook
-export async function downloadAlbum(
+// Add to Jellyfin: the server fetches the album into the Jellyfin library
+export async function addAlbumToJellyfin(
   deezer_id: string,
   token: string | null
-): Promise<LikeTrackResponse> {
+): Promise<ActionResponse> {
   return postAction('download-album', { deezer_id }, token, {
-    successMessage: 'Album download initiated',
-    errorMessage: 'Failed to trigger album download',
+    successMessage: 'Adding to Jellyfin',
+    errorMessage: "Couldn't Add this album to Jellyfin",
   })
 }
 
-export async function getAlbumsToDiscover(token: string | null): Promise<DiscoverAlbum[]> {
-  return getResultsList<DiscoverAlbum>('albums-to-discover', token, 'Failed to load albums to discover')
+export async function getAlbumBacklog(token: string | null): Promise<BacklogAlbum[]> {
+  return getResultsList<BacklogAlbum>('albums-to-discover', token, "Couldn't load the Album Backlog")
 }
 
-export async function getTracksToDiscover(token: string | null): Promise<DiscoverTrack[]> {
-  return getResultsList<DiscoverTrack>('tracks-to-discover', token, 'Failed to load tracks to discover')
+export async function getTrackBacklog(token: string | null): Promise<BacklogTrack[]> {
+  return getResultsList<BacklogTrack>('tracks-to-discover', token, "Couldn't load the Track Backlog")
 }
 
-export async function hideAlbum(payload: HideAlbumPayload, token: string | null): Promise<LikeTrackResponse> {
+export async function hideAlbum(payload: HideAlbumPayload, token: string | null): Promise<ActionResponse> {
   return postForJson('hide-album', payload, token, 'Failed to hide album')
 }
 
-export async function hideTrack(payload: HideTrackPayload, token: string | null): Promise<LikeTrackResponse> {
+export async function hideTrack(payload: HideTrackPayload, token: string | null): Promise<ActionResponse> {
   return postForJson('hide-track', payload, token, 'Failed to hide track')
 }
 

@@ -3,7 +3,7 @@ import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { EyebrowLabel } from '@/components/ui/EyebrowLabel'
 
-interface LikeModalProps {
+interface PickModalProps {
   isOpen: boolean
   track: { title: string; artist: string } | null
   playlists: readonly string[]
@@ -15,14 +15,14 @@ interface LikeModalProps {
 }
 
 /**
- * Shared Add-to-playlist ("Like") drawer — bottom sheet on mobile, right-side
- * panel on desktop, mirroring the Queue component's sheet/panel convention.
+ * Shared Pick drawer (choose a Radio Playlist) — bottom sheet on mobile, right-side
+ * panel on desktop.
  * Runs the full viewport height on desktop (top-0/bottom-0) instead of a
  * centered card with its own height budget, so the playlist list has room to
  * scroll internally without ever pushing the Cancel/Add row off-screen.
- * Presentational only: the `useLikeModal` hook stays in each caller.
+ * Presentational only: the `usePickModal` hook stays in each caller.
  */
-export function LikeModal({
+export function PickModal({
   isOpen,
   track,
   playlists,
@@ -31,7 +31,7 @@ export function LikeModal({
   onSelectPlaylist,
   onSubmit,
   onClose,
-}: LikeModalProps) {
+}: PickModalProps) {
   if (!isOpen || !track) return null
 
   return (
@@ -52,7 +52,7 @@ export function LikeModal({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <EyebrowLabel>Add to playlist</EyebrowLabel>
+            <EyebrowLabel>Pick for a Radio Playlist</EyebrowLabel>
             <p className="text-text-1 text-lg font-semibold truncate mt-1">{track.title}</p>
             <p className="text-text-2 text-sm truncate">{track.artist}</p>
           </div>
@@ -99,7 +99,7 @@ export function LikeModal({
             className="bg-accent text-accent-ink hover:bg-accent/90"
             disabled={isSubmitting || !selectedPlaylist}
           >
-            {isSubmitting ? 'Saving...' : 'Add'}
+            {isSubmitting ? 'Picking...' : 'Pick'}
           </Button>
         </div>
       </form>
