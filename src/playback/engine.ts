@@ -58,9 +58,10 @@ export type PlaybackEngine = {
   onError(listener: (message: string) => void): () => void
 }
 
-// How many tracks after the playing one an album keeps in the Track Cache, so
-// it plays through without gaps on a poor connection
-const ALBUM_LOOKAHEAD = 3
+// How many tracks after the playing one stay in the Track Cache, so a list
+// plays through and Next is instant even on a poor connection. A search plays
+// one track on its own; an artist's tracks fetch nothing ahead yet.
+const LOOKAHEAD: Record<StreamContext, number> = { album: 3, digging: 2, search: 0, artist: 0 }
 
 const IDLE: PlaybackState = { queue: [], index: -1, nowPlaying: null, loadingTrack: null, context: null }
 
@@ -89,9 +90,9 @@ export function createPlaybackEngine({ cache, player }: { cache: TrackCache; pla
     errorListeners.forEach(listener => listener(message))
   }
 
-  // The album tracks fetched ahead of the one at `index`
+  // The tracks fetched ahead of the one at `index`
   function upcoming(index: number) {
-    return state.context === 'album' ? state.queue.slice(index + 1, index + 1 + ALBUM_LOOKAHEAD) : []
+    return state.context ? state.queue.slice(index + 1, index + 1 + LOOKAHEAD[state.context]) : []
   }
 
   async function playAt(index: number) {
@@ -125,14 +126,14 @@ export function createPlaybackEngine({ cache, player }: { cache: TrackCache; pla
     void fetchAhead(request, index)
   }
 
-  // Fetches the next tracks of an album into the Track Cache one after the
+  // Fetches the next tracks of the list into the Track Cache one after the
   // other, the cache keeping their lookups one at a time. Stops as soon as
   // the listener moves elsewhere, since the window then moves with them.
   async function fetchAhead(request: number, index: number) {
     for (const track of upcoming(index)) {
       if (request !== latestRequest) return
       // A failure is left for when the track is played, which retries it
-      await cache.ensure(track, 'album')
+      await cache.ensure(track, state.context ?? 'digging')
     }
   }
 

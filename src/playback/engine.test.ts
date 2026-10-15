@@ -10,6 +10,10 @@ function track(title: string): QueueTrack {
 
 const LIST = ['One', 'Two', 'Three'].map(track)
 
+// The context that fetches nothing ahead, for tests about the tapped track
+// alone; fetching ahead has its own tests at the end
+const NO_LOOKAHEAD = 'search'
+
 const streamUrl = (title: string) => `https://files.example.com/${title}.flac`
 
 // Lets every pending promise settle
@@ -80,10 +84,10 @@ describe('playing a track from a list', () => {
   it('looks the track up, downloads it into the Track Cache, then plays the local copy', async () => {
     const { engine, fakePlayer, files, lookups, n8n } = setup()
 
-    await engine.playList(LIST, 1, 'digging')
+    await engine.playList(LIST, 1, NO_LOOKAHEAD)
 
     expect(lookups()).toEqual(['Two'])
-    expect(n8n.requests[0].body).toMatchObject({ deezer_id: 'id-Two', context: 'digging' })
+    expect(n8n.requests[0].body).toMatchObject({ deezer_id: 'id-Two', context: NO_LOOKAHEAD })
     expect(files.downloads).toEqual([streamUrl('Two')])
     expect(fakePlayer.played).toHaveLength(1)
     expect(fakePlayer.played[0]).toMatchObject({
@@ -108,11 +112,11 @@ describe('playing a track from a list', () => {
     expect(engine.getState()).toMatchObject({ loadingTrack: null, nowPlaying: LIST[1] })
   })
 
-  it('fetches nothing ahead of the playing track', async () => {
+  it('fetches nothing ahead of a track played from Search', async () => {
     const { engine, lookups, files } = setup()
 
-    await engine.playList(LIST, 0, 'digging')
-    await settle()
+    await engine.playList(LIST, 0, 'search')
+    await idle()
 
     expect(lookups()).toEqual(['One'])
     expect(files.downloads).toHaveLength(1)
@@ -121,7 +125,7 @@ describe('playing a track from a list', () => {
   it('replays a track already in the Track Cache without looking it up again', async () => {
     const { engine, lookups, fakePlayer } = setup()
 
-    await engine.playList(LIST, 0, 'digging')
+    await engine.playList(LIST, 0, NO_LOOKAHEAD)
     await engine.next()
     await engine.previous()
 
@@ -190,7 +194,7 @@ describe('next and previous', () => {
 
   it('treats two quick next presses as one', async () => {
     const { engine, fakePlayer, lookups, holdLookup } = setup()
-    await engine.playList(LIST, 0, 'digging')
+    await engine.playList(LIST, 0, NO_LOOKAHEAD)
     const lookup = holdLookup('Two')
 
     const first = engine.next()
@@ -227,10 +231,10 @@ describe('when a track ends', () => {
 
   it('does not advance while a tapped track is still loading', async () => {
     const { engine, fakePlayer, holdLookup } = setup()
-    await engine.playList(LIST, 0, 'digging')
+    await engine.playList(LIST, 0, NO_LOOKAHEAD)
     const lookup = holdLookup('Two')
 
-    const tapped = engine.playList(LIST, 1, 'digging')
+    const tapped = engine.playList(LIST, 1, NO_LOOKAHEAD)
     await settle()
     // Track One reaches its end while the tapped Two is still being fetched
     await engine.trackEnded()
@@ -479,5 +483,33 @@ describe('playing an album', () => {
     await idle()
 
     expect(lookups()).toEqual(['A1', 'A2'])
+  })
+})
+
+describe('playing the Track Backlog', () => {
+  const BACKLOG = ['T1', 'T2', 'T3', 'T4', 'T5'].map(track)
+
+  it('downloads the next 2 tracks after the playing one, looked up as digging', async () => {
+    const { engine, lookups, files, n8n, mostActiveLookups } = setup()
+
+    await engine.playList(BACKLOG, 0, 'digging')
+    await idle()
+
+    expect(lookups()).toEqual(['T1', 'T2', 'T3'])
+    expect(files.downloads).toEqual(['T1', 'T2', 'T3'].map(streamUrl))
+    expect(n8n.requests.map(r => (r.body as { context: string }).context)).toEqual(['digging', 'digging', 'digging'])
+    expect(mostActiveLookups()).toBe(1)
+  })
+
+  it('plays the next track from its downloaded file and moves the window along', async () => {
+    const { engine, lookups, fakePlayer } = setup()
+    await engine.playList(BACKLOG, 0, 'digging')
+    await idle()
+
+    await engine.next()
+    await idle()
+
+    expect(fakePlayer.playedTitles()).toEqual(['T1', 'T2'])
+    expect(lookups()).toEqual(['T1', 'T2', 'T3', 'T4'])
   })
 })
