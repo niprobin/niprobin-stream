@@ -29,12 +29,14 @@ import { ArtistPage } from './pages/Artist'
 import { HomePage } from './pages/Home'
 import { LoginPage } from './pages/Login'
 import { useMetaTags } from './hooks/useMetaTags'
+import { usePlayPauseShortcut } from './hooks/usePlayPauseShortcut'
 import { generateTrackMetaTags } from './utils/metaTagHelpers'
 
 function AppContent() {
   const { isAuthenticated, token, username, logout } = useAuth()
   const { cueTrack } = useAudio()
   const { setMetaTags, resetToDefault } = useMetaTags()
+  usePlayPauseShortcut()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, trackBacklog, albumBacklog } = useBacklog()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
