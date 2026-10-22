@@ -40,6 +40,9 @@ type BacklogContextValue = {
   refreshTracks: () => void
   refreshAlbums: () => void
   markShortlisted: (deezerId: string) => void
+  // A Rated or Added to Jellyfin album is done with: the server's backlog
+  // drops it too, so it leaves the cached one now
+  markDone: (deezerId: string) => void
   // The Radio Playlist the track is Picked for, from any device, or null
   pickedPlaylist: (track: PickableTrack) => string | null
   // A Pick (or move) the server accepted, shown before the next fetch
@@ -57,6 +60,7 @@ const BacklogContext = createContext<BacklogContextValue>({
   refreshTracks: () => {},
   refreshAlbums: () => {},
   markShortlisted: () => {},
+  markDone: () => {},
   pickedPlaylist: () => null,
   recordPick: () => {},
   hideTrack: () => {},
@@ -156,6 +160,10 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
     ) ?? albums)
   }
 
+  const markDone = (deezerId: string) => {
+    mutateAlbums(albums => albums?.filter(a => String(a.deezer_id) !== deezerId) ?? albums)
+  }
+
   // The Hides of the signed-in session
   const tokenRef = useRef(token)
   useEffect(() => {
@@ -228,6 +236,7 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
       refreshTracks,
       refreshAlbums,
       markShortlisted,
+      markDone,
       pickedPlaylist,
       recordPick,
       hideTrack: track => hide('track', trackTarget(track)),

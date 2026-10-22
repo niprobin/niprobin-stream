@@ -36,7 +36,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
-  const { markShortlisted, hideAlbum, albumBacklog } = useBacklog()
+  const { markShortlisted, markDone, hideAlbum, albumBacklog } = useBacklog()
   const { setMetaTags, resetToDefault } = useMetaTags()
 
   const handlePickTrack = (_track: AlbumTrackItem) => {
@@ -152,6 +152,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         deezer_id: albumId.toString(),
       }, token)
       showNotification(response.message, response.status)
+      if (response.status === 'success') markDone(albumId.toString())
     } catch (err) {
       console.error('Failed to rate album:', err)
       showNotification('Failed to rate album', 'error')
@@ -204,6 +205,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     try {
       const response = await addAlbumToJellyfin(albumId.toString(), token)
       showNotification(response.message, response.status)
+      if (response.status === 'success') markDone(albumId.toString())
     } catch (err) {
       showNotification("Couldn't Add this album to Jellyfin", 'error')
       console.error("Couldn't Add this album to Jellyfin:", err)
