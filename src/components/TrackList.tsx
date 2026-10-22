@@ -150,9 +150,9 @@ export function TrackList(props: TrackListProps) {
                 {props.enablePickButtons && props.isAuthenticated && (
                   <button
                     type="button"
-                    className={`transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 ${
-                      picked ? 'text-accent' : 'text-text-3'
-                    } hover:text-accent`}
+                    className={`transition-all hover:text-accent ${
+                      picked ? 'text-accent' : 'text-text-3 opacity-100 md:opacity-0 md:group-hover:opacity-100'
+                    }`}
                     onClick={(event) => {
                       event.stopPropagation()
                       openPickModal(trackId, item.track, item.artist, undefined, 'deezer_id' in item ? item.deezer_id : undefined)
