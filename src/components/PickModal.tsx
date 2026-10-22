@@ -55,7 +55,7 @@ export function PickModal({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <EyebrowLabel>{pickedFor ? `Picked for ${pickedFor}` : 'Pick for a Radio Playlist'}</EyebrowLabel>
+            <EyebrowLabel>{pickedFor ?? 'Pick for a Radio Playlist'}</EyebrowLabel>
             <p className="text-text-1 text-lg font-semibold truncate mt-1">{track.title}</p>
             <p className="text-text-2 text-sm truncate">{track.artist}</p>
           </div>

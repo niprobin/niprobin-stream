@@ -88,7 +88,7 @@ function SearchTrackRow({
         <p className="text-[13px] text-text-2 truncate mt-0.5">{result.artist}</p>
       </div>
       {pickedFor && (
-        <Heart className="h-4 w-4 flex-shrink-0 text-accent" fill="currentColor" aria-label={`Picked for ${pickedFor}`} />
+        <Heart className="h-4 w-4 flex-shrink-0 text-accent" fill="currentColor" aria-label={pickedFor} />
       )}
     </button>
   )
