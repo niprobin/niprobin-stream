@@ -24,6 +24,7 @@ export function Player() {
     selectedPlaylist,
     isSubmittingPick,
     RADIO_PLAYLISTS,
+    pickedFor,
     isTrackPicked,
     openPickModal,
     closePickModal,
@@ -220,10 +221,10 @@ export function Player() {
                   <Button
                     onClick={() => openPickModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)}
                     size="icon" variant="ghost"
-                    className={`hover:text-accent hover:bg-bg-2 ${isTrackPicked(currentTrack.title, currentTrack.artist) ? 'text-accent' : 'text-text-2'}`}
-                    aria-pressed={isTrackPicked(currentTrack.title, currentTrack.artist)}
+                    className={`hover:text-accent hover:bg-bg-2 ${isTrackPicked(currentTrack.title, currentTrack.artist, currentTrack.deezer_id) ? 'text-accent' : 'text-text-2'}`}
+                    aria-pressed={isTrackPicked(currentTrack.title, currentTrack.artist, currentTrack.deezer_id)}
                   >
-                    <Heart className="h-4 w-4" fill={isTrackPicked(currentTrack.title, currentTrack.artist) ? 'currentColor' : 'none'} />
+                    <Heart className="h-4 w-4" fill={isTrackPicked(currentTrack.title, currentTrack.artist, currentTrack.deezer_id) ? 'currentColor' : 'none'} />
                   </Button>
                 )}
                 <Button onClick={handleShareStream} size="icon" variant="ghost"
@@ -281,6 +282,7 @@ export function Player() {
         track={pickModalTrack}
         playlists={RADIO_PLAYLISTS}
         selectedPlaylist={selectedPlaylist}
+        pickedFor={pickedFor}
         isSubmitting={isSubmittingPick}
         onSelectPlaylist={setSelectedPlaylist}
         onSubmit={handleSubmitPick}

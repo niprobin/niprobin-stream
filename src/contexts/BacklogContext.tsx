@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useCachedData } from '@/hooks/useCachedData'
-import { getTrackBacklog, getAlbumBacklog } from '@/services/api'
+import { getTrackBacklog, getAlbumBacklog, getPickedTracks, type PickedTrack } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
@@ -11,6 +11,15 @@ import type { BacklogTrack, BacklogAlbum } from '@/types/api'
 const CACHE_DURATION_MS = 6 * 60 * 60 * 1000
 const TRACKS_CACHE_KEY = 'niprobin-tracks-cache'
 const ALBUMS_CACHE_KEY = 'niprobin-albums-cache'
+const PICKED_CACHE_KEY = 'niprobin-picked-cache'
+// Where this browser used to keep its own picks, before the server's list
+const OLD_PICKED_TRACKS_KEY = 'pickedTracks'
+
+// What a track list knows about a row or the playing track
+export type PickableTrack = { deezer_id?: string; title: string; artist: string }
+
+// Picks match on deezer_id; a pick without one falls back to title and artist
+const nameKey = (title: string, artist: string) => `${title}::${artist}`
 
 // What the Album page knows about an album, which any backlog album also has
 type AlbumToHide = Pick<BacklogAlbum, 'album' | 'artist' | 'deezer_id'>
@@ -31,6 +40,10 @@ type BacklogContextValue = {
   refreshTracks: () => void
   refreshAlbums: () => void
   markShortlisted: (deezerId: string) => void
+  // The Radio Playlist the track is Picked for, from any device, or null
+  pickedPlaylist: (track: PickableTrack) => string | null
+  // A Pick (or move) the server accepted, shown before the next fetch
+  recordPick: (track: PickableTrack, playlist: string) => void
   // Hide with a 5s Undo, see digging/hides.ts
   hideTrack: (track: BacklogTrack) => void
   hideAlbum: (album: AlbumToHide) => void
@@ -44,6 +57,8 @@ const BacklogContext = createContext<BacklogContextValue>({
   refreshTracks: () => {},
   refreshAlbums: () => {},
   markShortlisted: () => {},
+  pickedPlaylist: () => null,
+  recordPick: () => {},
   hideTrack: () => {},
   hideAlbum: () => {},
 })
@@ -78,8 +93,54 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
       }
     )
 
+  const { data: rawPicks, refresh: clearPickedCache, mutate: mutatePicks } =
+    useCachedData<PickedTrack[]>(
+      PICKED_CACHE_KEY,
+      () => getPickedTracks(token),
+      {
+        cacheDuration: CACHE_DURATION_MS,
+        refreshTrigger: trackRefreshTrigger,
+        enabled: isAuthenticated,
+        errorMessage: "Couldn't load the Picked tracks",
+      }
+    )
+
+  useEffect(() => {
+    try {
+      localStorage.removeItem(OLD_PICKED_TRACKS_KEY)
+    } catch {
+      // Only a few stale bytes left behind
+    }
+  }, [])
+
+  const picks = useMemo(() => {
+    const byDeezerId = new Map<string, string>()
+    const byName = new Map<string, string>()
+    for (const pick of rawPicks ?? []) {
+      if (!pick.playlist) continue
+      if (pick.deezer_id) byDeezerId.set(String(pick.deezer_id), pick.playlist)
+      else byName.set(nameKey(pick.track, pick.artist), pick.playlist)
+    }
+    return { byDeezerId, byName }
+  }, [rawPicks])
+
+  const pickedPlaylist = useCallback((track: PickableTrack) => {
+    const byId = track.deezer_id ? picks.byDeezerId.get(String(track.deezer_id)) : undefined
+    return byId ?? picks.byName.get(nameKey(track.title, track.artist)) ?? null
+  }, [picks])
+
+  const recordPick = (track: PickableTrack, playlist: string) => {
+    const pick: PickedTrack = { track: track.title, artist: track.artist, deezer_id: track.deezer_id ?? '', playlist }
+    const same = (other: PickedTrack) => pick.deezer_id
+      ? String(other.deezer_id) === pick.deezer_id
+      : !other.deezer_id && nameKey(other.track, other.artist) === nameKey(pick.track, pick.artist)
+    mutatePicks(current => [...(current ?? []).filter(other => !same(other)), pick])
+  }
+
+  // The Picked tracks refresh with the Track Backlog
   const refreshTracks = () => {
     clearTracksCache()
+    clearPickedCache()
     setTrackRefreshTrigger(n => n + 1)
   }
 
@@ -167,6 +228,8 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
       refreshTracks,
       refreshAlbums,
       markShortlisted,
+      pickedPlaylist,
+      recordPick,
       hideTrack: track => hide('track', trackTarget(track)),
       hideAlbum: album => hide('album', albumTarget(album)),
     }}>

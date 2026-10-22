@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { pickTrack } from '@/services/api'
 import { useNotification } from '@/contexts/NotificationContext'
-import { STORAGE_KEYS } from '@/utils/storageKeys'
+import { useBacklog } from '@/contexts/BacklogContext'
 
 const RADIO_PLAYLISTS = [
   'Beats',
@@ -33,6 +33,7 @@ type PickModalTrack = {
 
 export function usePickModal(token: string | null) {
   const { showNotification } = useNotification()
+  const { pickedPlaylist, recordPick } = useBacklog()
 
   const [isPickModalOpen, setIsPickModalOpen] = useState(false)
   const [pickModalTrack, setPickModalTrack] = useState<PickModalTrack | null>(null)
@@ -51,17 +52,23 @@ export function usePickModal(token: string | null) {
     }
   }, [isPickModalOpen])
 
-  // Helper function to check if track is picked
-  const isTrackPicked = (title?: string, artist?: string) => {
+  // Whether the track is Picked, on any device
+  const isTrackPicked = (title?: string, artist?: string, deezer_id?: string) => {
     if (!title || !artist) return false
-    const pickedTracks = JSON.parse(localStorage.getItem(STORAGE_KEYS.PICKED_TRACKS) || '[]')
-    return pickedTracks.some((track: any) => track.title === title && track.artist === artist)
+    return pickedPlaylist({ title, artist, deezer_id }) !== null
   }
+
+  // The Radio Playlist the open track is already Picked for: the drawer checks it
+  // and can't choose it again; another one moves the track
+  const pickedFor = pickModalTrack
+    ? pickedPlaylist({ title: pickModalTrack.title, artist: pickModalTrack.artist, deezer_id: pickModalTrack.deezer_id })
+    : null
 
   // Open modal with track information
   const openPickModal = (id: string, title: string, artist: string, spotifyId?: string, deezer_id?: string) => {
+    const current = pickedPlaylist({ title, artist, deezer_id })
     setPickModalTrack({ id, title, artist, spotifyId, deezer_id })
-    setSelectedPlaylist(RADIO_PLAYLISTS[0])
+    setSelectedPlaylist(RADIO_PLAYLISTS.find(playlist => playlist !== current) ?? RADIO_PLAYLISTS[0])
     setIsPickModalOpen(true)
   }
 
@@ -76,7 +83,8 @@ export function usePickModal(token: string | null) {
   // Handle form submission
   const handleSubmitPick = async (event: FormEvent) => {
     event.preventDefault()
-    if (!pickModalTrack || !selectedPlaylist) return
+    if (!pickModalTrack || !selectedPlaylist || selectedPlaylist === pickedFor) return
+    const wasPicked = pickedFor !== null
 
     setIsSubmittingPick(true)
     try {
@@ -89,17 +97,19 @@ export function usePickModal(token: string | null) {
       }, token)
 
       if (result.status === 'success') {
-        // Update localStorage
-        const pickedTracks = JSON.parse(localStorage.getItem(STORAGE_KEYS.PICKED_TRACKS) || '[]')
         const newTrack = {
           title: pickModalTrack.title,
           artist: pickModalTrack.artist,
           playlist: selectedPlaylist
         }
-        const updatedTracks = [...pickedTracks, newTrack]
-        localStorage.setItem(STORAGE_KEYS.PICKED_TRACKS, JSON.stringify(updatedTracks))
+        recordPick({ ...newTrack, deezer_id: pickModalTrack.deezer_id }, selectedPlaylist)
 
-        showNotification(`Picked "${pickModalTrack.title}" for ${selectedPlaylist}`, 'success')
+        showNotification(
+          wasPicked
+            ? `Moved "${pickModalTrack.title}" to ${selectedPlaylist}`
+            : `Picked "${pickModalTrack.title}" for ${selectedPlaylist}`,
+          'success'
+        )
 
         return { success: true, track: newTrack }
       } else if (result.status === 'error') {
@@ -121,6 +131,7 @@ export function usePickModal(token: string | null) {
     selectedPlaylist,
     isSubmittingPick,
     RADIO_PLAYLISTS,
+    pickedFor,
 
     // Functions
     isTrackPicked,

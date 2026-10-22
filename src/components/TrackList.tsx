@@ -57,6 +57,7 @@ export function TrackList(props: TrackListProps) {
     selectedPlaylist,
     isSubmittingPick,
     RADIO_PLAYLISTS,
+    pickedFor,
     isTrackPicked,
     openPickModal,
     closePickModal,
@@ -102,7 +103,7 @@ export function TrackList(props: TrackListProps) {
           const trackId = item.deezer_id
           const loading = props.loadingTrackId === trackId
           const isCurrentTrack = props.currentTrackId === trackId
-          const picked = isTrackPicked(item.track, item.artist)
+          const picked = isTrackPicked(item.track, item.artist, item.deezer_id)
 
           return (
             <div
@@ -216,6 +217,7 @@ export function TrackList(props: TrackListProps) {
       track={pickModalTrack}
       playlists={RADIO_PLAYLISTS}
       selectedPlaylist={selectedPlaylist}
+        pickedFor={pickedFor}
       isSubmitting={isSubmittingPick}
       onSelectPlaylist={setSelectedPlaylist}
       onSubmit={handleSubmitPick}

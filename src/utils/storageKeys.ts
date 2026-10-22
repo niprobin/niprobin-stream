@@ -3,6 +3,5 @@ export const STORAGE_KEYS = {
   USERNAME: 'niprobin-username',
   HIDDEN_ALBUMS: 'niprobin-hidden-albums',
   HIDDEN_TRACKS: 'niprobin-hidden-tracks',
-  PICKED_TRACKS: 'pickedTracks',
   SEARCH_HISTORY: 'niprobin-search-history',
 } as const

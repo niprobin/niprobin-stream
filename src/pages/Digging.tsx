@@ -175,6 +175,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
     selectedPlaylist,
     isSubmittingPick,
     RADIO_PLAYLISTS,
+    pickedFor,
     isTrackPicked,
     openPickModal,
     closePickModal,
@@ -377,7 +378,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                     )
                     const isCurrent = isCurrentTrack(currentTrack, { deezer_id: item.deezer_id, title: item.track, artist: item.artist })
                     const isLoading = loadingTrackId === item.deezer_id
-                    const isPicked = isTrackPicked(item.track, item.artist)
+                    const isPicked = isTrackPicked(item.track, item.artist, item.deezer_id)
                     const coverArt = originalTrack?.cover_url || (isCurrent ? currentTrack?.coverArt : undefined)
 
                     return (
@@ -502,6 +503,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
         track={pickModalTrack}
         playlists={RADIO_PLAYLISTS}
         selectedPlaylist={selectedPlaylist}
+        pickedFor={pickedFor}
         isSubmitting={isSubmittingPick}
         onSelectPlaylist={setSelectedPlaylist}
         onSubmit={handleSubmitPick}

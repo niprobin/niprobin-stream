@@ -5,7 +5,8 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
-import { BookmarkPlus, Loader2 } from 'lucide-react'
+import { BookmarkPlus, Heart, Loader2 } from 'lucide-react'
+import { useBacklog } from '@/contexts/BacklogContext'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { CarouselSection } from '@/components/ui/CarouselSection'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
@@ -49,12 +50,15 @@ function SearchTrackRow({
   isLoading,
   isCurrent,
   isPlaying,
+  pickedFor,
 }: {
   result: SearchResult
   onPlay: () => void
   isLoading: boolean
   isCurrent: boolean
   isPlaying: boolean
+  // The Radio Playlist it's Picked for, or null
+  pickedFor: string | null
 }) {
   const cover = result.cover_url || result.cover
   return (
@@ -83,6 +87,9 @@ function SearchTrackRow({
         <p className={`text-[15px] font-semibold truncate leading-snug ${isCurrent ? 'text-accent' : 'text-text-1'}`}>{result.track}</p>
         <p className="text-[13px] text-text-2 truncate mt-0.5">{result.artist}</p>
       </div>
+      {pickedFor && (
+        <Heart className="h-4 w-4 flex-shrink-0 text-accent" fill="currentColor" aria-label={`Picked for ${pickedFor}`} />
+      )}
     </button>
   )
 }
@@ -168,6 +175,7 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
   const { isLoading, increment, decrement } = useLoading()
   const { showNotification } = useNotification()
   const { playList, loadingTrackId, currentTrack, isPlaying } = useAudio()
+  const { pickedPlaylist } = useBacklog()
   const { token } = useAuth()
 
   const performSearch = async (q: string) => {
@@ -258,6 +266,7 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
                   isLoading={loadingTrackId === result.deezer_id}
                   isCurrent={isCurrentTrack(currentTrack, { deezer_id: result.deezer_id, title: result.track, artist: result.artist })}
                   isPlaying={isPlaying}
+                  pickedFor={pickedPlaylist({ deezer_id: result.deezer_id, title: result.track, artist: result.artist })}
                   onPlay={() => {
                     const queue = trackResults.map((r, idx) => ({
                       track: r.track,

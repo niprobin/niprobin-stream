@@ -1,5 +1,5 @@
 import type { FormEvent } from 'react'
-import { X } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { EyebrowLabel } from '@/components/ui/EyebrowLabel'
 
@@ -8,6 +8,8 @@ interface PickModalProps {
   track: { title: string; artist: string } | null
   playlists: readonly string[]
   selectedPlaylist: string
+  // The playlist the track is already Picked for: checked, can't be chosen
+  pickedFor?: string | null
   isSubmitting: boolean
   onSelectPlaylist: (playlist: string) => void
   onSubmit: (event: FormEvent) => void
@@ -27,6 +29,7 @@ export function PickModal({
   track,
   playlists,
   selectedPlaylist,
+  pickedFor = null,
   isSubmitting,
   onSelectPlaylist,
   onSubmit,
@@ -52,7 +55,7 @@ export function PickModal({
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <EyebrowLabel>Pick for a Radio Playlist</EyebrowLabel>
+            <EyebrowLabel>{pickedFor ? `Picked for ${pickedFor}` : 'Pick for a Radio Playlist'}</EyebrowLabel>
             <p className="text-text-1 text-lg font-semibold truncate mt-1">{track.title}</p>
             <p className="text-text-2 text-sm truncate">{track.artist}</p>
           </div>
@@ -68,7 +71,18 @@ export function PickModal({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 flex-1 min-h-0 overflow-y-auto pr-1">
-          {playlists.map((playlist) => (
+          {playlists.map((playlist) => playlist === pickedFor ? (
+            <button
+              type="button"
+              key={playlist}
+              disabled
+              aria-current="true"
+              className="flex items-center justify-between gap-2 text-left text-sm px-3 py-2.5 rounded-md-crate border border-accent/40 text-accent font-medium cursor-default"
+            >
+              {playlist}
+              <Check className="h-4 w-4 flex-shrink-0" />
+            </button>
+          ) : (
             <button
               type="button"
               key={playlist}
@@ -97,9 +111,9 @@ export function PickModal({
           <Button
             type="submit"
             className="bg-accent text-accent-ink hover:bg-accent/90"
-            disabled={isSubmitting || !selectedPlaylist}
+            disabled={isSubmitting || !selectedPlaylist || selectedPlaylist === pickedFor}
           >
-            {isSubmitting ? 'Picking...' : 'Pick'}
+            {isSubmitting ? (pickedFor ? 'Moving...' : 'Picking...') : pickedFor ? 'Move' : 'Pick'}
           </Button>
         </div>
       </form>

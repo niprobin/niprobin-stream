@@ -345,6 +345,14 @@ export async function getTrackBacklog(token: string | null): Promise<BacklogTrac
   return getResultsList<BacklogTrack>('tracks-to-discover', token, "Couldn't load the Track Backlog")
 }
 
+// A Picked track and the one Radio Playlist it's in: rows like the Track
+// Backlog's, plus their playlist. Picks from every device.
+export type PickedTrack = { track: string; artist: string; deezer_id: string; playlist: string }
+
+export async function getPickedTracks(token: string | null): Promise<PickedTrack[]> {
+  return getResultsList<PickedTrack>('picked-tracks', token, "Couldn't load the Picked tracks")
+}
+
 export async function hideAlbum(payload: HideAlbumPayload, token: string | null): Promise<ActionResponse> {
   return postForJson('hide-album', payload, token, 'Failed to hide album')
 }
