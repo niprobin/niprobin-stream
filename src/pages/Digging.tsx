@@ -427,7 +427,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
           {filteredAlbums.length === 0 ? (
             <div className="text-center text-text-2 py-12">
               {albumsView === 'listen'
-                ? 'No shortlisted albums yet. Use Shortlist on an album page to add one.'
+                ? 'Nothing in Listen to yet. Use Shortlist on an album page to add one.'
                 : 'No albums available yet. Check back soon.'}
             </div>
           ) : (

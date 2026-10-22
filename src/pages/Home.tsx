@@ -161,7 +161,9 @@ export function HomePage() {
       </CarouselSection>
 
       <CarouselSection title="Listen to" seeAllHref={ROUTES.diggingAlbums}>
-        {isLoadingAlbums ? <CarouselSkeleton /> : visibleAlbums.map((album) => (
+        {isLoadingAlbums ? <CarouselSkeleton /> : visibleAlbums.length === 0 ? (
+          <p className="text-text-2 text-sm">Nothing in Listen to yet.</p>
+        ) : visibleAlbums.map((album) => (
           <AlbumCard
             key={album.deezer_id}
             album={album}

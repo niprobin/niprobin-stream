@@ -1,4 +1,5 @@
 import type { FilterParams } from '@/utils/urlBuilder'
+import type { AlbumsView } from '@/utils/albumUtils'
 
 export function extractDeezerIdFromPath(path: string): string | null {
   const match = path.match(/^\/track\/(\d+)$/)
@@ -48,6 +49,10 @@ export function parseFiltersFromUrl(search: string): FilterParams {
     search: params.get('search') || '',
     folder: params.get('folder') || 'all',
     type: (params.get('type') as 'tracks' | 'albums') || 'tracks',
-    view: params.get('view') === 'backlog' ? 'backlog' : 'listen',
   }
+}
+
+// /digging/albums/backlog is the Backlog; any other albums path is Listen to
+export function parseAlbumsViewFromPath(path: string): AlbumsView {
+  return path === '/digging/albums/backlog' ? 'backlog' : 'listen'
 }

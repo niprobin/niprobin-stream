@@ -20,6 +20,7 @@ import {
   extractArtistIdFromPath,
   parsePageFromUrl,
   parseFiltersFromUrl,
+  parseAlbumsViewFromPath,
 } from './utils/urlParser'
 import { ROUTES } from './utils/routes'
 import { getTrackByDeezerId } from './services/api'
@@ -115,7 +116,8 @@ function AppContent() {
       }
 
       // Existing page routing logic - check pathname only (no query params)
-      const isDiggingRoute = path === '/digging' || path === '/digging/tracks' || path === '/digging/albums'
+      const isDiggingRoute = path === '/digging' || path === '/digging/tracks' || path === '/digging/albums' ||
+        path === ROUTES.diggingAlbumsView('listen') || path === ROUTES.diggingAlbumsView('backlog')
       console.log(`syncFromLocation: isDiggingRoute=${isDiggingRoute}`)
       if (isDiggingRoute) {
         if (isAuthenticated) {
@@ -126,10 +128,10 @@ function AppContent() {
           const currentPage = parsePageFromUrl(window.location.search)
           console.log(`syncFromLocation: parsed page=${currentPage}`)
           setDiggingPage(currentPage)
-          setAlbumsView(parseFiltersFromUrl(window.location.search).view ?? 'listen')
+          setAlbumsView(parseAlbumsViewFromPath(path))
 
           // Set tab based on URL
-          if (path === '/digging/albums') {
+          if (path.startsWith('/digging/albums')) {
             setDiggingTab('albums')
           } else if (path === '/digging/tracks') {
             setDiggingTab('tracks')
@@ -177,14 +179,14 @@ function AppContent() {
       const targetTab = diggingTabOverride || diggingTab
       const targetPage = pageNumber !== undefined ? pageNumber : diggingPage
       // The Listen to / Backlog sub-view only exists on the albums tab
-      const targetView = targetTab === 'albums' ? (albumsViewOverride ?? albumsView) : 'listen'
+      const targetView = albumsViewOverride ?? albumsView
 
       if (preserveFilters) {
         // Parse current filters from URL and preserve them
         const currentFilters = parseFiltersFromUrl(window.location.search)
-        path = buildDiggingUrlWithFilters(targetTab, { ...currentFilters, page: targetPage, view: targetView })
+        path = buildDiggingUrlWithFilters(targetTab, { ...currentFilters, page: targetPage }, targetView)
       } else {
-        path = buildDiggingUrlWithFilters(targetTab, { page: targetPage, view: targetView })
+        path = buildDiggingUrlWithFilters(targetTab, { page: targetPage }, targetView)
       }
       console.log(`navigate: building digging URL - tab=${targetTab}, page=${targetPage}, preserveFilters=${preserveFilters}, result=${path}`)
     } else if (page === 'album' && albumId) {

@@ -1,5 +1,5 @@
 import { ROUTES } from '@/utils/routes'
-import { parseFiltersFromUrl } from '@/utils/urlParser'
+import { parseAlbumsViewFromPath, parseFiltersFromUrl } from '@/utils/urlParser'
 import type { AlbumsView } from '@/utils/albumUtils'
 
 /**
@@ -11,7 +11,6 @@ export interface FilterParams {
   search?: string
   folder?: string
   type?: 'tracks' | 'albums'
-  view?: AlbumsView
 }
 
 export function buildTrackUrl(deezer_id: string): string {
@@ -92,9 +91,6 @@ function encodeFilterParams(params: FilterParams): string {
   if (params.type && params.type !== 'tracks') {
     urlParams.set('type', params.type)
   }
-  if (params.view && params.view !== 'listen') {
-    urlParams.set('view', params.view)
-  }
 
   const searchString = urlParams.toString()
   return searchString ? `?${searchString}` : ''
@@ -104,13 +100,15 @@ function encodeFilterParams(params: FilterParams): string {
  * Build a digging URL with filter parameters
  * @param tab - The digging tab ('tracks' or 'albums')
  * @param params - Filter parameters to include
+ * @param view - The albums tab's list (Listen to or Backlog); ignored for tracks
  * @returns The path to the digging page with filters
  */
 export function buildDiggingUrlWithFilters(
   tab: 'tracks' | 'albums',
-  params: FilterParams = {}
+  params: FilterParams = {},
+  view: AlbumsView = 'listen'
 ): string {
-  const basePath = `/digging/${tab}`
+  const basePath = tab === 'albums' ? ROUTES.diggingAlbumsView(view) : `/digging/${tab}`
   const searchString = encodeFilterParams(params)
   return basePath + searchString
 }
@@ -155,7 +153,7 @@ export function updateUrlFilters(
   } else {
     // For digging page, determine tab from current URL
     const currentTab = window.location.pathname.includes('/albums') ? 'albums' : 'tracks'
-    newUrl = buildDiggingUrlWithFilters(currentTab, updatedFilters)
+    newUrl = buildDiggingUrlWithFilters(currentTab, updatedFilters, parseAlbumsViewFromPath(window.location.pathname))
   }
 
   // Update browser history
