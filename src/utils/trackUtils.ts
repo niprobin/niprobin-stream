@@ -90,3 +90,16 @@ export function formatTrackForAPI(track: {
     date: track.date,
   }
 }
+/**
+ * Whether a listed track is the one in the player. Matches on deezer_id: the
+ * player's `id` is the stream's track_id and its title can come from the
+ * stream lookup, so neither reliably matches a list row.
+ */
+export function isCurrentTrack(
+  current: { deezer_id?: string; title: string; artist: string } | null | undefined,
+  track: { deezer_id?: string; title: string; artist: string }
+): boolean {
+  if (!current) return false
+  if (current.deezer_id && track.deezer_id) return current.deezer_id === track.deezer_id
+  return current.title === track.title && current.artist === track.artist
+}

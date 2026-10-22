@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Pagination } from '@/components/ui/Pagination'
 import { AlbumCard } from '@/components/ui/AlbumCard'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
+import { NowPlayingOverlay } from '@/components/ui/NowPlayingIndicator'
+import { isCurrentTrack } from '@/utils/trackUtils'
 import { EyebrowLabel } from '@/components/ui/EyebrowLabel'
 import { X, ChevronDown, Heart, Loader2, ListPlus } from 'lucide-react'
 import type { BacklogAlbum, BacklogTrack } from '@/services/api'
@@ -31,6 +33,7 @@ interface AlbumsPageProps {
 function DiggingTrackRow({
   track,
   isCurrentTrack,
+  isPlaying,
   isLoading,
   coverArt,
   onPlay,
@@ -40,6 +43,7 @@ function DiggingTrackRow({
 }: {
   track: AlbumTrackItem
   isCurrentTrack: boolean
+  isPlaying: boolean
   isLoading: boolean
   coverArt?: string
   onPlay: () => void
@@ -50,11 +54,12 @@ function DiggingTrackRow({
   return (
     <div
       className={`flex items-center gap-[13px] px-[18px] py-[13px] border-b border-border cursor-pointer active:bg-white/5 transition-colors ${
-        isCurrentTrack ? 'bg-accent/[0.08]' : ''
+        isCurrentTrack ? 'bg-accent/10' : ''
       }`}
       onClick={onPlay}
     >
-      {/* Album art */}
+      {/* Album art, with the now-playing marker over it */}
+      <div className="relative flex-shrink-0">
       {coverArt ? (
         <div className="flex-shrink-0 w-[46px] h-[46px] rounded-sm-crate overflow-hidden">
           <img src={coverArt} alt="" className="w-full h-full object-cover" />
@@ -66,6 +71,8 @@ function DiggingTrackRow({
       ) : (
         <CoverArtPlaceholder size={46} radius={10} showLabel={false} className="flex-shrink-0" />
       )}
+      {isCurrentTrack && <NowPlayingOverlay isPlaying={isPlaying} />}
+      </div>
 
       {/* Title / Artist */}
       <div className="flex-1 min-w-0">
@@ -150,7 +157,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
   const albumPageSize = albumColumns * albumRows
   const trackPageSize = 10
 
-  const { playList, loadingTrackId, currentTrack } = useAudio()
+  const { playList, loadingTrackId, currentTrack, isPlaying } = useAudio()
   const { token } = useAuth()
 
   const {
@@ -368,18 +375,17 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                     const originalTrack = filteredTracks.find(
                       t => t.track === item.track && t.artist === item.artist
                     )
-                    const isCurrentTrack = !!(currentTrack &&
-                      currentTrack.title === item.track &&
-                      currentTrack.artist === item.artist)
+                    const isCurrent = isCurrentTrack(currentTrack, { deezer_id: item.deezer_id, title: item.track, artist: item.artist })
                     const isLoading = loadingTrackId === item.deezer_id
                     const isPicked = isTrackPicked(item.track, item.artist)
-                    const coverArt = originalTrack?.cover_url || (isCurrentTrack ? currentTrack?.coverArt : undefined)
+                    const coverArt = originalTrack?.cover_url || (isCurrent ? currentTrack?.coverArt : undefined)
 
                     return (
                       <DiggingTrackRow
                         key={`${item.deezer_id}-${item['track-number']}`}
                         track={item}
-                        isCurrentTrack={isCurrentTrack}
+                        isCurrentTrack={isCurrent}
+                        isPlaying={isPlaying}
                         isLoading={isLoading}
                         coverArt={coverArt}
                         onPlay={() => {

@@ -32,7 +32,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [isAddingToJellyfin, setIsAddingToJellyfin] = useState(false)
   const [showShareTooltip, setShowShareTooltip] = useState(false)
 
-  const { currentTrack, playList, loadingTrackId } = useAudio()
+  const { currentTrack, isPlaying, playList, loadingTrackId } = useAudio()
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
@@ -451,7 +451,8 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         onSelect={(_trackItem, trackIndex) => playAlbumFrom(trackIndex)}
         enablePickButtons={isAuthenticated}
         onPickTrack={handlePickTrack}
-        currentTrackId={currentTrack?.id}
+        currentTrackId={currentTrack?.deezer_id}
+        isPlaying={isPlaying}
         isAuthenticated={isAuthenticated}
       />
     </div>

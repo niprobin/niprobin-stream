@@ -3,6 +3,7 @@ import { Loader2, Heart, Play } from 'lucide-react'
 import { usePickModal } from '@/hooks/usePickModal'
 import { useAuth } from '@/contexts/AuthContext'
 import { PickModal } from '@/components/PickModal'
+import { NowPlayingIndicator } from '@/components/ui/NowPlayingIndicator'
 import type { FormEvent } from 'react'
 
 type BaseTrack = {
@@ -23,7 +24,9 @@ type AlbumListProps = {
   loadingTrackId?: string | null
   enablePickButtons?: boolean
   onPickTrack?: (track: AlbumTrackItem) => void
+  // The playing track's deezer_id, and whether it's playing or paused
   currentTrackId?: string | null
+  isPlaying?: boolean
   isAuthenticated?: boolean
   compactSpacing?: boolean
   showColumnHeaders?: boolean
@@ -104,28 +107,34 @@ export function TrackList(props: TrackListProps) {
           return (
             <div
               key={key}
-              className={`grid ${gridCols} items-center ${horizontalPadding} h-14 border-b border-border hover:bg-bg-2/50 cursor-pointer transition-colors group`}
+              className={`grid ${gridCols} items-center ${horizontalPadding} h-14 border-b border-border cursor-pointer transition-colors group ${
+                isCurrentTrack ? 'bg-accent/10' : 'hover:bg-bg-2/50'
+              }`}
               onClick={() => props.onSelect(item, index)}
             >
-              {/* Track Number / Play Button Column */}
-              <div className="relative">
-                <span className={`text-xs font-normal text-center transition-colors group-hover:hidden ${
-                  isCurrentTrack ? 'text-text-1' : 'text-text-3'
-                }`}>
-                  {item['track-number']}
-                </span>
-                <div className="absolute inset-0 hidden group-hover:flex items-center justify-center">
-                  {loading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-text-2" />
-                  ) : (
-                    <Play className="h-3.5 w-3.5 text-text-2 fill-current" />
-                  )}
+              {/* Track Number / Play Button Column; the playing track shows the indicator instead */}
+              {isCurrentTrack ? (
+                <div className="flex items-center">
+                  <NowPlayingIndicator isPlaying={!!props.isPlaying} />
                 </div>
-              </div>
+              ) : (
+                <div className="relative">
+                  <span className="text-xs font-normal text-center transition-colors group-hover:hidden text-text-3">
+                    {item['track-number']}
+                  </span>
+                  <div className="absolute inset-0 hidden group-hover:flex items-center justify-center">
+                    {loading ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-text-2" />
+                    ) : (
+                      <Play className="h-3.5 w-3.5 text-text-2 fill-current" />
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Title / Artist Column */}
               <div className="flex flex-col gap-1 min-w-0">
-                <div className="text-sm font-normal text-text-1 truncate">{item.track}</div>
+                <div className={`text-sm truncate ${isCurrentTrack ? 'font-medium text-accent' : 'font-normal text-text-1'}`}>{item.track}</div>
                 <div className="text-xs text-text-2 font-light truncate">{item.artist}</div>
               </div>
 

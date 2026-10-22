@@ -47,3 +47,34 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+/* NowPlayingIndicator: three accent bars bouncing out of step */
+.now-playing {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 14px;
+}
+.now-playing > span {
+  width: 3px;
+  height: 100%;
+  border-radius: 1px;
+  background: theme('colors.accent');
+  transform-origin: bottom;
+  animation: now-playing 0.9s ease-in-out infinite;
+}
+.now-playing > span:nth-child(2) {
+  animation-delay: -0.3s;
+}
+.now-playing > span:nth-child(3) {
+  animation-delay: -0.6s;
+}
+@keyframes now-playing {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .now-playing > span {
+    animation: none;
+    transform: scaleY(0.6);
+  }
+}

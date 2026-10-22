@@ -11,6 +11,7 @@ interface QueueProps {
   onSelectTrack: (track: AlbumTrackItem, trackIndex: number) => void
   onPickTrack: (track: AlbumTrackItem) => void
   currentTrackId?: string | null
+  isPlaying?: boolean
   loadingTrackId?: string | null
   isAuthenticated: boolean
 }
@@ -28,6 +29,7 @@ export function Queue({
   onSelectTrack,
   onPickTrack,
   currentTrackId,
+  isPlaying,
   loadingTrackId,
   isAuthenticated,
 }: QueueProps) {
@@ -39,6 +41,7 @@ export function Queue({
       enablePickButtons={isAuthenticated}
       onPickTrack={onPickTrack}
       currentTrackId={currentTrackId}
+      isPlaying={isPlaying}
       loadingTrackId={loadingTrackId}
       isAuthenticated={isAuthenticated}
       compactSpacing={true}

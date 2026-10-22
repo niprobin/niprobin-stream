@@ -9,6 +9,8 @@ import { BookmarkPlus, Loader2 } from 'lucide-react'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { CarouselSection } from '@/components/ui/CarouselSection'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
+import { NowPlayingOverlay } from '@/components/ui/NowPlayingIndicator'
+import { isCurrentTrack } from '@/utils/trackUtils'
 import { SectionHeader } from '@/components/ui/SectionHeader'
 
 function CarouselSkeleton() {
@@ -45,18 +47,25 @@ function SearchTrackRow({
   result,
   onPlay,
   isLoading,
+  isCurrent,
+  isPlaying,
 }: {
   result: SearchResult
   onPlay: () => void
   isLoading: boolean
+  isCurrent: boolean
+  isPlaying: boolean
 }) {
   const cover = result.cover_url || result.cover
   return (
     <button
       onClick={onPlay}
       disabled={isLoading}
-      className="w-full flex items-center gap-[13px] px-[18px] py-[13px] border-b border-border text-left transition-colors active:bg-white/5 disabled:opacity-50"
+      className={`w-full flex items-center gap-[13px] px-[18px] py-[13px] border-b border-border text-left transition-colors active:bg-white/5 disabled:opacity-50 ${
+        isCurrent ? 'bg-accent/10' : ''
+      }`}
     >
+      <div className="relative flex-shrink-0">
       {cover ? (
         <div className="flex-shrink-0 w-[46px] h-[46px] rounded-sm-crate overflow-hidden">
           <img src={cover} alt={result.track} className="w-full h-full object-cover" />
@@ -68,8 +77,10 @@ function SearchTrackRow({
       ) : (
         <CoverArtPlaceholder size={46} radius={10} showLabel={false} className="flex-shrink-0" />
       )}
+      {isCurrent && <NowPlayingOverlay isPlaying={isPlaying} />}
+      </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-semibold text-text-1 truncate leading-snug">{result.track}</p>
+        <p className={`text-[15px] font-semibold truncate leading-snug ${isCurrent ? 'text-accent' : 'text-text-1'}`}>{result.track}</p>
         <p className="text-[13px] text-text-2 truncate mt-0.5">{result.artist}</p>
       </div>
     </button>
@@ -156,7 +167,7 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
 
   const { isLoading, increment, decrement } = useLoading()
   const { showNotification } = useNotification()
-  const { playList, loadingTrackId } = useAudio()
+  const { playList, loadingTrackId, currentTrack, isPlaying } = useAudio()
   const { token } = useAuth()
 
   const performSearch = async (q: string) => {
@@ -245,6 +256,8 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
                   key={`${result['track-id']}-${i}`}
                   result={result}
                   isLoading={loadingTrackId === result.deezer_id}
+                  isCurrent={isCurrentTrack(currentTrack, { deezer_id: result.deezer_id, title: result.track, artist: result.artist })}
+                  isPlaying={isPlaying}
                   onPlay={() => {
                     const queue = trackResults.map((r, idx) => ({
                       track: r.track,

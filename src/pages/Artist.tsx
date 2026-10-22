@@ -6,6 +6,8 @@ import { useLoading } from '@/contexts/LoadingContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { AlbumCard } from '@/components/ui/AlbumCard'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
+import { NowPlayingIndicator } from '@/components/ui/NowPlayingIndicator'
+import { isCurrentTrack } from '@/utils/trackUtils'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { Loader2 } from 'lucide-react'
 
@@ -13,7 +15,7 @@ export function ArtistPage({ artistId }: { artistId: string }) {
   const [data, setData] = useState<ArtistPageData | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const { playList, loadingTrackId } = useAudio()
+  const { playList, loadingTrackId, currentTrack, isPlaying } = useAudio()
   const { increment, decrement } = useLoading()
   const { showNotification } = useNotification()
 
@@ -96,13 +98,19 @@ export function ArtistPage({ artistId }: { artistId: string }) {
       <section className="mt-2 px-6 lg:px-10">
         <h2 className="font-serif-display italic text-2xl text-text-1 mb-4">Top Tracks</h2>
         <ol className="space-y-1">
-          {data.tracks.slice(0, 10).map((track, i) => (
+          {data.tracks.slice(0, 10).map((track, i) => {
+            const isCurrent = isCurrentTrack(currentTrack, { deezer_id: String(track.deezer_id), title: track.title, artist: track.artist })
+            return (
             <li
               key={track.deezer_id}
               onClick={() => handleTrackClick(i)}
-              className="flex items-center gap-4 px-2 py-2 rounded-lg hover:bg-bg-2 cursor-pointer group transition-colors"
+              className={`flex items-center gap-4 px-2 py-2 rounded-lg cursor-pointer group transition-colors ${
+                isCurrent ? 'bg-accent/10' : 'hover:bg-bg-2'
+              }`}
             >
-              <span className="text-text-3 w-5 text-sm text-right shrink-0">{i + 1}</span>
+              <span className="text-text-3 w-5 text-sm text-right shrink-0 flex justify-end">
+                {isCurrent ? <NowPlayingIndicator isPlaying={isPlaying} /> : i + 1}
+              </span>
               {track.cover ? (
                 <img
                   src={track.cover}
@@ -113,14 +121,15 @@ export function ArtistPage({ artistId }: { artistId: string }) {
                 <CoverArtPlaceholder size={38} radius={10} showLabel={false} className="shrink-0" />
               )}
               <div className="flex-1 min-w-0">
-                <p className="text-text-1 text-sm truncate">{track.title}</p>
+                <p className={`text-sm truncate ${isCurrent ? 'font-medium text-accent' : 'text-text-1'}`}>{track.title}</p>
                 <p className="text-text-2 text-xs truncate">{track.artist}</p>
               </div>
               {loadingTrackId === track.deezer_id && (
                 <Loader2 className="h-4 w-4 animate-spin text-text-2 shrink-0" />
               )}
             </li>
-          ))}
+            )
+          })}
         </ol>
       </section>
 

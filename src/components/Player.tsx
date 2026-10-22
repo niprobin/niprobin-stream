@@ -269,7 +269,8 @@ export function Player() {
         tracks={albumTracks.slice(currentTrackIndex)}
         onSelectTrack={handlePlayAlbumTrack}
         onPickTrack={handlePickTrack}
-        currentTrackId={currentTrack?.id}
+        currentTrackId={currentTrack?.deezer_id}
+        isPlaying={isPlaying}
         loadingTrackId={loadingTrackId}
         isAuthenticated={isAuthenticated}
       />
