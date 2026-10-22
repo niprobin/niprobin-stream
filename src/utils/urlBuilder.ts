@@ -92,7 +92,7 @@ function encodeFilterParams(params: FilterParams): string {
   if (params.type && params.type !== 'tracks') {
     urlParams.set('type', params.type)
   }
-  if (params.view && params.view !== 'backlog') {
+  if (params.view && params.view !== 'listen') {
     urlParams.set('view', params.view)
   }
 

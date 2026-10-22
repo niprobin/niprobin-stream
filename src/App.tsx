@@ -43,7 +43,7 @@ function AppContent() {
   const [currentArtistId, setCurrentArtistId] = useState<string | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
   const [diggingPage, setDiggingPage] = useState<number>(1)
-  const [albumsView, setAlbumsView] = useState<AlbumsView>('backlog')
+  const [albumsView, setAlbumsView] = useState<AlbumsView>('listen')
   const [searchInitialQuery, setSearchInitialQuery] = useState('')
 
   useEffect(() => {
@@ -126,7 +126,7 @@ function AppContent() {
           const currentPage = parsePageFromUrl(window.location.search)
           console.log(`syncFromLocation: parsed page=${currentPage}`)
           setDiggingPage(currentPage)
-          setAlbumsView(parseFiltersFromUrl(window.location.search).view ?? 'backlog')
+          setAlbumsView(parseFiltersFromUrl(window.location.search).view ?? 'listen')
 
           // Set tab based on URL
           if (path === '/digging/albums') {
@@ -176,8 +176,8 @@ function AppContent() {
     if (page === 'digging') {
       const targetTab = diggingTabOverride || diggingTab
       const targetPage = pageNumber !== undefined ? pageNumber : diggingPage
-      // The Backlog / Listen to sub-view only exists on the albums tab
-      const targetView = targetTab === 'albums' ? (albumsViewOverride ?? albumsView) : 'backlog'
+      // The Listen to / Backlog sub-view only exists on the albums tab
+      const targetView = targetTab === 'albums' ? (albumsViewOverride ?? albumsView) : 'listen'
 
       if (preserveFilters) {
         // Parse current filters from URL and preserve them
@@ -224,7 +224,7 @@ function AppContent() {
 
   const handleMobilePageChange = (page: string) => {
     if (page === 'tracks') navigateToDiggingTab('tracks')
-    else if (page === 'albums') navigateToAlbumsView('backlog')
+    else if (page === 'albums') navigateToAlbumsView('listen')
     else if (page === 'menu') setActivePage('menu')
     else navigate('home')
   }
@@ -324,13 +324,13 @@ function AppContent() {
             <SearchBar containerClassName="h-[42px]" />
           </div>
 
-          {/* Mobile albums sub-menu: Backlog / Listen to (< lg) */}
+          {/* Mobile albums sub-menu: Listen to / Backlog (< lg) */}
           {activePage === 'digging' && diggingTab === 'albums' && (
             <div className="lg:hidden flex-shrink-0 px-[18px] py-3 border-b border-border">
               <div className="flex bg-bg-1 rounded-md-crate p-[3px] gap-[3px]">
                 {([
-                  { view: 'backlog', label: 'Backlog', count: backlogCount },
                   { view: 'listen', label: 'Listen to', count: listenCount },
+                  { view: 'backlog', label: 'Backlog', count: backlogCount },
                 ] as const).map(({ view, label, count }) => (
                   <button
                     key={view}

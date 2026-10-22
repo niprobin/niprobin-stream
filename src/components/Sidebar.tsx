@@ -95,7 +95,7 @@ export function Sidebar({
             type="button"
             role="tab"
             aria-selected={isAlbumsActive}
-            onClick={() => onNavigateAlbumsView('backlog')}
+            onClick={() => onNavigateAlbumsView('listen')}
             className={navItemClass(isAlbumsActive)}
           >
             <Disc3 className="h-[18px] w-[18px]" />
@@ -103,8 +103,8 @@ export function Sidebar({
           </button>
           <div className="space-y-0.5">
             {([
-              { view: 'backlog', label: 'Backlog', count: albumsCount },
               { view: 'listen', label: 'Listen to', count: listenCount },
+              { view: 'backlog', label: 'Backlog', count: albumsCount },
             ] as const).map(({ view, label, count }) => {
               const isActive = isAlbumsListActive && albumsView === view
               return (

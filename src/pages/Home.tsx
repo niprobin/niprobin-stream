@@ -1,13 +1,12 @@
 import { useBacklog } from '@/contexts/BacklogContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
-import { useShortlistAlbum } from '@/hooks/useShortlistAlbum'
 import { isShortlisted } from '@/utils/albumUtils'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import type { BacklogTrack, BacklogAlbum } from '@/types/api'
 import { CarouselSection } from '@/components/ui/CarouselSection'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
-import { X, ListPlus, Loader2 } from 'lucide-react'
+import { X } from 'lucide-react'
 
 function TrackCard({
   track,
@@ -60,13 +59,9 @@ function TrackCard({
 function AlbumCard({
   album,
   onHide,
-  onShortlist,
-  isShortlisting,
 }: {
   album: BacklogAlbum
   onHide: (e: React.MouseEvent) => void
-  onShortlist: (e: React.MouseEvent) => void
-  isShortlisting: boolean
 }) {
   const handleClick = () => {
     navigateTo(ROUTES.album(album.deezer_id))
@@ -84,19 +79,6 @@ function AlbumCard({
             />
           ) : (
             <CoverArtPlaceholder size={140} className="w-full h-full" />
-          )}
-        </button>
-        <button
-          onClick={onShortlist}
-          disabled={isShortlisting}
-          className="absolute top-1.5 left-1.5 w-6 h-6 flex items-center justify-center bg-black/45 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-          aria-label="Shortlist album"
-          title="Shortlist"
-        >
-          {isShortlisting ? (
-            <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
-          ) : (
-            <ListPlus className="h-3.5 w-3.5 text-white" />
           )}
         </button>
         <button
@@ -134,8 +116,6 @@ export function HomePage() {
   const { playList, loadingTrackId } = useAudio()
   const { isAuthenticated } = useAuth()
 
-  const { shortlist, isShortlisting } = useShortlistAlbum()
-
   if (!isAuthenticated) {
     return (
       <div className="py-16 text-center space-y-2">
@@ -146,9 +126,9 @@ export function HomePage() {
 
   const visibleTracks = trackBacklog.slice(0, 20)
 
-  // Same set as the Backlog ("See all"): shortlisted albums live in "Listen to"
+  // Same set as "See all": the shortlisted albums, in "Listen to"
   const visibleAlbums = albumBacklog
-    .filter((a) => !isShortlisted(a))
+    .filter(isShortlisted)
     .slice(0, 20)
 
   return (
@@ -180,7 +160,7 @@ export function HomePage() {
         ))}
       </CarouselSection>
 
-      <CarouselSection title="Album Backlog" seeAllHref={ROUTES.diggingAlbums}>
+      <CarouselSection title="Listen to" seeAllHref={ROUTES.diggingAlbums}>
         {isLoadingAlbums ? <CarouselSkeleton /> : visibleAlbums.map((album) => (
           <AlbumCard
             key={album.deezer_id}
@@ -189,8 +169,6 @@ export function HomePage() {
               e.stopPropagation()
               hideAlbum(album)
             }}
-            onShortlist={(e) => shortlist(album, e)}
-            isShortlisting={isShortlisting(album)}
           />
         ))}
       </CarouselSection>
