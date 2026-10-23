@@ -12,6 +12,7 @@ import { Share2, X, Loader2, Music4, Download, ListPlus } from 'lucide-react'
 import { useMetaTags } from '@/hooks/useMetaTags'
 import { generateAlbumMetaTags } from '@/utils/metaTagHelpers'
 import { ROUTES } from '@/utils/routes'
+import { addBlocker, shortlistBlocker } from '@/digging/albumStatus'
 
 type AlbumPageProps = {
   albumId: number
@@ -25,7 +26,8 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [albumDataId, setAlbumDataId] = useState<string | number | undefined>(undefined)
   const [streamingLink, setStreamingLink] = useState<string | undefined>(undefined)
   const [artistId, setArtistId] = useState<string | undefined>(undefined)
-  const [albumRating, setAlbumRating] = useState(0)
+  // The stars just clicked, shown while the rating is being saved
+  const [pendingRating, setPendingRating] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [isShortlisting, setIsShortlisting] = useState(false)
@@ -36,7 +38,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const { isAuthenticated, token } = useAuth()
   const { showNotification } = useNotification()
   const { increment, decrement } = useLoading()
-  const { markShortlisted, markDone, hideAlbum, albumBacklog } = useBacklog()
+  const { markShortlisted, markDone, markAdded, albumStatus, recordRating, hideAlbum, albumBacklog } = useBacklog()
   const { setMetaTags, resetToDefault } = useMetaTags()
 
   const handlePickTrack = (_track: AlbumTrackItem) => {
@@ -142,7 +144,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
 
   // Handle rating
   const handleRateAlbum = async (value: number) => {
-    setAlbumRating(value)
+    setPendingRating(value)
 
     try {
       const response = await rateAlbum({
@@ -152,10 +154,15 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         deezer_id: albumId.toString(),
       }, token)
       showNotification(response.message, response.status)
-      if (response.status === 'success') markDone(albumId.toString())
+      if (response.status === 'success') {
+        recordRating(albumId.toString(), value)
+        markDone(albumId.toString())
+      }
     } catch (err) {
       console.error('Failed to rate album:', err)
       showNotification('Failed to rate album', 'error')
+    } finally {
+      setPendingRating(null)
     }
   }
 
@@ -170,6 +177,9 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         deezer_id: albumId.toString()
       }, token)
       showNotification(response.message, response.status)
+      if (response.status === 'success') {
+        markAdded({ album: albumName, artist: artistName, deezer_id: albumId.toString(), cover_url: coverUrl })
+      }
     } catch (err) {
       showNotification("Couldn't Add this album", 'error')
       console.error("Couldn't Add this album:", err)
@@ -251,6 +261,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     hideAlbum(listed ?? { album: albumName, artist: artistName, deezer_id: deezerId })
   }
 
+  // What the DB knows: the saved rating, and why Add or Shortlist is greyed
+  const status = albumStatus(albumId.toString())
+  const addBlockedBy = addBlocker(status)
+  const shortlistBlockedBy = shortlistBlocker(status)
+
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
@@ -325,7 +340,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
                 <StarRating
                   inline
                   variant="compact"
-                  rating={albumRating}
+                  rating={pendingRating ?? status.rating ?? 0}
                   onRatingChange={handleRateAlbum}
                   disabled={false}
                 />
@@ -336,10 +351,12 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             {isAuthenticated && (
               <button
                 onClick={handleAddAlbum}
-                disabled={isAdding}
+                disabled={isAdding || addBlockedBy !== null}
                 className="ap-action-btn"
               >
-                {isAdding ? (
+                {addBlockedBy ? (
+                  <span>{addBlockedBy}</span>
+                ) : isAdding ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" strokeWidth={1.5} />
                     <span>Adding...</span>
@@ -354,10 +371,12 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             {isAuthenticated && (
               <button
                 onClick={handleShortlistAlbum}
-                disabled={isShortlisting}
+                disabled={isShortlisting || shortlistBlockedBy !== null}
                 className="ap-action-btn"
               >
-                {isShortlisting ? (
+                {shortlistBlockedBy ? (
+                  <span>{shortlistBlockedBy}</span>
+                ) : isShortlisting ? (
                   <>
                     <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" strokeWidth={1.5} />
                     <span>Shortlisting...</span>

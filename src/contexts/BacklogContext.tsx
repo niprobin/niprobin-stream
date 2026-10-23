@@ -1,10 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useCachedData } from '@/hooks/useCachedData'
-import { getTrackBacklog, getAlbumBacklog, getPickedTracks, type PickedTrack } from '@/services/api'
+import { getTrackBacklog, getAlbumBacklog, getPickedTracks, getRatedAlbums, type PickedTrack, type RatedAlbum } from '@/services/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
+import { albumStatus as statusOf, ratingsByDeezerId, type AlbumStatus } from '@/digging/albumStatus'
 import { clearHides, createHides, hideKey, HIDE_UNDO_WINDOW_MS, type HideKind, type Hides, type HideTarget } from '@/digging/hides'
 import type { BacklogTrack, BacklogAlbum } from '@/types/api'
 
@@ -12,6 +13,7 @@ const CACHE_DURATION_MS = 6 * 60 * 60 * 1000
 const TRACKS_CACHE_KEY = 'niprobin-tracks-cache'
 const ALBUMS_CACHE_KEY = 'niprobin-albums-cache'
 const PICKED_CACHE_KEY = 'niprobin-picked-cache'
+const RATED_CACHE_KEY = 'niprobin-rated-cache'
 // Where this browser used to keep its own picks, before the server's list
 const OLD_PICKED_TRACKS_KEY = 'pickedTracks'
 
@@ -20,6 +22,7 @@ export type PickableTrack = { deezer_id?: string; title: string; artist: string 
 
 // What the Album page knows about an album, which any backlog album also has
 type AlbumToHide = Pick<BacklogAlbum, 'album' | 'artist' | 'deezer_id'>
+type AlbumToAdd = AlbumToHide & { cover_url?: string }
 
 const trackTarget = (t: { track: string; artist: string; deezer_id: string }): HideTarget =>
   ({ deezerId: String(t.deezer_id), title: t.track, artist: t.artist })
@@ -40,6 +43,12 @@ type BacklogContextValue = {
   // A Rated or Added to Jellyfin album is done with: the server's backlog
   // drops it too, so it leaves the cached one now
   markDone: (deezerId: string) => void
+  // An Add the server accepted: the album is in the backlog before the next fetch
+  markAdded: (album: AlbumToAdd) => void
+  // What the DB knows about an album: its rating, and whether it's in the backlog or shortlisted
+  albumStatus: (deezerId: string) => AlbumStatus
+  // A rating the server accepted, shown before the next fetch
+  recordRating: (deezerId: string, rating: number) => void
   // The playlist n8n has for the track (any device), or null when it isn't Picked
   pickedPlaylist: (track: PickableTrack) => string | null
   // A Pick (or move) the server accepted, shown before the next fetch
@@ -58,6 +67,9 @@ const BacklogContext = createContext<BacklogContextValue>({
   refreshAlbums: () => {},
   markShortlisted: () => {},
   markDone: () => {},
+  markAdded: () => {},
+  albumStatus: () => ({ rating: null, inBacklog: false, shortlisted: false }),
+  recordRating: () => {},
   pickedPlaylist: () => null,
   recordPick: () => {},
   hideTrack: () => {},
@@ -106,6 +118,18 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
       }
     )
 
+  const { data: rawRatings, refresh: clearRatedCache, mutate: mutateRatings } =
+    useCachedData<RatedAlbum[]>(
+      RATED_CACHE_KEY,
+      () => getRatedAlbums(token),
+      {
+        cacheDuration: CACHE_DURATION_MS,
+        refreshTrigger: albumRefreshTrigger,
+        enabled: isAuthenticated,
+        errorMessage: "Couldn't load the Rated albums",
+      }
+    )
+
   useEffect(() => {
     try {
       localStorage.removeItem(OLD_PICKED_TRACKS_KEY)
@@ -141,8 +165,10 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
     setTrackRefreshTrigger(n => n + 1)
   }
 
+  // The Rated albums refresh with the Album Backlog
   const refreshAlbums = () => {
     clearAlbumsCache()
+    clearRatedCache()
     setAlbumRefreshTrigger(n => n + 1)
   }
 
@@ -156,6 +182,23 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
   const markDone = (deezerId: string) => {
     mutateAlbums(albums => albums?.filter(a => String(a.deezer_id) !== deezerId) ?? albums)
   }
+
+  const markAdded = (album: AlbumToAdd) => {
+    const deezerId = String(album.deezer_id)
+    mutateAlbums(albums => {
+      if (!albums || albums.some(a => String(a.deezer_id) === deezerId)) return albums
+      return [...albums, { id: '', album: album.album, artist: album.artist, cover_url: album.cover_url ?? '', deezer_id: deezerId }]
+    })
+  }
+
+  const recordRating = (deezerId: string, rating: number) => {
+    mutateRatings(current => [
+      ...(current ?? []).filter(other => String(other.deezer_id) !== deezerId),
+      { deezer_id: deezerId, rating },
+    ])
+  }
+
+  const ratings = useMemo(() => ratingsByDeezerId(rawRatings ?? []), [rawRatings])
 
   // The Hides of the signed-in session
   const tokenRef = useRef(token)
@@ -220,6 +263,11 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
     [rawAlbums, hidden.album],
   )
 
+  const albumStatus = useCallback(
+    (deezerId: string) => statusOf(deezerId, albumBacklog, ratings),
+    [albumBacklog, ratings],
+  )
+
   return (
     <BacklogContext.Provider value={{
       trackBacklog,
@@ -230,6 +278,9 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
       refreshAlbums,
       markShortlisted,
       markDone,
+      markAdded,
+      albumStatus,
+      recordRating,
       pickedPlaylist,
       recordPick,
       hideTrack: track => hide('track', trackTarget(track)),

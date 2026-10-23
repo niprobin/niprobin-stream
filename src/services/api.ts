@@ -353,6 +353,13 @@ export async function getPickedTracks(token: string | null): Promise<PickedTrack
   return getResultsList<PickedTrack>('picked-tracks', token, "Couldn't load the Picked tracks")
 }
 
+// A Rated album, by deezer_id, and its 1–5 rating
+export type RatedAlbum = { deezer_id: string | number; rating: number }
+
+export async function getRatedAlbums(token: string | null): Promise<RatedAlbum[]> {
+  return getResultsList<RatedAlbum>('rated-albums', token, "Couldn't load the Rated albums")
+}
+
 export async function hideAlbum(payload: HideAlbumPayload, token: string | null): Promise<ActionResponse> {
   return postForJson('hide-album', payload, token, 'Failed to hide album')
 }

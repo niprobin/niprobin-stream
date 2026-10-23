@@ -7,6 +7,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { BookmarkPlus, Heart, Loader2 } from 'lucide-react'
 import { useBacklog } from '@/contexts/BacklogContext'
+import { addBlocker, type AlbumStatus } from '@/digging/albumStatus'
+import { RatingBadge } from '@/components/ui/RatingBadge'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { CarouselSection } from '@/components/ui/CarouselSection'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
@@ -98,18 +100,27 @@ function SearchAlbumCard({
   album,
   onAdd,
   isAdding,
+  status,
 }: {
   album: AlbumResult
   onAdd: () => void
   isAdding: boolean
+  status: AlbumStatus
 }) {
+  const addBlockedBy = addBlocker(status)
+
   const handleClick = () => {
     navigateTo(ROUTES.album(album.deezer_id))
   }
 
   return (
     <div className="flex-shrink-0 w-60 snap-start space-y-2">
-      <button onClick={handleClick} className="w-full text-left group">
+      <button onClick={handleClick} className="relative w-full text-left group">
+        {status.rating !== null && (
+          <div className="absolute top-2 left-2">
+            <RatingBadge rating={status.rating} />
+          </div>
+        )}
         {album.cover ? (
           <img
             src={album.cover}
@@ -126,15 +137,15 @@ function SearchAlbumCard({
       </button>
       <button
         onClick={onAdd}
-        disabled={isAdding}
-        className="w-full h-7 text-xs flex items-center justify-center gap-1 text-text-2 hover:text-text-1 border border-border hover:border-text-3 rounded-sm-crate transition-colors disabled:opacity-50"
+        disabled={isAdding || addBlockedBy !== null}
+        className="w-full h-7 text-xs flex items-center justify-center gap-1 text-text-2 hover:text-text-1 border border-border hover:border-text-3 rounded-sm-crate transition-colors disabled:opacity-50 disabled:hover:text-text-2 disabled:hover:border-border"
       >
-        {isAdding ? (
+        {addBlockedBy ? null : isAdding ? (
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : (
           <BookmarkPlus className="h-3 w-3" />
         )}
-        {isAdding ? 'Adding...' : 'Add'}
+        {addBlockedBy ?? (isAdding ? 'Adding...' : 'Add')}
       </button>
     </div>
   )
@@ -175,7 +186,7 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
   const { isLoading, increment, decrement } = useLoading()
   const { showNotification } = useNotification()
   const { playList, loadingTrackId, currentTrack, isPlaying } = useAudio()
-  const { pickedPlaylist } = useBacklog()
+  const { pickedPlaylist, albumStatus, markAdded } = useBacklog()
   const { token } = useAuth()
 
   const performSearch = async (q: string) => {
@@ -212,6 +223,9 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
         token,
       )
       showNotification(response.message, response.status)
+      if (response.status === 'success') {
+        markAdded({ album: album.album, artist: album.artist, deezer_id: album.deezer_id, cover_url: album.cover })
+      }
     } catch {
       showNotification("Couldn't Add this album", 'error')
     } finally {
@@ -295,6 +309,7 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
                 key={`${album.deezer_id}-${i}`}
                 album={album}
                 isAdding={addingAlbumId === album.deezer_id}
+                status={albumStatus(String(album.deezer_id))}
                 onAdd={() => handleAddAlbum(album)}
               />
             ))

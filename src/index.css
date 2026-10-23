@@ -16,6 +16,11 @@
            rounded-sm-crate transition-colors cursor-pointer w-full;
   }
 
+  /* Greyed: the DB already has it (In backlog, Shortlisted, Rated) or it's being sent */
+  .ap-action-btn:disabled {
+    @apply text-text-3 cursor-default hover:bg-bg-1 hover:border-border;
+  }
+
   .ap-action-btn-primary {
     @apply bg-accent text-accent-ink border-transparent hover:bg-accent/85 hover:border-transparent hover:text-accent-ink;
   }

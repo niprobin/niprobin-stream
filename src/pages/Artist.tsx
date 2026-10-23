@@ -5,6 +5,8 @@ import { useAudio, autoPlayInfo } from '@/contexts/AudioContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { AlbumCard } from '@/components/ui/AlbumCard'
+import { RatingBadge } from '@/components/ui/RatingBadge'
+import { useBacklog } from '@/contexts/BacklogContext'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { NowPlayingIndicator } from '@/components/ui/NowPlayingIndicator'
 import { isCurrentTrack } from '@/utils/trackUtils'
@@ -18,6 +20,7 @@ export function ArtistPage({ artistId }: { artistId: string }) {
   const { playList, loadingTrackId, currentTrack, isPlaying } = useAudio()
   const { increment, decrement } = useLoading()
   const { showNotification } = useNotification()
+  const { albumStatus } = useBacklog()
 
   useEffect(() => {
     let cancelled = false
@@ -138,17 +141,21 @@ export function ArtistPage({ artistId }: { artistId: string }) {
         <section className="mt-10 px-6 lg:px-10">
           <h2 className="font-serif-display italic text-2xl text-text-1 mb-4">Albums</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {data.albums.map((album) => (
-              <AlbumCard
-                key={album.deezer_id}
-                album={{
-                  album: album.title,
-                  artist: album.year,
-                  cover: album.cover,
-                }}
-                onClick={() => handleAlbumClick(album)}
-              />
-            ))}
+            {data.albums.map((album) => {
+              const { rating } = albumStatus(String(album.deezer_id))
+              return (
+                <AlbumCard
+                  key={album.deezer_id}
+                  album={{
+                    album: album.title,
+                    artist: album.year,
+                    cover: album.cover,
+                  }}
+                  onClick={() => handleAlbumClick(album)}
+                  leftActionButton={rating !== null ? <RatingBadge rating={rating} /> : undefined}
+                />
+              )
+            })}
           </div>
         </section>
       )}
