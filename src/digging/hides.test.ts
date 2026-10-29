@@ -112,21 +112,52 @@ describe('Hide', () => {
   })
 
   it.each([
-    ['refuses', { status: 500, text: 'oops' }],
-    ['answers with an error', { json: { status: 'error', message: 'nope' } }],
-    ['is unreachable', { networkError: true as const }],
-  ])('brings the item back and reports why when n8n %s', async (_, reply) => {
+    ['refuses', { status: 400, text: 'oops' }, "Couldn't Hide this track"],
+    ['answers with an error', { json: { status: 'error', message: 'nope' } }, 'nope'],
+    ['fails with a 5xx', { status: 500, text: 'oops' }, "Couldn't Hide this track: no answer from the server"],
+    ['is unreachable', { networkError: true as const }, "Couldn't Hide this track: no answer from the server"],
+  ])('brings the item back and reports why when n8n %s', async (_, reply, message) => {
     const { n8n, hides, errors, isHidden, store } = setup()
     n8n.on('hide-track', reply)
+    n8n.on('tracks-to-discover', { json: [{ track: 'A', artist: 'Artist', deezer_id: 'id-A' }] })
+    hides.catchUp([item('A')])
 
     hides.hide(item('A'))
     await vi.advanceTimersByTimeAsync(HIDE_UNDO_WINDOW_MS)
     await settle()
 
     expect(isHidden('A')).toBe(false)
-    expect(errors).toEqual(["Couldn't Hide this track"])
+    expect(errors).toEqual([message])
     // A new session wouldn't hide it either
     expect(createHides({ kind: 'track', getToken: () => 'tok', store }).hidden().size).toBe(0)
+  })
+})
+
+describe('a Hide n8n did not answer clearly', () => {
+  it('counts an empty 200 as sent', async () => {
+    const { n8n, hides, errors, isHidden } = setup()
+    n8n.on('hide-track', { text: '' })
+
+    hides.hide(item('A'))
+    await vi.advanceTimersByTimeAsync(HIDE_UNDO_WINDOW_MS)
+    await settle()
+
+    expect(errors).toEqual([])
+    expect(isHidden('A')).toBe(true)
+  })
+
+  it('counts an unanswered Hide as sent when the backlog no longer lists the item', async () => {
+    const { n8n, hides, errors, isHidden } = setup()
+    hides.catchUp([item('A'), item('B')])
+    n8n.on('hide-track', { status: 524, text: '<html>A timeout occurred</html>' })
+    n8n.on('tracks-to-discover', { json: [{ track: 'B', artist: 'Artist', deezer_id: 'id-B' }] })
+
+    hides.hide(item('A'))
+    await vi.advanceTimersByTimeAsync(HIDE_UNDO_WINDOW_MS)
+    await settle()
+
+    expect(errors).toEqual([])
+    expect(isHidden('A')).toBe(true)
   })
 })
 

@@ -54,11 +54,6 @@ export type StreamResponse = {
   cover?: string
 }
 
-export type ActionResponse = {
-  status: 'success' | 'error'
-  message: string
-}
-
 export type BacklogAlbum = {
   id: string
   album: string

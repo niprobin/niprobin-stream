@@ -28,6 +28,8 @@ All app state lives in React Context providers under `src/contexts/`, composed i
 ### Data flow and caching
 
 - All backend calls go through `src/services/api.ts` (typed request/response via `src/types/api.ts`). Don't call webhooks directly from components.
+- `src/services/api.ts` makes every request through `src/api/webhook.ts`. `webhook.ts`, `actionMessages.ts` and `webhook.test.ts` are copied word for word from the native client: change both copies together. Actions come back as success, rejected or unknown. `src/digging/actions.ts` (and `hides.ts` for Hide) settle an unknown one by checking the list it changes (`settleAction`) before saying it failed. The reply format n8n should follow is in `../nipstream-native-app/docs/n8n-contract.md`.
+- What the listener reads after an action comes from `MESSAGES` in `src/api/actionMessages.ts`, never from server text (except a refusal's own `message`).
 - Curated "digging" data (tracks/albums) is cached client-side in `localStorage` for 5 minutes (`niprobin-tracks-cache`, `niprobin-albums-cache`); Sync buttons in the UI clear this cache. When changing digging data flows, keep cache invalidation in mind.
 - The PWA service worker (`vite-plugin-pwa`, configured in `vite.config.ts`) additionally does `NetworkFirst` runtime caching of `n8n.niprobin.com` requests for 24h — two caching layers exist (localStorage app-cache and SW HTTP-cache).
 

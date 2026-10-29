@@ -1,9 +1,13 @@
-import { hideAlbum, hideTrack, trackKey } from '@/services/api'
+import { MESSAGES } from '@/api/actionMessages'
+import { settleAction, type ActionOutcome } from '@/api/webhook'
+import { getAlbumBacklog, getTrackBacklog, hideAlbum, hideTrack, trackKey } from '@/services/api'
 import { STORAGE_KEYS } from '@/utils/storageKeys'
 
 // Hide, on the native client's rules: the item goes at once, the Hide is sent
 // once the undo window has passed, a refused Hide brings the item back, and a
 // sent one keeps the item hidden until the server's backlog stops listing it.
+// A Hide n8n didn't answer for counts as sent when the backlog no longer
+// lists the item.
 
 // How long a Hide can be undone before it's sent to the server
 export const HIDE_UNDO_WINDOW_MS = 5000
@@ -22,10 +26,20 @@ const ACTED_ON_KEYS: Record<HideKind, string> = {
   album: STORAGE_KEYS.HIDDEN_ALBUMS,
 }
 
-const SENDERS: Record<HideKind, (target: HideTarget, token: string | null) => Promise<{ status?: string }>> = {
+const SENDERS: Record<HideKind, (target: HideTarget, token: string | null) => Promise<ActionOutcome>> = {
   track: (target, token) => hideTrack({ track: target.title, artist: target.artist, deezer_id: target.deezerId }, token),
   album: (target, token) => hideAlbum({ album: target.title, artist: target.artist, deezer_id: target.deezerId }, token),
 }
+
+// The keys of every item the server's backlog lists now
+const LISTED: Record<HideKind, (token: string | null) => Promise<Set<string>>> = {
+  track: async token =>
+    new Set((await getTrackBacklog(token)).map(t => hideKey({ deezerId: String(t.deezer_id), title: t.track, artist: t.artist }))),
+  album: async token =>
+    new Set((await getAlbumBacklog(token)).map(a => hideKey({ deezerId: String(a.deezer_id), title: a.album, artist: a.artist }))),
+}
+
+const FAILED: Record<HideKind, string> = { track: MESSAGES.hideTrackFailed, album: MESSAGES.hideAlbumFailed }
 
 // Albums are told apart like tracks are
 export const hideKey: (target: HideTarget) => string = trackKey
@@ -58,6 +72,9 @@ export function createHides({ kind, getToken, store = localStorage }: Options): 
   const storageKey = ACTED_ON_KEYS[kind]
   const actedOn = readActedOn()
   const pendingHides = new Map<string, { target: HideTarget; timer: ReturnType<typeof setTimeout> }>()
+  // What the backlog listed last (catchUp), so a Hide is only checked
+  // against the backlog for an item it listed
+  let listedKeys: ReadonlySet<string> = new Set()
   let hidden: ReadonlySet<string> = new Set(actedOn)
   let sent: ReadonlySet<string> = hidden
   let disposed = false
@@ -107,18 +124,18 @@ export function createHides({ kind, getToken, store = localStorage }: Options): 
     saveActedOn()
     publish()
 
-    let ok: boolean
-    try {
-      const result = await SENDERS[kind](pending.target, getToken())
-      ok = result?.status !== 'error'
-    } catch {
-      ok = false
-    }
-    if (ok || disposed) return
+    const wasListed = listedKeys.has(key)
+    const token = getToken()
+    const result = await settleAction(
+      await SENDERS[kind](pending.target, token),
+      FAILED[kind],
+      async () => wasListed && !(await LISTED[kind](token)).has(key),
+    )
+    if (result.ok || disposed) return
     actedOn.delete(key)
     saveActedOn()
     publish()
-    errorListeners.forEach(listener => listener(`Couldn't Hide this ${kind}`))
+    errorListeners.forEach(listener => listener(result.error))
   }
 
   return {
@@ -138,7 +155,7 @@ export function createHides({ kind, getToken, store = localStorage }: Options): 
     hidden: () => hidden,
     sent: () => sent,
     catchUp(listed) {
-      const listedKeys = new Set(listed.map(hideKey))
+      listedKeys = new Set(listed.map(hideKey))
       const caughtUp = [...actedOn].filter(key => !listedKeys.has(key))
       if (caughtUp.length === 0) return
       caughtUp.forEach(key => actedOn.delete(key))

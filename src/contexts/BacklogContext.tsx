@@ -8,6 +8,7 @@ import { useNotification } from '@/contexts/NotificationContext'
 import { albumStatus as statusOf, ratingsByDeezerId, type AlbumStatus } from '@/digging/albumStatus'
 import { clearHides, createHides, hideKey, HIDE_UNDO_WINDOW_MS, type HideKind, type Hides, type HideTarget } from '@/digging/hides'
 import type { BacklogTrack, BacklogAlbum } from '@/types/api'
+import { MESSAGES } from '@/api/actionMessages'
 
 const CACHE_DURATION_MS = 6 * 60 * 60 * 1000
 const TRACKS_CACHE_KEY = 'niprobin-tracks-cache'
@@ -248,7 +249,7 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
   const hide = useCallback((kind: HideKind, target: HideTarget) => {
     if (!hides) return
     const { undo } = hides[kind].hide(target)
-    showNotification(kind === 'track' ? 'Track hidden' : 'Album hidden', 'info', {
+    showNotification(MESSAGES.hidden, 'info', {
       action: { label: 'Undo', onClick: undo },
       durationMs: HIDE_UNDO_WINDOW_MS,
     })

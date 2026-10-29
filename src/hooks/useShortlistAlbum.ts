@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { shortlistAlbum, type BacklogAlbum } from '@/services/api'
+import type { BacklogAlbum } from '@/services/api'
+import { MESSAGES } from '@/api/actionMessages'
+import { shortlist as sendShortlist } from '@/digging/actions'
 import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useBacklog } from '@/contexts/BacklogContext'
@@ -23,12 +25,9 @@ export function useShortlistAlbum() {
 
     setShortlistingIds(prev => new Set(prev).add(id))
     try {
-      const response = await shortlistAlbum({ album_id: id, saved: true }, token)
-      showNotification(response.message, response.status)
-      if (response.status === 'success') markShortlisted(id)
-    } catch (err) {
-      console.error('Failed to shortlist album:', err)
-      showNotification('Failed to shortlist album', 'error')
+      const result = await sendShortlist(id, token)
+      showNotification(result.ok ? MESSAGES.shortlisted : result.error, result.ok ? 'success' : 'error')
+      if (result.ok) markShortlisted(id)
     } finally {
       setShortlistingIds(prev => {
         const next = new Set(prev)

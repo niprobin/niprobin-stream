@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
-import { searchTracks, searchAlbums, searchArtists, addAlbum } from '@/services/api'
+import { searchTracks, searchAlbums, searchArtists } from '@/services/api'
+import { MESSAGES } from '@/api/actionMessages'
+import { add } from '@/digging/actions'
 import type { SearchResult, AlbumResult, ArtistSearchResult } from '@/types/api'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
@@ -218,16 +220,13 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
   const handleAddAlbum = async (album: AlbumResult) => {
     setAddingAlbumId(album.deezer_id)
     try {
-      const response = await addAlbum(
-        { album: album.album, artist: album.artist, deezer_id: album.deezer_id },
-        token,
-      )
-      showNotification(response.message, response.status)
-      if (response.status === 'success') {
+      const result = await add({ album: album.album, artist: album.artist, deezer_id: album.deezer_id }, token)
+      if (result.ok) {
+        showNotification(MESSAGES.added, 'success')
         markAdded({ album: album.album, artist: album.artist, deezer_id: album.deezer_id, cover_url: album.cover })
+      } else {
+        showNotification(result.error, 'error')
       }
-    } catch {
-      showNotification("Couldn't Add this album", 'error')
     } finally {
       setAddingAlbumId(null)
     }

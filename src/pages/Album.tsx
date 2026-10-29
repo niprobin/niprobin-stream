@@ -4,7 +4,9 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useLoading } from '@/contexts/LoadingContext'
 import { useBacklog } from '@/contexts/BacklogContext'
-import { getAlbumById, rateAlbum, addAlbum, shortlistAlbum, addAlbumToJellyfin, type AlbumTrack } from '@/services/api'
+import { getAlbumById, type AlbumTrack } from '@/services/api'
+import { MESSAGES } from '@/api/actionMessages'
+import * as digging from '@/digging/actions'
 import { StarRating } from '@/components/ui/StarRating'
 import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { TrackList } from '@/components/TrackList'
@@ -147,20 +149,14 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     setPendingRating(value)
 
     try {
-      const response = await rateAlbum({
-        album: albumName,
-        artist: artistName,
-        rating: value,
-        deezer_id: albumId.toString(),
-      }, token)
-      showNotification(response.message, response.status)
-      if (response.status === 'success') {
+      const result = await digging.rate({ album: albumName, artist: artistName, deezer_id: albumId.toString() }, value, token)
+      if (result.ok) {
+        showNotification(MESSAGES.rated(value), 'success')
         recordRating(albumId.toString(), value)
         markDone(albumId.toString())
+      } else {
+        showNotification(result.error, 'error')
       }
-    } catch (err) {
-      console.error('Failed to rate album:', err)
-      showNotification('Failed to rate album', 'error')
     } finally {
       setPendingRating(null)
     }
@@ -171,18 +167,13 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     setIsAdding(true)
 
     try {
-      const response = await addAlbum({
-        album: albumName,
-        artist: artistName,
-        deezer_id: albumId.toString()
-      }, token)
-      showNotification(response.message, response.status)
-      if (response.status === 'success') {
+      const result = await digging.add({ album: albumName, artist: artistName, deezer_id: albumId.toString() }, token)
+      if (result.ok) {
+        showNotification(MESSAGES.added, 'success')
         markAdded({ album: albumName, artist: artistName, deezer_id: albumId.toString(), cover_url: coverUrl })
+      } else {
+        showNotification(result.error, 'error')
       }
-    } catch (err) {
-      showNotification("Couldn't Add this album", 'error')
-      console.error("Couldn't Add this album:", err)
     } finally {
       setIsAdding(false)
     }
@@ -193,16 +184,10 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     setIsShortlisting(true)
 
     try {
-      const response = await shortlistAlbum({
-        album_id: albumId.toString(),
-        saved: true,
-      }, token)
-      showNotification(response.message, response.status)
+      const result = await digging.shortlist(albumId.toString(), token)
+      showNotification(result.ok ? MESSAGES.shortlisted : result.error, result.ok ? 'success' : 'error')
       // Update the Album Backlog locally so the "Listen to" view reflects the change
-      if (response.status === 'success') markShortlisted(albumId.toString())
-    } catch (err) {
-      showNotification('Failed to shortlist album', 'error')
-      console.error('Failed to shortlist album:', err)
+      if (result.ok) markShortlisted(albumId.toString())
     } finally {
       setIsShortlisting(false)
     }
@@ -213,12 +198,11 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     setIsAddingToJellyfin(true)
 
     try {
-      const response = await addAlbumToJellyfin(albumId.toString(), token)
-      showNotification(response.message, response.status)
-      if (response.status === 'success') markDone(albumId.toString())
-    } catch (err) {
-      showNotification("Couldn't Add this album to Jellyfin", 'error')
-      console.error("Couldn't Add this album to Jellyfin:", err)
+      const id = albumId.toString()
+      const wasListed = albumBacklog.some(album => String(album.deezer_id) === id)
+      const result = await digging.addToJellyfin(id, wasListed, token)
+      showNotification(result.ok ? MESSAGES.addingToJellyfin : result.error, result.ok ? 'success' : 'error')
+      if (result.ok) markDone(id)
     } finally {
       setIsAddingToJellyfin(false)
     }

@@ -1,8 +1,10 @@
 import { vi } from 'vitest'
+import { webhookLog } from '../src/api/webhook'
 
 // A fake n8n backend for module tests. It replaces global fetch, answers each
 // webhook path with a canned reply, and records every request so tests can
-// assert on what was sent.
+// assert on what was sent. It also collects the failures webhook.ts logs,
+// keeping them out of the test output.
 
 type Reply =
   | { status?: number; json: unknown }
@@ -24,6 +26,10 @@ const BASE_URL = 'https://n8n.niprobin.com/webhook/'
 export function installFakeN8n() {
   const handlers = new Map<string, Handler>()
   const requests: RecordedRequest[] = []
+  const logged: string[] = []
+  webhookLog.warn = message => {
+    logged.push(message)
+  }
 
   const fakeFetch = vi.fn(async (input: string, init: RequestInit = {}) => {
     const url = String(input)
@@ -62,5 +68,6 @@ export function installFakeN8n() {
       handlers.set(path, typeof reply === 'function' ? reply : () => reply)
     },
     requests,
+    logged,
   }
 }

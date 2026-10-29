@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { pickTrack } from '@/services/api'
+import { MESSAGES } from '@/api/actionMessages'
+import { pick } from '@/digging/actions'
 import { useNotification } from '@/contexts/NotificationContext'
 import { useBacklog } from '@/contexts/BacklogContext'
 
@@ -88,15 +89,9 @@ export function usePickModal(token: string | null) {
 
     setIsSubmittingPick(true)
     try {
-      const result = await pickTrack({
-        track: pickModalTrack.title,
-        artist: pickModalTrack.artist,
-        playlist: selectedPlaylist,
-        'spotify-id': pickModalTrack.spotifyId || '',
-        deezer_id: pickModalTrack.deezer_id
-      }, token)
+      const result = await pick(pickModalTrack, selectedPlaylist, token)
 
-      if (result.status === 'success') {
+      if (result.ok) {
         const newTrack = {
           title: pickModalTrack.title,
           artist: pickModalTrack.artist,
@@ -104,20 +99,11 @@ export function usePickModal(token: string | null) {
         }
         recordPick({ ...newTrack, deezer_id: pickModalTrack.deezer_id }, selectedPlaylist)
 
-        showNotification(
-          wasPicked
-            ? `Moved "${pickModalTrack.title}" to ${selectedPlaylist}`
-            : `Picked "${pickModalTrack.title}" for ${selectedPlaylist}`,
-          'success'
-        )
+        showNotification(wasPicked ? MESSAGES.moved(selectedPlaylist) : MESSAGES.picked(selectedPlaylist), 'success')
 
         return { success: true, track: newTrack }
-      } else if (result.status === 'error') {
-        showNotification(result.message || "Couldn't Pick this track", 'error')
-        return { success: false }
       }
-    } catch (error) {
-      showNotification("Couldn't Pick this track", 'error')
+      showNotification(result.error, 'error')
       return { success: false }
     } finally {
       closePickModal()
