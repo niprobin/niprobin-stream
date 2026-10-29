@@ -46,3 +46,17 @@ Tailwind CSS with a dark slate theme (`slate-900`/`slate-950` backgrounds). No l
 `CONTEXT.md` points to the domain glossary, which lives in the native client's repo (`nipstream-native-app/CONTEXT.md`); `docs/adr/` holds this repo's decisions.
 
 `docs/superpowers/plans/` and `docs/superpowers/specs/` contain dated planning/design docs for past features (search & mobile UI, album download button, swipe animations — the swipes and full-screen mobile player have since been removed: the PWA is the desktop client, mobile is the native app) — useful for understanding *why* a feature was built a certain way before changing it.
+
+## Working with the native app
+
+Nipstream has two clients; the native Android app (`niprobin/nipstream-native-app`, checked out next to this repo) is the hub. Before planning or shipping, read `../nipstream-native-app/docs/agents/workflow.md`: which repo a ticket goes in, cross-app parent issues (they live in the native repo), the shared board, and `Closes #N` on every commit that finishes an issue. Commit straight to `main`.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `niprobin/niprobin-stream`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Uses the default label strings: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
