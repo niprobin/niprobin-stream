@@ -48,6 +48,7 @@ export function ArtistPage({ artistId }: { artistId: string }) {
     const queue = data.tracks.map((t, i) => ({
       track: t.title,
       deezer_id: t.deezer_id,
+      isrc: t.isrc,
       artist: t.artist,
       'track-number': i + 1,
       cover: t.cover,

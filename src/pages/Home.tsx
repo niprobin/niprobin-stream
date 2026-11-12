@@ -148,6 +148,7 @@ export function HomePage() {
               const queue = visibleTracks.map((t, i) => ({
                 track: t.track,
                 deezer_id: t.deezer_id,
+                isrc: t.isrc,
                 artist: t.artist,
                 'track-number': i + 1,
                 date: t.date,

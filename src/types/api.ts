@@ -10,6 +10,7 @@ export type SearchResult = {
   cover?: string
   cover_url?: string
   deezer_id: string
+  isrc?: string | null
 }
 
 export type AlbumResult = {
@@ -23,6 +24,7 @@ export type AlbumResult = {
 export type AlbumTrack = {
   track: string
   deezer_id: string
+  isrc?: string | null
   artist: string
   'track-number': number
   'album-id'?: number
@@ -70,6 +72,7 @@ export type BacklogTrack = {
   curator: string
   date: string
   deezer_id: string
+  isrc?: string | null
   cover_url?: string
   // TODO: Remove once confirmed the database field is fully gone
   'spotify-id'?: string
@@ -82,6 +85,7 @@ export type PickTrackPayload = {
   playlist: string
   'spotify-id'?: string
   deezer_id?: string
+  isrc?: string
 }
 
 export type RateAlbumPayload = {
@@ -124,6 +128,7 @@ export type ArtistSearchResult = {
 
 export type ArtistTrack = {
   deezer_id: string
+  isrc?: string | null
   title: string
   cover: string
   artist: string

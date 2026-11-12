@@ -279,11 +279,12 @@ export function Search({ initialQuery = '' }: { initialQuery?: string }) {
                   isLoading={loadingTrackId === result.deezer_id}
                   isCurrent={isCurrentTrack(currentTrack, { deezer_id: result.deezer_id, title: result.track, artist: result.artist })}
                   isPlaying={isPlaying}
-                  pickedFor={pickedPlaylist({ deezer_id: result.deezer_id, title: result.track, artist: result.artist })}
+                  pickedFor={pickedPlaylist({ deezer_id: result.deezer_id, isrc: result.isrc, title: result.track, artist: result.artist })}
                   onPlay={() => {
                     const queue = trackResults.map((r, idx) => ({
                       track: r.track,
                       deezer_id: r.deezer_id,
+                      isrc: r.isrc,
                       artist: r.artist,
                       'track-number': idx + 1,
                       cover: r.cover_url || r.cover,

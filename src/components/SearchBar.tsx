@@ -329,7 +329,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       cover={r.cover_url || r.cover}
                       onClick={() => {
                         commitSearch(query)
-                        playList([{ track: r.track, artist: r.artist, deezer_id: r.deezer_id, 'track-number': 1, cover: r.cover_url || r.cover }], 0, autoPlayInfo('Search'))
+                        playList([{ track: r.track, artist: r.artist, deezer_id: r.deezer_id, isrc: r.isrc, 'track-number': 1, cover: r.cover_url || r.cover }], 0, autoPlayInfo('Search'))
                         setIsOpen(false)
                       }}
                     />
@@ -362,7 +362,7 @@ export function SearchBar({ containerClassName }: { containerClassName?: string 
                       artist={t.artist}
                       onClick={() => {
                         commitSearch(query)
-                        playList([{ track: t.track, artist: t.artist, deezer_id: t.deezer_id, 'track-number': 1, curator: t.curator }], 0, autoPlayInfo('Search'))
+                        playList([{ track: t.track, artist: t.artist, deezer_id: t.deezer_id, isrc: t.isrc, 'track-number': 1, curator: t.curator }], 0, autoPlayInfo('Search'))
                         setIsOpen(false)
                       }}
                     />

@@ -77,3 +77,16 @@ describe('the album actions', () => {
     await expect(addToJellyfin('302127', true, 'tok')).resolves.toEqual({ ok: true })
   })
 })
+
+describe('Pick with an ISRC', () => {
+  it('sends the ISRC, and settles a Pick n8n wrote on the other version of the song', async () => {
+    const n8n = installFakeN8n()
+    n8n.on('like-track', { status: 524, text: '' })
+    n8n.on('picked-tracks', { json: [{ deezer_id: 'single-id', isrc: 'FRX202400001', playlist: 'Reggae' }] })
+
+    const result = await pick({ title: 'Song', artist: 'Artist', deezer_id: 'album-id', isrc: 'frx202400001' }, 'Reggae', 'tok')
+
+    expect(n8n.requests[0].body).toMatchObject({ deezer_id: 'album-id', isrc: 'FRX202400001', playlist: 'Reggae' })
+    expect(result.ok).toBe(true)
+  })
+})

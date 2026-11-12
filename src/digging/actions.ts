@@ -11,12 +11,13 @@ import {
   shortlistAlbum,
 } from '@/services/api'
 import type { BacklogAlbum } from '@/types/api'
+import { isPickedFor, toIsrc } from './picks'
 
 // The digging actions, settled as in the native client: an action n8n didn't
 // answer for is checked against the list it changes before the listener is
 // told it failed. Hide has its own rules in hides.ts.
 
-type TrackToPick = { title: string; artist: string; deezer_id?: string; spotifyId?: string }
+type TrackToPick = { title: string; artist: string; deezer_id?: string; isrc?: string | null; spotifyId?: string }
 type AlbumRef = { album: string; artist: string; deezer_id: string }
 
 // The album as the server lists it now (undefined when it isn't listed).
@@ -31,12 +32,19 @@ const isShortlisted = (album: BacklogAlbum | undefined) => String(album?.saved).
 // Pick: send a track to one Radio Playlist (or move it there)
 export async function pick(track: TrackToPick, playlist: string, token: string | null): Promise<ActionResult> {
   const outcome = await pickTrack(
-    { track: track.title, artist: track.artist, playlist, 'spotify-id': track.spotifyId || '', deezer_id: track.deezer_id },
+    {
+      track: track.title,
+      artist: track.artist,
+      playlist,
+      'spotify-id': track.spotifyId || '',
+      deezer_id: track.deezer_id,
+      isrc: toIsrc(track.isrc),
+    },
     token,
   )
   return settleAction(outcome, MESSAGES.pickFailed, async () => {
-    const picks = await getPickedTracks(token)
-    return !!track.deezer_id && picks.some(p => String(p.deezer_id) === track.deezer_id && p.playlist === playlist)
+    // n8n may have moved the pick of another version of the same recording
+    return isPickedFor(await getPickedTracks(token), track, playlist)
   })
 }
 

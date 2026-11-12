@@ -25,12 +25,14 @@ type Track = {
   coverArt?: string      // absent on backlog tracks with no cover
   spotifyId?: string     // legacy field; not actively populated
   deezer_id?: string     // preserved for Pick/Hide payloads
+  isrc?: string          // matches a Pick made on another version of the song
   curator?: string       // backlog tracks only
 }
 
 export type AlbumTrackItem = {
   track: string
   deezer_id: string
+  isrc?: string | null
   artist: string
   'track-number': number
   date?: string
@@ -75,6 +77,7 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined)
 function toQueueTrack(item: AlbumTrackItem, info: AlbumInfo): QueueTrack {
   return {
     deezerId: item.deezer_id || '',
+    isrc: item.isrc || undefined,
     title: item.track,
     artist: item.artist,
     coverUrl: item.cover || info.cover || undefined,
@@ -87,6 +90,7 @@ function toAlbumTrackItem(track: QueueTrack, index: number): AlbumTrackItem {
   return {
     track: track.title,
     deezer_id: track.deezerId,
+    isrc: track.isrc,
     artist: track.artist,
     'track-number': track.trackNumber ?? index + 1,
     curator: track.curator,
@@ -104,6 +108,7 @@ function toTrack(track: QueueTrack, details: StreamDetails | undefined): Track {
     albumId: details?.albumId,
     coverArt: track.coverUrl || details?.cover,
     deezer_id: track.deezerId || undefined,
+    isrc: track.isrc,
     curator: track.curator,
   }
 }

@@ -103,7 +103,7 @@ export function TrackList(props: TrackListProps) {
           const trackId = item.deezer_id
           const loading = props.loadingTrackId === trackId
           const isCurrentTrack = props.currentTrackId === trackId
-          const picked = isTrackPicked(item.track, item.artist, item.deezer_id)
+          const picked = isTrackPicked(item.track, item.artist, item.deezer_id, item.isrc)
 
           return (
             <div
@@ -155,7 +155,7 @@ export function TrackList(props: TrackListProps) {
                     }`}
                     onClick={(event) => {
                       event.stopPropagation()
-                      openPickModal(trackId, item.track, item.artist, undefined, 'deezer_id' in item ? item.deezer_id : undefined)
+                      openPickModal(trackId, item.track, item.artist, undefined, 'deezer_id' in item ? item.deezer_id : undefined, item.isrc)
                     }}
                     aria-pressed={picked}
                   >

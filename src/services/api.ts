@@ -61,7 +61,8 @@ export async function searchTracks(query: string): Promise<SearchResult[]> {
 
 export type StreamContext = 'digging' | 'album' | 'search' | 'artist'
 
-export type StreamTrack = { deezerId: string; title: string; artist: string }
+// isrc, when n8n sends one, tells that two deezer_ids are the same recording
+export type StreamTrack = { deezerId: string; title: string; artist: string; isrc?: string }
 
 // Two rows can share a deezer_id (bonus or live duplicates) or both lack one,
 // so the title and artist are part of a track's identity.
@@ -230,9 +231,9 @@ export async function getTrackBacklog(token: string | null): Promise<BacklogTrac
   return listOrThrow<BacklogTrack>('tracks-to-discover', token, "Couldn't load the Track Backlog")
 }
 
-// A Picked track, by deezer_id, and the playlist n8n has for it, shown as is.
-// Picks from every device.
-export type PickedTrack = { deezer_id: string | number; playlist: string }
+// A Picked track, by deezer_id and ISRC, and the playlist n8n has for it, shown
+// as is. Picks from every device.
+export type PickedTrack = { deezer_id: string | number; isrc?: string | null; playlist: string }
 
 export async function getPickedTracks(token: string | null): Promise<PickedTrack[]> {
   return listOrThrow<PickedTrack>('picked-tracks', token, "Couldn't load the Picked tracks")

@@ -217,6 +217,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
     const allQueue = filteredTracks.map((t, index) => ({
       track: t.track,
       deezer_id: t.deezer_id,
+      isrc: t.isrc,
       artist: t.artist,
       'track-number': index + 1,
       date: t.date,
@@ -363,6 +364,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
             const mappedPagedTracks: AlbumTrackItem[] = pagedTracks.map((t, i) => ({
               track: t.track,
               deezer_id: t.deezer_id,
+              isrc: t.isrc,
               artist: t.artist,
               'track-number': (currentPage - 1) * trackPageSize + i + 1,
               date: t.date,
@@ -378,7 +380,7 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                     )
                     const isCurrent = isCurrentTrack(currentTrack, { deezer_id: item.deezer_id, title: item.track, artist: item.artist })
                     const isLoading = loadingTrackId === item.deezer_id
-                    const isPicked = isTrackPicked(item.track, item.artist, item.deezer_id)
+                    const isPicked = isTrackPicked(item.track, item.artist, item.deezer_id, item.isrc)
                     const coverArt = originalTrack?.cover_url || (isCurrent ? currentTrack?.coverArt : undefined)
 
                     return (
@@ -403,7 +405,8 @@ export function AlbumsPage({ activeTab, albumsView, currentPage, onPageChange }:
                             item.track,
                             item.artist,
                             undefined,
-                            item.deezer_id
+                            item.deezer_id,
+                            item.isrc
                           )
                         }}
                         isPicked={isPicked}

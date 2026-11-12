@@ -133,6 +133,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
       tracks.map((t) => ({
         track: t.track,
         deezer_id: t.deezer_id,
+        isrc: t.isrc,
         artist: t.artist,
         'track-number': t['track-number'],
       })),
@@ -449,6 +450,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         tracks={tracks.map(track => ({
           track: track.track,
           deezer_id: track.deezer_id,
+          isrc: track.isrc,
           artist: track.artist,
           'track-number': track['track-number'],
         }))}

@@ -219,12 +219,12 @@ export function Player() {
               <div className="flex gap-1 px-2 py-1 rounded-sm-crate bg-bg-2/40">
                 {isAuthenticated && currentTrack && (
                   <Button
-                    onClick={() => openPickModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id)}
+                    onClick={() => openPickModal(currentTrack.id, currentTrack.title, currentTrack.artist, currentTrack.spotifyId, currentTrack.deezer_id, currentTrack.isrc)}
                     size="icon" variant="ghost"
-                    className={`hover:text-accent hover:bg-bg-2 ${isTrackPicked(currentTrack.title, currentTrack.artist, currentTrack.deezer_id) ? 'text-accent' : 'text-text-2'}`}
-                    aria-pressed={isTrackPicked(currentTrack.title, currentTrack.artist, currentTrack.deezer_id)}
+                    className={`hover:text-accent hover:bg-bg-2 ${isTrackPicked(currentTrack.title, currentTrack.artist, currentTrack.deezer_id, currentTrack.isrc) ? 'text-accent' : 'text-text-2'}`}
+                    aria-pressed={isTrackPicked(currentTrack.title, currentTrack.artist, currentTrack.deezer_id, currentTrack.isrc)}
                   >
-                    <Heart className="h-4 w-4" fill={isTrackPicked(currentTrack.title, currentTrack.artist, currentTrack.deezer_id) ? 'currentColor' : 'none'} />
+                    <Heart className="h-4 w-4" fill={isTrackPicked(currentTrack.title, currentTrack.artist, currentTrack.deezer_id, currentTrack.isrc) ? 'currentColor' : 'none'} />
                   </Button>
                 )}
                 <Button onClick={handleShareStream} size="icon" variant="ghost"

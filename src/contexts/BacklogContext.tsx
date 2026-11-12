@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react'
 import { useCachedData } from '@/hooks/useCachedData'
 import { getTrackBacklog, getAlbumBacklog, getPickedTracks, getRatedAlbums, type PickedTrack, type RatedAlbum } from '@/services/api'
+import { indexPicks, pickedPlaylistOf, withPick, type PickableTrack } from '@/digging/picks'
 import { useAuth } from '@/contexts/AuthContext'
 import { useAudio } from '@/contexts/AudioContext'
 import { useNotification } from '@/contexts/NotificationContext'
@@ -19,7 +20,7 @@ const RATED_CACHE_KEY = 'niprobin-rated-cache'
 const OLD_PICKED_TRACKS_KEY = 'pickedTracks'
 
 // What a track list knows about a row or the playing track
-export type PickableTrack = { deezer_id?: string; title: string; artist: string }
+export type { PickableTrack }
 
 // What the Album page knows about an album, which any backlog album also has
 type AlbumToHide = Pick<BacklogAlbum, 'album' | 'artist' | 'deezer_id'>
@@ -139,24 +140,12 @@ export function BacklogProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Picks match on deezer_id only
-  const picksByDeezerId = useMemo(() => new Map(
-    (rawPicks ?? [])
-      .filter(pick => pick.deezer_id && pick.playlist)
-      .map(pick => [String(pick.deezer_id), String(pick.playlist)])
-  ), [rawPicks])
+  const pickIndex = useMemo(() => indexPicks(rawPicks ?? []), [rawPicks])
 
-  const pickedPlaylist = useCallback((track: PickableTrack) => {
-    return (track.deezer_id && picksByDeezerId.get(String(track.deezer_id))) || null
-  }, [picksByDeezerId])
+  const pickedPlaylist = useCallback((track: PickableTrack) => pickedPlaylistOf(pickIndex, track), [pickIndex])
 
   const recordPick = (track: PickableTrack, playlist: string) => {
-    const deezerId = track.deezer_id
-    if (!deezerId) return
-    mutatePicks(current => [
-      ...(current ?? []).filter(other => String(other.deezer_id) !== String(deezerId)),
-      { deezer_id: deezerId, playlist },
-    ])
+    mutatePicks(current => withPick(current ?? [], track, playlist))
   }
 
   // The Picked tracks refresh with the Track Backlog

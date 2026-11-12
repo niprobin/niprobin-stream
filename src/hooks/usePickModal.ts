@@ -30,6 +30,7 @@ type PickModalTrack = {
   artist: string
   spotifyId?: string
   deezer_id?: string
+  isrc?: string | null
 }
 
 export function usePickModal(token: string | null) {
@@ -54,21 +55,21 @@ export function usePickModal(token: string | null) {
   }, [isPickModalOpen])
 
   // Whether the track is Picked, on any device
-  const isTrackPicked = (title?: string, artist?: string, deezer_id?: string) => {
+  const isTrackPicked = (title?: string, artist?: string, deezer_id?: string, isrc?: string | null) => {
     if (!title || !artist) return false
-    return pickedPlaylist({ title, artist, deezer_id }) !== null
+    return pickedPlaylist({ title, artist, deezer_id, isrc }) !== null
   }
 
   // The Radio Playlist the open track is already Picked for: the drawer checks it
   // and can't choose it again; another one moves the track
   const pickedFor = pickModalTrack
-    ? pickedPlaylist({ title: pickModalTrack.title, artist: pickModalTrack.artist, deezer_id: pickModalTrack.deezer_id })
+    ? pickedPlaylist({ title: pickModalTrack.title, artist: pickModalTrack.artist, deezer_id: pickModalTrack.deezer_id, isrc: pickModalTrack.isrc })
     : null
 
   // Open modal with track information
-  const openPickModal = (id: string, title: string, artist: string, spotifyId?: string, deezer_id?: string) => {
-    const current = pickedPlaylist({ title, artist, deezer_id })
-    setPickModalTrack({ id, title, artist, spotifyId, deezer_id })
+  const openPickModal = (id: string, title: string, artist: string, spotifyId?: string, deezer_id?: string, isrc?: string | null) => {
+    const current = pickedPlaylist({ title, artist, deezer_id, isrc })
+    setPickModalTrack({ id, title, artist, spotifyId, deezer_id, isrc })
     setSelectedPlaylist(RADIO_PLAYLISTS.find(playlist => playlist !== current) ?? RADIO_PLAYLISTS[0])
     setIsPickModalOpen(true)
   }
@@ -97,7 +98,7 @@ export function usePickModal(token: string | null) {
           artist: pickModalTrack.artist,
           playlist: selectedPlaylist
         }
-        recordPick({ ...newTrack, deezer_id: pickModalTrack.deezer_id }, selectedPlaylist)
+        recordPick({ ...newTrack, deezer_id: pickModalTrack.deezer_id, isrc: pickModalTrack.isrc }, selectedPlaylist)
 
         showNotification(wasPicked ? MESSAGES.moved(selectedPlaylist) : MESSAGES.picked(selectedPlaylist), 'success')
 
