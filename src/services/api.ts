@@ -246,6 +246,22 @@ export async function getRatedAlbums(token: string | null): Promise<RatedAlbum[]
   return listOrThrow<RatedAlbum>('rated-albums', token, "Couldn't load the Rated albums")
 }
 
+// A Followed artist (the artists table, active rows), by deezer_id
+export type FollowedArtist = { deezer_id: string | number; artist: string }
+
+export async function getFollowedArtists(token: string | null): Promise<FollowedArtist[]> {
+  return listOrThrow<FollowedArtist>('followed-artists', token, "Couldn't load the Followed artists")
+}
+
+// Follow: add an artist to the ones whose new albums are watched for
+export function followArtist(payload: { artist: string; deezer_id: string }, token: string | null): Promise<ActionOutcome> {
+  return callAction('follow-artist', token, payload)
+}
+
+export function unfollowArtist(payload: { artist: string; deezer_id: string }, token: string | null): Promise<ActionOutcome> {
+  return callAction('unfollow-artist', token, payload)
+}
+
 export function hideAlbum(payload: HideAlbumPayload, token: string | null): Promise<ActionOutcome> {
   return callAction('hide-album', token, payload)
 }

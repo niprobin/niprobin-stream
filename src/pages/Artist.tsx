@@ -11,7 +11,10 @@ import { CoverArtPlaceholder } from '@/components/ui/CoverArtPlaceholder'
 import { NowPlayingIndicator } from '@/components/ui/NowPlayingIndicator'
 import { isCurrentTrack } from '@/utils/trackUtils'
 import { ROUTES, navigateTo } from '@/utils/routes'
-import { Loader2 } from 'lucide-react'
+import { Loader2, UserCheck, UserPlus } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
+import { follow, isFollowed, unfollow } from '@/digging/follows'
+import { MESSAGES } from '@/api/actionMessages'
 
 export function ArtistPage({ artistId }: { artistId: string }) {
   const [data, setData] = useState<ArtistPageData | null>(null)
@@ -21,6 +24,10 @@ export function ArtistPage({ artistId }: { artistId: string }) {
   const { increment, decrement } = useLoading()
   const { showNotification } = useNotification()
   const { albumStatus } = useBacklog()
+  const { isAuthenticated, token } = useAuth()
+  // null while the server's list hasn't said (or can't: signed out, failed)
+  const [following, setFollowing] = useState<boolean | null>(null)
+  const [isSendingFollow, setIsSendingFollow] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -42,6 +49,34 @@ export function ArtistPage({ artistId }: { artistId: string }) {
     load()
     return () => { cancelled = true }
   }, [artistId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Whether the artist is Followed, from the server's list
+  useEffect(() => {
+    setFollowing(null)
+    if (!isAuthenticated) return
+    let cancelled = false
+    isFollowed(String(artistId), token)
+      .then(result => { if (!cancelled) setFollowing(result) })
+      .catch(() => { /* the button stays hidden */ })
+    return () => { cancelled = true }
+  }, [artistId, isAuthenticated, token])
+
+  const handleFollowClick = async () => {
+    if (!data || following === null || isSendingFollow) return
+    const artist = { name: data.info.name, deezer_id: String(data.info.deezer_id || artistId) }
+    const wasFollowing = following
+    // Shown at once, put back if it didn't go through
+    setFollowing(!wasFollowing)
+    setIsSendingFollow(true)
+    const result = wasFollowing ? await unfollow(artist, token) : await follow(artist, token)
+    setIsSendingFollow(false)
+    if (result.ok) {
+      showNotification(wasFollowing ? MESSAGES.unfollowed(artist.name) : MESSAGES.followed(artist.name), 'success')
+    } else {
+      setFollowing(wasFollowing)
+      showNotification(result.error, 'error')
+    }
+  }
 
   const handleTrackClick = (index: number) => {
     if (!data) return
@@ -95,6 +130,23 @@ export function ArtistPage({ artistId }: { artistId: string }) {
           <h1 className="font-serif-display italic text-4xl lg:text-5xl xl:text-6xl leading-none text-text-1 mb-2">
             {data.info.name}
           </h1>
+          {following !== null && (
+            <button
+              type="button"
+              onClick={handleFollowClick}
+              disabled={isSendingFollow}
+              aria-pressed={following}
+              aria-label={following ? `Following ${data.info.name}, stop following` : `Follow ${data.info.name}`}
+              className={`mt-1 self-center lg:self-start inline-flex items-center gap-2 h-9 px-4 rounded-full border text-sm font-medium transition-colors disabled:opacity-60 ${
+                following
+                  ? 'border-accent bg-accent/10 text-accent hover:bg-accent/20'
+                  : 'border-border text-text-1 hover:bg-bg-2'
+              }`}
+            >
+              {following ? <UserCheck className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+              {following ? 'Following' : 'Follow'}
+            </button>
+          )}
         </div>
       </div>
 

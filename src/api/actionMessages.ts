@@ -30,4 +30,9 @@ export const MESSAGES = {
 
   addingToJellyfin: 'Adding to Jellyfin',
   addToJellyfinFailed: "Couldn't Add this album to Jellyfin",
+
+  followed: (artist: string) => `Following ${artist}`,
+  followFailed: "Couldn't Follow this artist",
+  unfollowed: (artist: string) => `Stopped following ${artist}`,
+  unfollowFailed: "Couldn't stop following this artist",
 } as const
