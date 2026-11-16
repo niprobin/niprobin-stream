@@ -41,7 +41,7 @@ function AppContent() {
   const { setMetaTags, resetToDefault } = useMetaTags()
   usePlayPauseShortcut()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, trackBacklog, albumBacklog } = useBacklog()
-  const { artists: followedArtists } = useFollowedArtists()
+  const { artists: followedArtists, isLoading: isLoadingArtists, reload: reloadArtists } = useFollowedArtists()
   const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'artist' | 'artists' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [currentArtistId, setCurrentArtistId] = useState<string | null>(null)
@@ -294,8 +294,9 @@ function AppContent() {
   const listenCount = albumBacklog.filter(isShortlisted).length
   const backlogCount = albumBacklog.length - listenCount
 
-  const isRefreshing = isLoadingTracks || isLoadingAlbums
-  const handleRefresh = () => { refreshTracks(); refreshAlbums() }
+  // Refresh backlogs also reloads the Followed artists (their last Pick and Rating)
+  const isRefreshing = isLoadingTracks || isLoadingAlbums || isLoadingArtists
+  const handleRefresh = () => { refreshTracks(); refreshAlbums(); reloadArtists() }
 
   return (
     <>
