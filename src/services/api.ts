@@ -246,18 +246,16 @@ export async function getRatedAlbums(token: string | null): Promise<RatedAlbum[]
   return listOrThrow<RatedAlbum>('rated-albums', token, "Couldn't load the Rated albums")
 }
 
-// A Followed artist (the artists table, active rows), by deezer_id, with its
-// last Pick and last Rating. `artist` is the name's old field.
+// A Followed artist (the artists table, active rows), by deezer_id, with when
+// it was followed and its Pick and Rated album counts (`liked_*`, n8n's names).
+// `artist` is the name's old field.
 export type FollowedArtist = {
   deezer_id: string | number
   name?: string | null
   artist?: string | null
-  last_liked_track?: string | null
-  last_liked_track_date?: string | null
-  last_rated_album?: string | null
-  last_rated_album_rating?: number | null
-  last_rated_album_date?: string | null
-  last_activity_date?: string | null
+  created_at?: string | null
+  liked_tracks?: number | string | null
+  liked_albums?: number | string | null
 }
 
 export async function getFollowedArtists(token: string | null): Promise<FollowedArtist[]> {

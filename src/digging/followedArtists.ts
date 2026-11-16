@@ -8,15 +8,15 @@ import { unfollow as sendUnfollow, type ArtistRef } from './follows'
 // How long an Unfollow from the list can be undone before it's sent
 export const UNFOLLOW_UNDO_WINDOW_MS = 5000
 
-// A Followed artist with its last Pick and last Rating (dates as n8n sends them)
+// A Followed artist, when it was followed (as n8n sends it) and how many of
+// its tracks were Picked and its albums Rated
 export type FollowedArtist = ArtistRef & {
-  lastPick: { title: string; date: string | null } | null
-  lastRating: { album: string; rating: number | null; date: string | null } | null
-  // The latest of the two, for the Recent sort
-  lastActivity: string | null
+  followedAt: string | null
+  picks: number
+  ratedAlbums: number
 }
 
-export type ArtistSort = 'name' | 'recent'
+export type ArtistSort = 'name' | 'followed' | 'picks' | 'albums'
 
 export type FollowedArtistsState = {
   // A→Z, without the artists being unfollowed; null until the first load
@@ -43,38 +43,40 @@ const byName = (a: ArtistRef, b: ArtistRef) => a.name.localeCompare(b.name, unde
 
 const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : null)
 
+const count = (value: unknown) => {
+  const n = Number(value)
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
+}
+
 function toArtist(row: FollowedArtistRow): FollowedArtist {
-  const pick = text(row.last_liked_track)
-  const album = text(row.last_rated_album)
-  const rating = Number(row.last_rated_album_rating)
   return {
     deezer_id: row.deezer_id == null ? '' : String(row.deezer_id),
     name: text(row.name) ?? text(row.artist) ?? '',
-    lastPick: pick ? { title: pick, date: text(row.last_liked_track_date) } : null,
-    lastRating: album
-      ? { album, rating: Number.isFinite(rating) && rating > 0 ? rating : null, date: text(row.last_rated_album_date) }
-      : null,
-    lastActivity: text(row.last_activity_date),
+    followedAt: text(row.created_at),
+    picks: count(row.liked_tracks),
+    ratedAlbums: count(row.liked_albums),
   }
 }
 
 const time = (date: string | null) => {
   const ms = date ? Date.parse(date) : NaN
-  return Number.isNaN(ms) ? null : ms
+  return Number.isNaN(ms) ? -Infinity : ms
 }
 
-// Recent: latest activity first, artists with none at the end A→Z
+// Biggest first, then A→Z: the latest followed, the most Picks, the most Rated albums
+const KEY: Record<Exclude<ArtistSort, 'name'>, (artist: FollowedArtist) => number> = {
+  followed: artist => time(artist.followedAt),
+  picks: artist => artist.picks,
+  albums: artist => artist.ratedAlbums,
+}
+
 export function sortArtists(artists: FollowedArtist[], sort: ArtistSort): FollowedArtist[] {
   if (sort === 'name') return [...artists].sort(byName)
+  const key = KEY[sort]
   return [...artists].sort((a, b) => {
-    const ta = time(a.lastActivity)
-    const tb = time(b.lastActivity)
-    if (ta !== tb) {
-      if (ta === null) return 1
-      if (tb === null) return -1
-      return tb - ta
-    }
-    return byName(a, b)
+    const ka = key(a)
+    const kb = key(b)
+    return ka === kb ? byName(a, b) : kb > ka ? 1 : -1
   })
 }
 

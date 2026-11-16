@@ -9,29 +9,11 @@ import {
 } from './followedArtists'
 
 const ROWS = [
-  {
-    deezer_id: 27,
-    name: 'Daft Punk',
-    last_liked_track: 'Veridis Quo',
-    last_liked_track_date: '2024-03-01',
-    last_rated_album: null,
-    last_rated_album_rating: null,
-    last_rated_album_date: null,
-    last_activity_date: '2024-03-01T00:00:00+00:00',
-  },
+  { deezer_id: 27, name: 'Daft Punk', created_at: '2026-11-13T15:54:23.675338+00:00', liked_tracks: 4, liked_albums: 0 },
   // The name's old field still works
   { deezer_id: '1', artist: 'aphex Twin' },
   { deezer_id: null, name: 'No id' },
-  {
-    deezer_id: '2',
-    name: 'Björk',
-    last_liked_track: null,
-    last_liked_track_date: null,
-    last_rated_album: 'Homogenic',
-    last_rated_album_rating: 4,
-    last_rated_album_date: '2021-12-22',
-    last_activity_date: '2021-12-22T00:00:00+00:00',
-  },
+  { deezer_id: '2', name: 'Björk', created_at: '2026-11-01T10:00:00+00:00', liked_tracks: '0', liked_albums: 2 },
 ]
 
 async function setup() {
@@ -64,20 +46,13 @@ describe('Followed artists', () => {
     expect(n8n.requests[0].headers).toMatchObject({ 'X-Auth-Token': 'tok' })
   })
 
-  it('keeps each artist\'s last Pick and last Rating', async () => {
+  it('keeps when each artist was followed and its Pick and Rated album counts', async () => {
     const { followed } = await setup()
     const byName = (name: string) => followed.getState().artists?.find(a => a.name === name)
 
-    expect(byName('Daft Punk')).toMatchObject({
-      lastPick: { title: 'Veridis Quo', date: '2024-03-01' },
-      lastRating: null,
-      lastActivity: '2024-03-01T00:00:00+00:00',
-    })
-    expect(byName('Björk')).toMatchObject({
-      lastPick: null,
-      lastRating: { album: 'Homogenic', rating: 4, date: '2021-12-22' },
-    })
-    expect(byName('aphex Twin')).toMatchObject({ lastPick: null, lastRating: null, lastActivity: null })
+    expect(byName('Daft Punk')).toMatchObject({ followedAt: '2026-11-13T15:54:23.675338+00:00', picks: 4, ratedAlbums: 0 })
+    expect(byName('Björk')).toMatchObject({ picks: 0, ratedAlbums: 2 })
+    expect(byName('aphex Twin')).toMatchObject({ followedAt: null, picks: 0, ratedAlbums: 0 })
   })
 
   it('says when the list could not load', async () => {
@@ -152,26 +127,35 @@ describe('Followed artists', () => {
 })
 
 describe('The Artists sort', () => {
-  const artist = (name: string, lastActivity: string | null): FollowedArtist => ({
+  const artist = (name: string, followedAt: string | null, picks: number, ratedAlbums: number): FollowedArtist => ({
     deezer_id: name,
     name,
-    lastPick: null,
-    lastRating: null,
-    lastActivity,
+    followedAt,
+    picks,
+    ratedAlbums,
   })
   const list = [
-    artist('Old', '2021-12-22T00:00:00+00:00'),
-    artist('zed', null),
-    artist('New', '2024-03-01T00:00:00+00:00'),
-    artist('alpha', null),
+    artist('Old', '2021-12-22T00:00:00+00:00', 5, 0),
+    artist('zed', null, 0, 1),
+    artist('New', '2026-11-13T00:00:00+00:00', 1, 3),
+    artist('alpha', null, 0, 1),
   ]
-
-  it('puts the latest activity first and the artists without any last, A→Z', () => {
-    expect(sortArtists(list, 'recent').map(a => a.name)).toEqual(['New', 'Old', 'alpha', 'zed'])
-  })
+  const names = (sort: Parameters<typeof sortArtists>[1]) => sortArtists(list, sort).map(a => a.name)
 
   it('sorts A→Z ignoring case', () => {
-    expect(sortArtists(list, 'name').map(a => a.name)).toEqual(['alpha', 'New', 'Old', 'zed'])
+    expect(names('name')).toEqual(['alpha', 'New', 'Old', 'zed'])
+  })
+
+  it('puts the latest followed first and the artists without a date last, A→Z', () => {
+    expect(names('followed')).toEqual(['New', 'Old', 'alpha', 'zed'])
+  })
+
+  it('puts the most Picks first, ties A→Z', () => {
+    expect(names('picks')).toEqual(['Old', 'New', 'alpha', 'zed'])
+  })
+
+  it('puts the most Rated albums first, ties A→Z', () => {
+    expect(names('albums')).toEqual(['New', 'alpha', 'zed', 'Old'])
   })
 })
 

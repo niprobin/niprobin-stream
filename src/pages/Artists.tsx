@@ -2,15 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { Search, UserMinus } from 'lucide-react'
 import { useFollowedArtists } from '@/contexts/FollowedArtistsContext'
 import { matchesArtist, sortArtists, type ArtistSort, type FollowedArtist } from '@/digging/followedArtists'
-import { ratingBadge } from '@/digging/albumStatus'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { cn } from '@/lib/utils'
 
-// What each row shows under the name
-type ActivityShown = 'pick' | 'rating' | 'both'
-
 const SORT_KEY = 'niprobin-artists-sort'
-const SHOWN_KEY = 'niprobin-artists-activity'
 
 // The choices are remembered in this browser; a blocked localStorage just forgets them
 function readChoice<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
@@ -73,41 +68,27 @@ function Segmented<T extends string>({
   )
 }
 
-function Activity({ artist, shown }: { artist: FollowedArtist; shown: ActivityShown }) {
-  const pick = shown !== 'rating' ? artist.lastPick : null
-  const rating = shown !== 'pick' ? artist.lastRating : null
-  if (!pick && !rating) {
-    const what = shown === 'pick' ? 'No Pick yet' : shown === 'rating' ? 'No Rating yet' : 'No Pick or Rating yet'
-    return <p className="text-xs text-text-3">{what}</p>
-  }
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
+
+// "12 Picks · 3 Rated albums · Followed 13 Nov 2026"
+function Activity({ artist }: { artist: FollowedArtist }) {
+  const followed = formatDate(artist.followedAt)
   return (
-    <div className="space-y-0.5 text-xs text-text-2">
-      {pick && (
-        <p className="truncate">
-          <span className="text-text-3">Pick · </span>
-          {pick.title}
-          {formatDate(pick.date) && <span className="text-text-3 font-mono"> · {formatDate(pick.date)}</span>}
-        </p>
-      )}
-      {rating && (
-        <p className="truncate">
-          <span className="text-text-3">Rated · </span>
-          {rating.album}
-          {rating.rating !== null && <span className="text-accent"> {ratingBadge(rating.rating)}</span>}
-          {formatDate(rating.date) && <span className="text-text-3 font-mono"> · {formatDate(rating.date)}</span>}
-        </p>
-      )}
-    </div>
+    <p className="text-xs text-text-2 truncate">
+      <span className={artist.picks ? '' : 'text-text-3'}>{plural(artist.picks, 'Pick')}</span>
+      <span className="text-text-3"> · </span>
+      <span className={artist.ratedAlbums ? '' : 'text-text-3'}>{plural(artist.ratedAlbums, 'Rated album')}</span>
+      {followed && <span className="text-text-3 font-mono"> · Followed {followed}</span>}
+    </p>
   )
 }
 
-// The Followed artists, A→Z or by last activity: open one, or stop following it (5s Undo)
+// The Followed artists, sorted A→Z, by follow date or by Picks/Rated albums: open one, or stop following it (5s Undo)
 export function ArtistsPage() {
   const { artists, isLoading, loadFailed, reload, unfollow } = useFollowedArtists()
   const [query, setQuery] = useState('')
-  const [sort, setSort] = useState<ArtistSort>(() => readChoice(SORT_KEY, ['name', 'recent'], 'name'))
-  const [activityShown, setActivityShown] = useState<ActivityShown>(() =>
-    readChoice(SHOWN_KEY, ['pick', 'rating', 'both'], 'both'),
+  const [sort, setSort] = useState<ArtistSort>(() =>
+    readChoice(SORT_KEY, ['name', 'followed', 'picks', 'albums'], 'name'),
   )
 
   // Follows made from an Artist page since the last load show up here
@@ -154,24 +135,13 @@ export function ArtistsPage() {
               value={sort}
               options={[
                 { value: 'name', label: 'A→Z' },
-                { value: 'recent', label: 'Recent activity' },
+                { value: 'followed', label: 'Recently followed' },
+                { value: 'picks', label: 'Most Picks' },
+                { value: 'albums', label: 'Most Rated albums' },
               ]}
               onChange={value => {
                 setSort(value)
                 saveChoice(SORT_KEY, value)
-              }}
-            />
-            <Segmented
-              label="Show"
-              value={activityShown}
-              options={[
-                { value: 'pick', label: 'Last Pick' },
-                { value: 'rating', label: 'Last Rating' },
-                { value: 'both', label: 'Both' },
-              ]}
-              onChange={value => {
-                setActivityShown(value)
-                saveChoice(SHOWN_KEY, value)
               }}
             />
           </div>
@@ -208,7 +178,7 @@ export function ArtistsPage() {
                     className="flex-1 min-w-0 px-3 py-2.5"
                   >
                     <p className="text-sm text-text-1 truncate">{artist.name}</p>
-                    <Activity artist={artist} shown={activityShown} />
+                    <Activity artist={artist} />
                   </a>
                   <button
                     type="button"
