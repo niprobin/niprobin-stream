@@ -1,4 +1,4 @@
-import { getFollowedArtists } from '@/services/api'
+import { getFollowedArtists, type FollowedArtist as FollowedArtistRow } from '@/services/api'
 import { unfollow as sendUnfollow, type ArtistRef } from './follows'
 
 // The Followed artists for the Artists page and the Sidebar count. Unfollow
@@ -8,9 +8,19 @@ import { unfollow as sendUnfollow, type ArtistRef } from './follows'
 // How long an Unfollow from the list can be undone before it's sent
 export const UNFOLLOW_UNDO_WINDOW_MS = 5000
 
+// A Followed artist with its last Pick and last Rating (dates as n8n sends them)
+export type FollowedArtist = ArtistRef & {
+  lastPick: { title: string; date: string | null } | null
+  lastRating: { album: string; rating: number | null; date: string | null } | null
+  // The latest of the two, for the Recent sort
+  lastActivity: string | null
+}
+
+export type ArtistSort = 'name' | 'recent'
+
 export type FollowedArtistsState = {
   // A→Z, without the artists being unfollowed; null until the first load
-  artists: ArtistRef[] | null
+  artists: FollowedArtist[] | null
   isLoading: boolean
   // The last load failed
   loadFailed: boolean
@@ -31,8 +41,45 @@ export type FollowedArtists = {
 
 const byName = (a: ArtistRef, b: ArtistRef) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
 
+const text = (value: unknown) => (typeof value === 'string' && value.trim() ? value.trim() : null)
+
+function toArtist(row: FollowedArtistRow): FollowedArtist {
+  const pick = text(row.last_liked_track)
+  const album = text(row.last_rated_album)
+  const rating = Number(row.last_rated_album_rating)
+  return {
+    deezer_id: row.deezer_id == null ? '' : String(row.deezer_id),
+    name: text(row.name) ?? text(row.artist) ?? '',
+    lastPick: pick ? { title: pick, date: text(row.last_liked_track_date) } : null,
+    lastRating: album
+      ? { album, rating: Number.isFinite(rating) && rating > 0 ? rating : null, date: text(row.last_rated_album_date) }
+      : null,
+    lastActivity: text(row.last_activity_date),
+  }
+}
+
+const time = (date: string | null) => {
+  const ms = date ? Date.parse(date) : NaN
+  return Number.isNaN(ms) ? null : ms
+}
+
+// Recent: latest activity first, artists with none at the end A→Z
+export function sortArtists(artists: FollowedArtist[], sort: ArtistSort): FollowedArtist[] {
+  if (sort === 'name') return [...artists].sort(byName)
+  return [...artists].sort((a, b) => {
+    const ta = time(a.lastActivity)
+    const tb = time(b.lastActivity)
+    if (ta !== tb) {
+      if (ta === null) return 1
+      if (tb === null) return -1
+      return tb - ta
+    }
+    return byName(a, b)
+  })
+}
+
 export function createFollowedArtists({ getToken }: { getToken: () => string | null }): FollowedArtists {
-  let artists: ArtistRef[] | null = null
+  let artists: FollowedArtist[] | null = null
   let isLoading = false
   let loadFailed = false
   let disposed = false
@@ -77,7 +124,7 @@ export function createFollowedArtists({ getToken }: { getToken: () => string | n
         const rows = await getFollowedArtists(getToken())
         if (disposed) return
         artists = rows
-          .map(row => ({ deezer_id: row.deezer_id == null ? '' : String(row.deezer_id), name: String(row.artist ?? '') }))
+          .map(toArtist)
           .filter(artist => artist.deezer_id)
           .sort(byName)
         loadFailed = false

@@ -1,13 +1,114 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Search, UserMinus } from 'lucide-react'
 import { useFollowedArtists } from '@/contexts/FollowedArtistsContext'
-import { matchesArtist } from '@/digging/followedArtists'
+import { matchesArtist, sortArtists, type ArtistSort, type FollowedArtist } from '@/digging/followedArtists'
+import { ratingBadge } from '@/digging/albumStatus'
 import { ROUTES, navigateTo } from '@/utils/routes'
+import { cn } from '@/lib/utils'
 
-// The Followed artists, A→Z: open one, or stop following it (5s Undo)
+// What each row shows under the name
+type ActivityShown = 'pick' | 'rating' | 'both'
+
+const SORT_KEY = 'niprobin-artists-sort'
+const SHOWN_KEY = 'niprobin-artists-activity'
+
+// The choices are remembered in this browser; a blocked localStorage just forgets them
+function readChoice<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const value = localStorage.getItem(key)
+    return allowed.includes(value as T) ? (value as T) : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function saveChoice(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // not remembered
+  }
+}
+
+// 2021-12-22 → 22 Dec 2021 (the day n8n says, whatever the time zone)
+function formatDate(date: string | null): string | null {
+  if (!date) return null
+  const ms = Date.parse(date)
+  if (Number.isNaN(ms)) return null
+  return new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
+}
+
+function Segmented<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string
+  value: T
+  options: { value: T; label: string }[]
+  onChange: (value: T) => void
+}) {
+  return (
+    <div className="inline-flex items-center gap-2">
+      <span className="text-xs text-text-3">{label}</span>
+      <div role="radiogroup" aria-label={label} className="inline-flex rounded-full border border-border p-0.5">
+        {options.map(option => (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={value === option.value}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              'h-7 px-3 rounded-full text-xs font-medium transition-colors',
+              value === option.value ? 'bg-bg-2 text-text-1' : 'text-text-2 hover:text-text-1',
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function Activity({ artist, shown }: { artist: FollowedArtist; shown: ActivityShown }) {
+  const pick = shown !== 'rating' ? artist.lastPick : null
+  const rating = shown !== 'pick' ? artist.lastRating : null
+  if (!pick && !rating) {
+    const what = shown === 'pick' ? 'No Pick yet' : shown === 'rating' ? 'No Rating yet' : 'No Pick or Rating yet'
+    return <p className="text-xs text-text-3">{what}</p>
+  }
+  return (
+    <div className="space-y-0.5 text-xs text-text-2">
+      {pick && (
+        <p className="truncate">
+          <span className="text-text-3">Pick · </span>
+          {pick.title}
+          {formatDate(pick.date) && <span className="text-text-3 font-mono"> · {formatDate(pick.date)}</span>}
+        </p>
+      )}
+      {rating && (
+        <p className="truncate">
+          <span className="text-text-3">Rated · </span>
+          {rating.album}
+          {rating.rating !== null && <span className="text-accent"> {ratingBadge(rating.rating)}</span>}
+          {formatDate(rating.date) && <span className="text-text-3 font-mono"> · {formatDate(rating.date)}</span>}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// The Followed artists, A→Z or by last activity: open one, or stop following it (5s Undo)
 export function ArtistsPage() {
   const { artists, isLoading, loadFailed, reload, unfollow } = useFollowedArtists()
   const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<ArtistSort>(() => readChoice(SORT_KEY, ['name', 'recent'], 'name'))
+  const [activityShown, setActivityShown] = useState<ActivityShown>(() =>
+    readChoice(SHOWN_KEY, ['pick', 'rating', 'both'], 'both'),
+  )
 
   // Follows made from an Artist page since the last load show up here
   useEffect(() => {
@@ -15,8 +116,8 @@ export function ArtistsPage() {
   }, [reload])
 
   const shown = useMemo(
-    () => (artists ?? []).filter(artist => matchesArtist(artist.name, query)),
-    [artists, query],
+    () => sortArtists((artists ?? []).filter(artist => matchesArtist(artist.name, query)), sort),
+    [artists, query, sort],
   )
 
   return (
@@ -47,6 +148,34 @@ export function ArtistsPage() {
         <p className="py-16 text-center text-text-2">No followed artists yet. Follow one from its Artist page.</p>
       ) : (
         <>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-4">
+            <Segmented
+              label="Sort"
+              value={sort}
+              options={[
+                { value: 'name', label: 'A→Z' },
+                { value: 'recent', label: 'Recent activity' },
+              ]}
+              onChange={value => {
+                setSort(value)
+                saveChoice(SORT_KEY, value)
+              }}
+            />
+            <Segmented
+              label="Show"
+              value={activityShown}
+              options={[
+                { value: 'pick', label: 'Last Pick' },
+                { value: 'rating', label: 'Last Rating' },
+                { value: 'both', label: 'Both' },
+              ]}
+              onChange={value => {
+                setActivityShown(value)
+                saveChoice(SHOWN_KEY, value)
+              }}
+            />
+          </div>
+
           <div className="relative mb-4 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-3 pointer-events-none" />
             <input
@@ -76,9 +205,10 @@ export function ArtistsPage() {
                       event.preventDefault()
                       navigateTo(ROUTES.artist(artist.deezer_id))
                     }}
-                    className="flex-1 min-w-0 px-3 py-2.5 text-sm text-text-1 truncate"
+                    className="flex-1 min-w-0 px-3 py-2.5"
                   >
-                    {artist.name}
+                    <p className="text-sm text-text-1 truncate">{artist.name}</p>
+                    <Activity artist={artist} shown={activityShown} />
                   </a>
                   <button
                     type="button"

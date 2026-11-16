@@ -1,12 +1,37 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { installFakeN8n } from '../../test/fakeN8n'
-import { createFollowedArtists, matchesArtist, UNFOLLOW_UNDO_WINDOW_MS } from './followedArtists'
+import {
+  createFollowedArtists,
+  matchesArtist,
+  sortArtists,
+  UNFOLLOW_UNDO_WINDOW_MS,
+  type FollowedArtist,
+} from './followedArtists'
 
 const ROWS = [
-  { deezer_id: 27, artist: 'Daft Punk' },
+  {
+    deezer_id: 27,
+    name: 'Daft Punk',
+    last_liked_track: 'Veridis Quo',
+    last_liked_track_date: '2024-03-01',
+    last_rated_album: null,
+    last_rated_album_rating: null,
+    last_rated_album_date: null,
+    last_activity_date: '2024-03-01T00:00:00+00:00',
+  },
+  // The name's old field still works
   { deezer_id: '1', artist: 'aphex Twin' },
-  { deezer_id: null, artist: 'No id' },
-  { deezer_id: '2', artist: 'Björk' },
+  { deezer_id: null, name: 'No id' },
+  {
+    deezer_id: '2',
+    name: 'Björk',
+    last_liked_track: null,
+    last_liked_track_date: null,
+    last_rated_album: 'Homogenic',
+    last_rated_album_rating: 4,
+    last_rated_album_date: '2021-12-22',
+    last_activity_date: '2021-12-22T00:00:00+00:00',
+  },
 ]
 
 async function setup() {
@@ -37,6 +62,22 @@ describe('Followed artists', () => {
 
     expect(names()).toEqual(['aphex Twin', 'Björk', 'Daft Punk'])
     expect(n8n.requests[0].headers).toMatchObject({ 'X-Auth-Token': 'tok' })
+  })
+
+  it('keeps each artist\'s last Pick and last Rating', async () => {
+    const { followed } = await setup()
+    const byName = (name: string) => followed.getState().artists?.find(a => a.name === name)
+
+    expect(byName('Daft Punk')).toMatchObject({
+      lastPick: { title: 'Veridis Quo', date: '2024-03-01' },
+      lastRating: null,
+      lastActivity: '2024-03-01T00:00:00+00:00',
+    })
+    expect(byName('Björk')).toMatchObject({
+      lastPick: null,
+      lastRating: { album: 'Homogenic', rating: 4, date: '2021-12-22' },
+    })
+    expect(byName('aphex Twin')).toMatchObject({ lastPick: null, lastRating: null, lastActivity: null })
   })
 
   it('says when the list could not load', async () => {
@@ -107,6 +148,30 @@ describe('Followed artists', () => {
     await vi.advanceTimersByTimeAsync(UNFOLLOW_UNDO_WINDOW_MS)
 
     expect(n8n.requests.filter(r => r.path === 'unfollow-artist')).toHaveLength(0)
+  })
+})
+
+describe('The Artists sort', () => {
+  const artist = (name: string, lastActivity: string | null): FollowedArtist => ({
+    deezer_id: name,
+    name,
+    lastPick: null,
+    lastRating: null,
+    lastActivity,
+  })
+  const list = [
+    artist('Old', '2021-12-22T00:00:00+00:00'),
+    artist('zed', null),
+    artist('New', '2024-03-01T00:00:00+00:00'),
+    artist('alpha', null),
+  ]
+
+  it('puts the latest activity first and the artists without any last, A→Z', () => {
+    expect(sortArtists(list, 'recent').map(a => a.name)).toEqual(['New', 'Old', 'alpha', 'zed'])
+  })
+
+  it('sorts A→Z ignoring case', () => {
+    expect(sortArtists(list, 'name').map(a => a.name)).toEqual(['alpha', 'New', 'Old', 'zed'])
   })
 })
 
