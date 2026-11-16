@@ -3,6 +3,7 @@ import type { AlbumsView } from '@/utils/albumUtils'
 export const ROUTES = {
   album: (id: number | string) => `/album/${id}`,
   artist: (id: string | number) => `/artist/${encodeURIComponent(id)}`,
+  artists: '/artists',
   digging: '/digging',
   diggingTracks: '/digging/tracks',
   diggingAlbums: '/digging/albums',

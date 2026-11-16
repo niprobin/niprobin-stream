@@ -27,6 +27,8 @@ import { getTrackByDeezerId } from './services/api'
 import { isShortlisted, type AlbumsView } from './utils/albumUtils'
 import { AlbumPage } from './pages/Album'
 import { ArtistPage } from './pages/Artist'
+import { ArtistsPage } from './pages/Artists'
+import { useFollowedArtists } from './contexts/FollowedArtistsContext'
 import { HomePage } from './pages/Home'
 import { LoginPage } from './pages/Login'
 import { useMetaTags } from './hooks/useMetaTags'
@@ -39,7 +41,8 @@ function AppContent() {
   const { setMetaTags, resetToDefault } = useMetaTags()
   usePlayPauseShortcut()
   const { refreshTracks, refreshAlbums, isLoadingTracks, isLoadingAlbums, trackBacklog, albumBacklog } = useBacklog()
-  const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'>('home')
+  const { artists: followedArtists } = useFollowedArtists()
+  const [activePage, setActivePage] = useState<'home' | 'digging' | 'album' | 'artist' | 'artists' | 'search' | 'menu'>('home')
   const [currentAlbumId, setCurrentAlbumId] = useState<number | null>(null)
   const [currentArtistId, setCurrentArtistId] = useState<string | null>(null)
   const [diggingTab, setDiggingTab] = useState<'tracks' | 'albums'>('tracks')
@@ -143,6 +146,9 @@ function AppContent() {
           window.history.replaceState({}, '', '/')
           setActivePage('home')
         }
+      } else if (path === ROUTES.artists) {
+        resetToDefault()
+        setActivePage('artists')
       } else if (path === '/search') {
         const params = new URLSearchParams(window.location.search)
         setSearchInitialQuery(params.get('q') ?? '')
@@ -163,7 +169,7 @@ function AppContent() {
   }, [isAuthenticated, cueTrack])
 
   const navigate = (
-    page: 'home' | 'digging' | 'album' | 'search',
+    page: 'home' | 'digging' | 'album' | 'artists' | 'search',
     albumId?: number,
     diggingTabOverride?: 'tracks' | 'albums',
     pageNumber?: number,
@@ -191,6 +197,8 @@ function AppContent() {
       console.log(`navigate: building digging URL - tab=${targetTab}, page=${targetPage}, preserveFilters=${preserveFilters}, result=${path}`)
     } else if (page === 'album' && albumId) {
       path = ROUTES.album(albumId)
+    } else if (page === 'artists') {
+      path = ROUTES.artists
     } else if (page === 'search') {
       path = '/search'
     }
@@ -266,6 +274,8 @@ function AppContent() {
             currentPage={diggingPage}
             onPageChange={navigateToDiggingPage}
           />
+        ) : activePage === 'artists' ? (
+          <ArtistsPage />
         ) : activePage === 'search' ? (
           <Search key={searchInitialQuery} initialQuery={searchInitialQuery} />
         ) : (
@@ -278,7 +288,7 @@ function AppContent() {
   const mobileCurrentPage: 'home' | 'tracks' | 'albums' | 'menu' =
     activePage === 'album' ? 'albums'
     : activePage === 'digging' ? diggingTab
-    : activePage === 'menu' ? 'menu'
+    : activePage === 'menu' || activePage === 'artists' ? 'menu'
     : 'home'
 
   const listenCount = albumBacklog.filter(isShortlisted).length
@@ -302,11 +312,13 @@ function AppContent() {
           albumsView={albumsView}
           albumsCount={backlogCount}
           listenCount={listenCount}
+          artistsCount={followedArtists?.length}
           username={username}
           isRefreshing={isRefreshing}
           onNavigateHome={() => navigate('home')}
           onNavigateTracks={() => navigateToDiggingTab('tracks')}
           onNavigateAlbumsView={navigateToAlbumsView}
+          onNavigateArtists={() => navigate('artists')}
           onRefresh={handleRefresh}
           onLogout={logout}
         />
@@ -367,6 +379,8 @@ function AppContent() {
                 isAuthenticated={isAuthenticated}
                 username={username}
                 isRefreshing={isRefreshing}
+                artistsCount={followedArtists?.length}
+                onNavigateArtists={() => navigate('artists')}
                 onRefresh={handleRefresh}
                 onLogout={logout}
               />

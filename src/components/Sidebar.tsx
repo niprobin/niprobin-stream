@@ -1,20 +1,22 @@
-import { RefreshCw, Home, Music, Disc3 } from 'lucide-react'
+import { RefreshCw, Home, Music, Disc3, Users } from 'lucide-react'
 import { Logo } from './ui/Logo'
 import type { AlbumsView } from '@/utils/albumUtils'
 
 interface SidebarProps {
   isAuthenticated: boolean
-  activePage: 'home' | 'digging' | 'album' | 'artist' | 'search' | 'menu'
+  activePage: 'home' | 'digging' | 'album' | 'artist' | 'artists' | 'search' | 'menu'
   diggingTab: 'tracks' | 'albums'
   tracksCount?: number
   albumsView: AlbumsView
   albumsCount?: number
   listenCount?: number
+  artistsCount?: number
   username?: string | null
   isRefreshing: boolean
   onNavigateHome: () => void
   onNavigateTracks: () => void
   onNavigateAlbumsView: (view: AlbumsView) => void
+  onNavigateArtists: () => void
   onRefresh: () => void
   onLogout: () => void
 }
@@ -31,11 +33,13 @@ export function Sidebar({
   albumsView,
   albumsCount,
   listenCount,
+  artistsCount,
   username,
   isRefreshing,
   onNavigateHome,
   onNavigateTracks,
   onNavigateAlbumsView,
+  onNavigateArtists,
   onRefresh,
   onLogout,
 }: SidebarProps) {
@@ -125,6 +129,19 @@ export function Sidebar({
               )
             })}
           </div>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activePage === 'artists'}
+            onClick={onNavigateArtists}
+            className={navItemClass(activePage === 'artists')}
+          >
+            <Users className="h-[18px] w-[18px]" />
+            <span className="flex-1 text-left">Artists</span>
+            {typeof artistsCount === 'number' && artistsCount > 0 && (
+              <span className="text-xs font-mono text-text-3">{artistsCount}</span>
+            )}
+          </button>
         </nav>
       )}
 

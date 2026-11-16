@@ -1,9 +1,11 @@
-import { RefreshCw } from 'lucide-react'
+import { ChevronRight, RefreshCw, Users } from 'lucide-react'
 
 interface MobileMenuProps {
   isAuthenticated: boolean
   username?: string | null
   isRefreshing: boolean
+  artistsCount?: number
+  onNavigateArtists: () => void
   onRefresh: () => void
   onLogout: () => void
 }
@@ -16,12 +18,32 @@ export function MobileMenu({
   isAuthenticated,
   username,
   isRefreshing,
+  artistsCount,
+  onNavigateArtists,
   onRefresh,
   onLogout,
 }: MobileMenuProps) {
   return (
     <div className="py-8 px-6 space-y-6">
       <h2 className="text-text-1 text-xl font-semibold">Menu</h2>
+
+      {isAuthenticated && (
+        <div className="space-y-2">
+          <p className="text-xs text-text-3 uppercase tracking-wider">Library</p>
+          <button
+            type="button"
+            onClick={onNavigateArtists}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded-md-crate bg-bg-1 text-text-1 active:bg-bg-2 transition-colors"
+          >
+            <Users className="h-5 w-5 text-text-3" />
+            <span className="flex-1 text-left text-sm font-medium">Artists</span>
+            {typeof artistsCount === 'number' && artistsCount > 0 && (
+              <span className="text-xs font-mono text-text-3">{artistsCount}</span>
+            )}
+            <ChevronRight className="h-4 w-4 text-text-3" />
+          </button>
+        </div>
+      )}
 
       {isAuthenticated && (
         <div className="space-y-2">
