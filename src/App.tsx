@@ -256,9 +256,9 @@ function AppContent() {
     navigate('digging', undefined, diggingTab, validPage, true)
   }
 
-  // Desktop album grid is sized to fit the viewport (no scroll), so its page
+  // Desktop album grid and Artists table are sized to fit the viewport (no scroll), so their page
   // needs a definite height down the wrapper chain.
-  const isFitToViewport = activePage === 'digging' && diggingTab === 'albums'
+  const isFitToViewport = (activePage === 'digging' && diggingTab === 'albums') || activePage === 'artists'
 
   const pageContent = (
     <div className={`w-full px-4 sm:px-6 lg:px-10 ${isFitToViewport ? 'lg:h-full' : ''}`}>

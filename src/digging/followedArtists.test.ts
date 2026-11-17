@@ -140,7 +140,8 @@ describe('The Artists sort', () => {
     artist('New', '2026-11-13T00:00:00+00:00', 1, 3),
     artist('alpha', null, 0, 1),
   ]
-  const names = (sort: Parameters<typeof sortArtists>[1]) => sortArtists(list, sort).map(a => a.name)
+  const names = (sort: Parameters<typeof sortArtists>[1], reversed = false) =>
+    sortArtists(list, sort, reversed).map(a => a.name)
 
   it('sorts A→Z ignoring case', () => {
     expect(names('name')).toEqual(['alpha', 'New', 'Old', 'zed'])
@@ -156,6 +157,13 @@ describe('The Artists sort', () => {
 
   it('puts the most Rated albums first, ties A→Z', () => {
     expect(names('albums')).toEqual(['New', 'alpha', 'zed', 'Old'])
+  })
+
+  it('reverses each order, keeping ties A→Z and the artists without a date last', () => {
+    expect(names('name', true)).toEqual(['zed', 'Old', 'New', 'alpha'])
+    expect(names('followed', true)).toEqual(['Old', 'New', 'alpha', 'zed'])
+    expect(names('picks', true)).toEqual(['alpha', 'zed', 'New', 'Old'])
+    expect(names('albums', true)).toEqual(['Old', 'alpha', 'zed', 'New'])
   })
 })
 

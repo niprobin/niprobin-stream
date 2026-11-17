@@ -70,13 +70,18 @@ const KEY: Record<Exclude<ArtistSort, 'name'>, (artist: FollowedArtist) => numbe
   albums: artist => artist.ratedAlbums,
 }
 
-export function sortArtists(artists: FollowedArtist[], sort: ArtistSort): FollowedArtist[] {
-  if (sort === 'name') return [...artists].sort(byName)
+// reversed: Z→A, the earliest followed, the fewest Picks or Rated albums.
+// Ties stay A→Z and the artists without a follow date stay last either way.
+export function sortArtists(artists: FollowedArtist[], sort: ArtistSort, reversed = false): FollowedArtist[] {
+  const flip = reversed ? -1 : 1
+  if (sort === 'name') return [...artists].sort((a, b) => flip * byName(a, b))
   const key = KEY[sort]
   return [...artists].sort((a, b) => {
     const ka = key(a)
     const kb = key(b)
-    return ka === kb ? byName(a, b) : kb > ka ? 1 : -1
+    if (ka === kb) return byName(a, b)
+    if (ka === -Infinity || kb === -Infinity) return ka === -Infinity ? 1 : -1
+    return flip * (kb > ka ? 1 : -1)
   })
 }
 
