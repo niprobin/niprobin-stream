@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Search, UserMinus } from 'lucide-react'
+import { ArrowDown, Search, UserMinus } from 'lucide-react'
 import { useFollowedArtists } from '@/contexts/FollowedArtistsContext'
-import { matchesArtist, sortArtists, type ArtistSort, type FollowedArtist } from '@/digging/followedArtists'
+import { matchesArtist, sortArtists, type ArtistSort } from '@/digging/followedArtists'
 import { ROUTES, navigateTo } from '@/utils/routes'
 import { cn } from '@/lib/utils'
 
@@ -33,57 +33,24 @@ function formatDate(date: string | null): string | null {
   return new Date(ms).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })
 }
 
-function Segmented<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string
-  value: T
-  options: { value: T; label: string }[]
-  onChange: (value: T) => void
-}) {
-  return (
-    <div className="inline-flex items-center gap-2">
-      <span className="text-xs text-text-3">{label}</span>
-      <div role="radiogroup" aria-label={label} className="inline-flex rounded-full border border-border p-0.5">
-        {options.map(option => (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={value === option.value}
-            onClick={() => onChange(option.value)}
-            className={cn(
-              'h-7 px-3 rounded-full text-xs font-medium transition-colors',
-              value === option.value ? 'bg-bg-2 text-text-1' : 'text-text-2 hover:text-text-1',
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
-// "12 Picks · 3 Rated albums · Followed 13 Nov 2026"
-function Activity({ artist }: { artist: FollowedArtist }) {
-  const followed = formatDate(artist.followedAt)
-  return (
-    <p className="text-xs text-text-2 truncate">
-      <span className={artist.picks ? '' : 'text-text-3'}>{plural(artist.picks, 'Pick')}</span>
-      <span className="text-text-3"> · </span>
-      <span className={artist.ratedAlbums ? '' : 'text-text-3'}>{plural(artist.ratedAlbums, 'Rated album')}</span>
-      {followed && <span className="text-text-3 font-mono"> · Followed {followed}</span>}
-    </p>
-  )
+// One grid for the header and the rows, so the columns line up
+const COLS = 'grid grid-cols-[minmax(0,1fr)_4rem_4rem] sm:grid-cols-[minmax(0,1fr)_4rem_4rem_7rem] items-center gap-x-4'
+
+// Each column header sorts by it, in the one direction that makes sense for it
+const COLUMNS: { sort: ArtistSort; label: string; title: string; className: string }[] = [
+  { sort: 'name', label: 'Artist', title: 'Sort A→Z', className: 'justify-start' },
+  { sort: 'picks', label: 'Picks', title: 'Sort by most Picks', className: 'justify-end' },
+  { sort: 'albums', label: 'Rated', title: 'Sort by most Rated albums', className: 'justify-end' },
+  { sort: 'followed', label: 'Followed', title: 'Sort by recently followed', className: 'justify-end hidden sm:flex' },
+]
+
+function Count({ n }: { n: number }) {
+  return <span className={cn('text-right tabular-nums', n ? 'text-text-1' : 'text-text-3')}>{n || '–'}</span>
 }
 
-// The Followed artists, sorted A→Z, by follow date or by Picks/Rated albums: open one, or stop following it (5s Undo)
+// The Followed artists as a table sorted by a column (A→Z, Picks, Rated albums, follow date): open one, or stop following it (5s Undo)
 export function ArtistsPage() {
   const { artists, isLoading, loadFailed, reload, unfollow } = useFollowedArtists()
   const [query, setQuery] = useState('')
@@ -129,23 +96,6 @@ export function ArtistsPage() {
         <p className="py-16 text-center text-text-2">No followed artists yet. Follow one from its Artist page.</p>
       ) : (
         <>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-4">
-            <Segmented
-              label="Sort"
-              value={sort}
-              options={[
-                { value: 'name', label: 'A→Z' },
-                { value: 'followed', label: 'Recently followed' },
-                { value: 'picks', label: 'Most Picks' },
-                { value: 'albums', label: 'Most Rated albums' },
-              ]}
-              onChange={value => {
-                setSort(value)
-                saveChoice(SORT_KEY, value)
-              }}
-            />
-          </div>
-
           <div className="relative mb-4 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-3 pointer-events-none" />
             <input
@@ -161,38 +111,67 @@ export function ArtistsPage() {
           {shown.length === 0 ? (
             <p className="py-10 text-center text-text-2">No artist matches "{query.trim()}"</p>
           ) : (
-            <ul className="space-y-1">
-              {shown.map(artist => (
-                <li
-                  key={artist.deezer_id}
-                  className="flex items-center gap-2 rounded-lg hover:bg-bg-2 transition-colors"
-                >
-                  <a
-                    href={ROUTES.artist(artist.deezer_id)}
-                    onClick={event => {
-                      // A plain click stays in the app; Ctrl/middle click opens a tab
-                      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return
-                      event.preventDefault()
-                      navigateTo(ROUTES.artist(artist.deezer_id))
-                    }}
-                    className="flex-1 min-w-0 px-3 py-2.5"
+            <div className="max-w-3xl">
+              <div className="flex items-center gap-2 border-b border-border">
+                <div className={cn(COLS, 'flex-1 min-w-0 h-10 px-3')}>
+                  {COLUMNS.map(column => (
+                    <button
+                      key={column.sort}
+                      type="button"
+                      aria-pressed={sort === column.sort}
+                      title={column.title}
+                      onClick={() => {
+                        setSort(column.sort)
+                        saveChoice(SORT_KEY, column.sort)
+                      }}
+                      className={cn(
+                        'flex items-center gap-1 text-xs font-medium transition-colors',
+                        column.className,
+                        sort === column.sort ? 'text-text-1' : 'text-text-2 hover:text-text-1',
+                      )}
+                    >
+                      {column.label}
+                      {sort === column.sort && <ArrowDown aria-hidden="true" className="h-3 w-3 text-accent" />}
+                    </button>
+                  ))}
+                </div>
+                <span className="shrink-0 w-9 mr-2" />
+              </div>
+              <ul>
+                {shown.map(artist => (
+                  <li
+                    key={artist.deezer_id}
+                    className="group flex items-center gap-2 rounded-lg hover:bg-bg-2 focus-within:bg-bg-2 transition-colors"
                   >
-                    <p className="text-sm text-text-1 truncate">{artist.name}</p>
-                    <Activity artist={artist} />
-                  </a>
-                  <button
-                    type="button"
-                    onClick={() => unfollow(artist)}
-                    aria-label={`Stop following ${artist.name}`}
-                    title="Unfollow"
-                    className="shrink-0 mr-2 inline-flex items-center gap-1.5 h-8 px-3 rounded-full border border-border text-xs font-medium text-text-2 hover:text-text-1 hover:bg-bg-1 transition-colors"
-                  >
-                    <UserMinus className="h-3.5 w-3.5" />
-                    Unfollow
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    <a
+                      href={ROUTES.artist(artist.deezer_id)}
+                      onClick={event => {
+                        // A plain click stays in the app; Ctrl/middle click opens a tab
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return
+                        event.preventDefault()
+                        navigateTo(ROUTES.artist(artist.deezer_id))
+                      }}
+                      aria-label={`${artist.name}: ${plural(artist.picks, 'Pick')}, ${plural(artist.ratedAlbums, 'Rated album')}`}
+                      className={cn(COLS, 'flex-1 min-w-0 h-11 px-3 text-sm')}
+                    >
+                      <span className="text-text-1 truncate">{artist.name}</span>
+                      <Count n={artist.picks} />
+                      <Count n={artist.ratedAlbums} />
+                      <span className="hidden sm:block text-right text-text-2 tabular-nums">{formatDate(artist.followedAt) ?? '–'}</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => unfollow(artist)}
+                      aria-label={`Stop following ${artist.name}`}
+                      title="Unfollow"
+                      className="shrink-0 mr-2 inline-flex items-center justify-center h-9 w-9 rounded-full text-text-2 hover:text-text-1 hover:bg-bg-1 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 transition"
+                    >
+                      <UserMinus className="h-4 w-4" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </>
       )}
