@@ -20,6 +20,12 @@ type AlbumPageProps = {
   albumId: number
 }
 
+// 1976-05-03 → 3 May 1976 (the day n8n says, whatever the time zone); anything else as sent
+function formatReleaseDate(date: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}/.test(date)) return date
+  return new Date(Date.parse(date)).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+}
+
 export function AlbumPage({ albumId }: AlbumPageProps) {
   const [tracks, setTracks] = useState<AlbumTrack[]>([])
   const [albumName, setAlbumName] = useState('')
@@ -290,22 +296,24 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             <h1 className="font-serif-display italic text-4xl lg:text-5xl xl:text-6xl leading-none text-text-1 mb-2">
               {albumName}
             </h1>
-            {artistId ? (
-              <button
-                onClick={() => { window.history.pushState({}, '', ROUTES.artist(artistId)); window.dispatchEvent(new PopStateEvent('popstate')) }}
-                className="text-xs text-text-2 uppercase tracking-widest font-light underline decoration-dotted underline-offset-4 hover:text-text-1 transition-colors text-center lg:text-left"
-              >
-                {artistName}
-              </button>
-            ) : (
-              <p className="text-xs text-text-2 uppercase tracking-widest font-light">{artistName}</p>
-            )}
-            {releaseDate && (
-              // Year only, like a record sleeve; the full date stays on hover
-              <time dateTime={releaseDate} title={releaseDate} className="text-xs text-text-3 tracking-widest font-light tabular-nums">
-                {/\d{4}/.exec(releaseDate)?.[0] ?? releaseDate}
-              </time>
-            )}
+            <div className="flex flex-wrap items-baseline justify-center lg:justify-start gap-x-3 gap-y-1 text-xs text-text-2 uppercase tracking-widest font-light">
+              {artistId ? (
+                <button
+                  onClick={() => { window.history.pushState({}, '', ROUTES.artist(artistId)); window.dispatchEvent(new PopStateEvent('popstate')) }}
+                  className="uppercase tracking-widest underline decoration-dotted underline-offset-4 hover:text-text-1 transition-colors"
+                >
+                  {artistName}
+                </button>
+              ) : (
+                <p>{artistName}</p>
+              )}
+              {releaseDate && (
+                <>
+                  <span aria-hidden="true" className="text-text-3">·</span>
+                  <time dateTime={releaseDate} className="whitespace-nowrap">{formatReleaseDate(releaseDate)}</time>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
