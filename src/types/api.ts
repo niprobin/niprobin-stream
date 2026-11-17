@@ -41,6 +41,7 @@ export type AlbumResponse = {
   cover: string
   id?: string
   streamingLink?: string
+  releaseDate?: string
 }
 
 // Partially normalised: stream_url/track_id/hash_url are mapped to camelCase at

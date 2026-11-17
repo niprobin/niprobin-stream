@@ -151,6 +151,7 @@ function parseAlbumMeta(albumData: any, fallbackId: string) {
     artistName: isNewFormat ? (albumData.artist?.name || '') : (albumData.artist || ''),
     artistId: isNewFormat ? (albumData.artist?.id ?? undefined) : undefined,
     legacyId: isNewFormat ? undefined : albumData.id,
+    releaseDate: (isNewFormat ? albumData.album.release_date : undefined) ?? albumData.release_date,
   }
 }
 
@@ -165,7 +166,7 @@ export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
   if (Array.isArray(data) && data.length > 0) {
     albumData = data[0]
     if (albumData.tracks && Array.isArray(albumData.tracks)) {
-      const { albumTitle, albumCover, albumId: parsedAlbumId, streamingLink, artistName, artistId, legacyId } = parseAlbumMeta(albumData, deezer_id)
+      const { albumTitle, albumCover, albumId: parsedAlbumId, streamingLink, artistName, artistId, legacyId, releaseDate } = parseAlbumMeta(albumData, deezer_id)
 
       tracks = albumData.tracks.map((track: any) => ({
         ...track,
@@ -176,7 +177,7 @@ export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
         cover: albumCover,
       }))
 
-      return { tracks, albumId: parsedAlbumId, album: albumTitle, artist: artistName, artistId, cover: albumCover, id: legacyId, streamingLink }
+      return { tracks, albumId: parsedAlbumId, album: albumTitle, artist: artistName, artistId, cover: albumCover, id: legacyId, streamingLink, releaseDate }
     }
   } else if (Array.isArray(data)) {
     tracks = data
@@ -196,6 +197,7 @@ export async function getAlbumById(deezer_id: string): Promise<AlbumResponse> {
     cover: albumData.cover || (tracks.length > 0 ? tracks[0].cover || '' : ''),
     id: albumData.id,
     streamingLink: albumData.streaming_link,
+    releaseDate: albumData.release_date,
   }
 }
 

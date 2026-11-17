@@ -27,6 +27,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const [coverUrl, setCoverUrl] = useState('')
   const [albumDataId, setAlbumDataId] = useState<string | number | undefined>(undefined)
   const [streamingLink, setStreamingLink] = useState<string | undefined>(undefined)
+  const [releaseDate, setReleaseDate] = useState<string | undefined>(undefined)
   const [artistId, setArtistId] = useState<string | undefined>(undefined)
   // The stars just clicked, shown while the rating is being saved
   const [pendingRating, setPendingRating] = useState<number | null>(null)
@@ -75,6 +76,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         // switch (and keep its prefetched tracks).
         setAlbumDataId(data.id ?? data.albumId)
         setStreamingLink(data.streamingLink)
+        setReleaseDate(data.releaseDate)
 
         // Update meta tags for the album
         const albumMetaTags = generateAlbumMetaTags({
@@ -297,6 +299,12 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
               </button>
             ) : (
               <p className="text-xs text-text-2 uppercase tracking-widest font-light">{artistName}</p>
+            )}
+            {releaseDate && (
+              // Year only, like a record sleeve; the full date stays on hover
+              <time dateTime={releaseDate} title={releaseDate} className="text-xs text-text-3 tracking-widest font-light tabular-nums">
+                {/\d{4}/.exec(releaseDate)?.[0] ?? releaseDate}
+              </time>
             )}
           </div>
         </div>
